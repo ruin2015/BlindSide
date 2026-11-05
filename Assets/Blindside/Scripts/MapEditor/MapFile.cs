@@ -283,15 +283,42 @@ namespace Blindside.MapEditor
             }
             catch (Exception ex) { Debug.LogWarning("[MapStore] can't list " + Directory + ": " + ex.Message); }
             saved.Sort((a, b) => b.modified.CompareTo(a.modified));
+            list.AddRange(CatalogEntries());
             list.AddRange(saved);
             return list;
         }
 
-        /// <summary>One entry by its stem ("" = the default house); null when there is no such file.</summary>
+        /// <summary>One entry by its stem ("" = the default house, "@id" = a map the build ships); null when there is no such map.</summary>
         public static MapEntry Find(string stem)
         {
             if (string.IsNullOrEmpty(stem) || IsDefaultStem(stem)) return DefaultEntry();
+            if (Blindside.Flow.MapCatalog.IsCatalogStem(stem))
+            {
+                var c = Blindside.Flow.MapCatalog.Find(Blindside.Flow.MapCatalog.IdOf(stem));
+                return c != null && c.listed ? ReadCatalog(c) : null;
+            }
             return Exists(stem) ? ReadFile(PathFor(stem)) : null;
+        }
+
+        // ---- maps the build ships (Resources/BlindsideMapCatalog: exported from the editor as map scenes) ---------------------------
+
+        static List<MapEntry> CatalogEntries()
+        {
+            var list = new List<MapEntry>();
+            var cat = Blindside.Flow.MapCatalog.Instance;
+            if (cat == null) return list;
+            foreach (var c in cat.entries) if (c != null && c.listed && c.mapJson != null) list.Add(ReadCatalog(c));
+            return list;
+        }
+
+        static MapEntry ReadCatalog(Blindside.Flow.MapCatalog.Entry c)
+        {
+            var e = new MapEntry { stem = Blindside.Flow.MapCatalog.StemPrefix + c.id, displayName = string.IsNullOrEmpty(c.displayName) ? c.id : c.displayName };
+            if (c.mapJson == null) { e.kind = MapEntry.EntryKind.Corrupt; e.corruptReason = "ファイルを読み込めません"; return e; }
+            if (!MapFile.TryParse(c.mapJson.text, out var f, out var why)) { e.kind = MapEntry.EntryKind.Corrupt; e.corruptReason = why; return e; }
+            e.kind = MapEntry.EntryKind.Saved; e.file = f; e.width = f.width; e.height = f.height;
+            FillErrors(e, f.ToModel());
+            return e;
         }
 
         // ---- the title's choice -----------------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-05 13:57
+Screen 1440x810 · 0 issues · generated 2026-11-06 01:08
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -17,6 +17,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 |---|---|---|---|---|---|---|---|---|
 | title_attack | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_defense | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| title_build | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_spot_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_logo | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_selected | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -94,36 +95,36 @@ Operator names and card numbers are normalised to OP / N before grouping.
 ## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 49종)
 
 - Brighten ×2
-- Chip ×407
+- Chip ×411
 - CornerBrackets ×17
-- CutCornerGraphic ×61
+- CutCornerGraphic ×62
 - EngagePreview ×3
-- HazardStripe ×123
+- HazardStripe ×126
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×27
-- KitBrighten ×12
+- KitBrighten ×14
 - KitChoice ×2
 - KitCommandMenu ×3
-- KitGradient ×8
+- KitGradient ×10
 - KitOptionsPanel ×2
-- KitPointer ×40
+- KitPointer ×49
 - KitRoster ×24
-- KitShadow ×71
-- KitSweep ×81
+- KitShadow ×77
+- KitSweep ×84
 - KitSwitch ×4
-- KitTint ×221
-- KitTitleLeft ×4
-- LintIgnoreClip ×477
-- LintIgnoreOverlap ×105
+- KitTint ×225
+- KitTitleLeft ×5
+- LintIgnoreClip ×517
+- LintIgnoreOverlap ×127
 - ResultScreen ×3
-- SegmentedBar ×227
-- SlantedGraphic ×1923
-- SlantedMask ×216
-- TacticalPanel ×794
-- TitleSelectScreen ×4
+- SegmentedBar ×237
+- SlantedGraphic ×1967
+- SlantedMask ×222
+- TacticalPanel ×798
+- TitleSelectScreen ×5
 - TutorialDroneCard ×2
 - TutorialGuide ×3
 - TutorialObjective ×2
@@ -133,9 +134,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
 - UIContactAlert ×24
-- UIGlitchImage ×229
-- UIGlitchName ×32
-- UIGlitchText ×83
+- UIGlitchImage ×232
+- UIGlitchName ×33
+- UIGlitchText ×84
 - UIHeadshotBadge ×24
 - UIPerspective ×3
 - UIPerspectiveVertex ×150
@@ -149,6 +150,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 |---|---|---|
 | title_attack | 1440x810 | タイトル — 攻撃選択 |
 | title_defense | 1440x810 | タイトル — 防衛選択 |
+| title_build | 1440x810 | タイトル — ビルド (マップエディタなし) |
 | title_spot_glitch | 1440x810 | タイトル — スポットライト グリッチ (t=0.21s) |
 | title_logo | 1440x810 | タイトル — ロゴ演出 (t=0.3s) |
 | hud_selected | 1440x810 | HUD — 隊員選択 (CRUSHER) |

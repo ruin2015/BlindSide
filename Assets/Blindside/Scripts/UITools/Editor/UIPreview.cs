@@ -42,6 +42,7 @@ namespace Blindside.UITools.EditorTools
         {
             new State { name = "title_attack", label = "タイトル — 攻撃選択", build = s => BuildTitle(s, OperatorTeam.Attack) },
             new State { name = "title_defense", label = "タイトル — 防衛選択", build = s => BuildTitle(s, OperatorTeam.Defense) },
+            new State { name = "title_build", label = "タイトル — ビルド (マップエディタなし)", build = BuildTitleAsBuild },
             new State { name = UIPreviewKitTitleSquad.Name, label = "タイトル — スポットライト グリッチ (t=0.21s)", build = UIPreviewKitTitleSquad.Build },
             new State { name = UIPreviewKitTitleLeft.Name, label = "タイトル — ロゴ演出 (t=0.3s)", build = UIPreviewKitTitleLeft.Build },
             new State { name = "hud_selected", label = "HUD — 隊員選択 (CRUSHER)", build = s => BuildHud(s, HudState.Selected) },
@@ -399,6 +400,14 @@ namespace Blindside.UITools.EditorTools
             var canvas = s.NewCanvas("BlindsideCanvas", UITheme.CanvasKind.Menu, 0);
             var screen = TitleSelectScreenBuilder.BuildInto(canvas.transform);
             screen.ShowPreview(team);
+        }
+
+        // the title as a build draws it: no マップエディタ block, the map card across the row (KitTitleTop.buildLayout)
+        static void BuildTitleAsBuild(Stage s)
+        {
+            KitTitleTop.buildLayout = true;
+            try { BuildTitle(s, OperatorTeam.Attack); }
+            finally { KitTitleTop.buildLayout = false; }
         }
 
         // ================================================================

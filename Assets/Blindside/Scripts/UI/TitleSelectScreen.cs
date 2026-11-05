@@ -15,6 +15,7 @@ using Blindside.Integration;
 using Blindside.Rendering;
 using Blindside.Map;
 using Blindside.MapEditor;
+using Blindside.Flow;
 
 namespace Blindside.UI
 {
@@ -97,6 +98,7 @@ namespace Blindside.UI
         /// <summary>The マップエディタ entry (.ed, UITheme.title.editorButton) beside the map card in the .row3 row, built here so the scene needs no edit.</summary>
         void BuildMapEditorButton()
         {
+            if (Application.isPlaying && !Application.isEditor) return;   // a build has no map editor (its scene is editor-only)
             var T = UITheme.Current.title;
             var go = new GameObject("MapEditorButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
             go.transform.SetParent(MapRow, false);
@@ -146,6 +148,7 @@ namespace Blindside.UI
 
         public void OpenMapEditor()
         {
+            if (SceneFlow.InRole(SceneRole.Title)) { SceneFlow.GoMapEditor(); return; }   // the editor is its own (editor-only) scene
             screenGroup.blocksRaycasts = false;
             gameObject.SetActive(false);
             Blindside.MapEditor.MapEditorScreen.Open(ShowAgain);   // the title comes back when the editor is left
@@ -434,6 +437,7 @@ namespace Blindside.UI
         // ---- starting ---------------------------------------------------------------------------------------------------------------
 
         OperatorTeam launchTeam;
+        string deployScene;   // Deploy → Launch: the scene the chosen map plays in (null = the battle scene)
 
         /// <summary>[再挑戦]: the same side on the same map again (a test play stays a test play, back to the editor from its result).</summary>
         public void Restart()
@@ -451,6 +455,8 @@ namespace Blindside.UI
             if (!CanStart || deploying) return;
             var data = selectedMap.BuildGameData();
             if (data == null) { RefreshMapSelection(); return; }
+            var cat = MapCatalog.Find(MapCatalog.IdOf(selectedMap.stem));   // an exported map plays in its own scene
+            deployScene = cat != null && !string.IsNullOrEmpty(cat.sceneName) ? cat.sceneName : null;
             if (!deployWipe || !Application.isPlaying) { Launch(SelectedTeam, data, null); return; }
             // the wipe covers the screen, then the match starts as before (Launch: title away, intro); no clicks meanwhile
             deploying = true;
@@ -470,7 +476,15 @@ namespace Blindside.UI
         {
             bool tutorial = launchingTutorial;
             launchingTutorial = false;
+            string scene = deployScene;
+            deployScene = null;
             if (!MapLibrary.SetCurrent(source.Clone())) return false;      // (logs why)
+            if (!tutorial && SceneFlow.InRole(SceneRole.Title))
+            {
+                // the title scene plays no match: the battle scene (or the chosen map's own scene) does, with this request
+                SceneFlow.GoBattle(new LaunchRequest { team = team, map = source.Clone(), skipIntro = skipIntro, sceneName = scene });
+                return true;
+            }
             // every launch but the tutorial's is a normal match
             if (!tutorial) Blindside.Tutorial.TutorialDirector.Disarm(matchBootstrap);
             else if (matchBootstrap != null) matchBootstrap.tutorialMode = true;
@@ -520,21 +534,31 @@ namespace Blindside.UI
         /// TutorialDirector takes it from there.</summary>
         public void LaunchTutorial()
         {
-            if (deploying || matchBootstrap == null) return;
+            if (deploying) return;
+            // the title scene: the tutorial is its own scene (SceneFlow), its SceneEntry calls StartTutorialHere
+            bool ownScene = SceneFlow.InRole(SceneRole.Title);
+            if (!ownScene && matchBootstrap == null) return;
             System.Action go = () =>
             {
-                Blindside.Tutorial.TutorialDirector.Prepare(matchBootstrap);
-                launchingTutorial = true;
-                if (!Launch(OperatorTeam.Attack, Blindside.Tutorial.TutorialMap.Build(), null, skipIntro: true))
-                {
-                    Blindside.Tutorial.TutorialDirector.Disarm(matchBootstrap);
-                    screenGroup.blocksRaycasts = true;
-                }
+                if (ownScene) { SceneFlow.GoTutorial(); return; }
+                if (!StartTutorialHere()) screenGroup.blocksRaycasts = true;
             };
             if (!deployWipe || !Application.isPlaying) { go(); return; }
             deploying = true;
             screenGroup.blocksRaycasts = false;
             KitWipe.Play(() => { deploying = false; go(); });
+        }
+
+        /// <summary>The tutorial match in this scene (the tutorial scene's SceneEntry, or the one-scene flow): the training map (TutorialMap)
+        /// in tutorial mode, no intro. False when it could not start.</summary>
+        public bool StartTutorialHere()
+        {
+            if (matchBootstrap == null) return false;
+            Blindside.Tutorial.TutorialDirector.Prepare(matchBootstrap);
+            launchingTutorial = true;
+            if (Launch(OperatorTeam.Attack, Blindside.Tutorial.TutorialMap.Build(), null, skipIntro: true)) return true;
+            Blindside.Tutorial.TutorialDirector.Disarm(matchBootstrap);
+            return false;
         }
 
         /// <summary>The チュートリアル button: bottom right of the screen, left of the settings button.</summary>
@@ -561,6 +585,7 @@ namespace Blindside.UI
         void OnIntroStopped(PlayableDirector d)
         {
             d.stopped -= OnIntroStopped;
+            if (SceneFlow.Leaving) return;   // the scene is being unloaded (the director stops with it): no match here
             StartMatch();
         }
 

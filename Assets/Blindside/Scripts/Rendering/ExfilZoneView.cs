@@ -24,10 +24,22 @@ namespace Blindside.Rendering
         readonly List<GameObject> planes = new List<GameObject>();
         readonly List<GameObject> labels = new List<GameObject>();
 
+        // every scene that has the map gets one (the scene set: the game may start in the title scene, which has no map, and load the
+        // battle scene after it — so not only the first scene)
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+            Ensure();
+        }
+
+        static void OnSceneLoaded(UnityEngine.SceneManagement.Scene s, UnityEngine.SceneManagement.LoadSceneMode m) => Ensure();
+
+        static void Ensure()
+        {
             if (FindAnyObjectByType<ExfilZoneView>(FindObjectsInactive.Include) != null) return;
+            if (GameObject.Find(FloorPath) == null) return;   // a scene without the map (the title)
             new GameObject("ExfilZones").AddComponent<ExfilZoneView>();
         }
 

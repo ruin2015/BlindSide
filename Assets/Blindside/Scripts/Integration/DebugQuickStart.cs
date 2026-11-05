@@ -6,6 +6,7 @@ using System.Collections;
 using UnityEngine;
 using Blindside.Core;
 using Blindside.Data;
+using Blindside.Flow;
 using Blindside.Map;
 using Blindside.Turns;
 using Blindside.UI;
@@ -27,19 +28,35 @@ namespace Blindside.Integration
 
         IEnumerator Start()
         {
+            DontDestroyOnLoad(gameObject);   // the title scene hands the match to the battle scene (SceneFlow): this has to outlive it
             TitleSelectScreen title = null; MatchBootstrap mb = null;
             float t0 = Time.realtimeSinceStartup;
-            while (title == null || mb == null)
+            bool viaScene = false;
+            while (title == null || (mb == null && !viaScene))
             {
                 if (Time.realtimeSinceStartup - t0 > Timeout) { Fail("no TitleSelectScreen / MatchBootstrap in the scene"); yield break; }
                 title = FindFirstObjectByType<TitleSelectScreen>(FindObjectsInactive.Include);
                 mb = FindFirstObjectByType<MatchBootstrap>(FindObjectsInactive.Include);
+                viaScene = SceneFlow.InRole(SceneRole.Title);
                 yield return null;
             }
             yield return null;   // the title's Awake / OnEnable have run
 
             GameRng.Seed(Seed);
             if (!title.Launch(OperatorTeam.Attack, MapLibrary.LoadDefault(), null, skipIntro: true)) { Fail("the default map was refused"); yield break; }
+            if (viaScene)
+            {
+                // the battle scene takes the request (SceneEntry → Launch with skipIntro): its MatchBootstrap runs the match
+                mb = null;
+                t0 = Time.realtimeSinceStartup;
+                while (mb == null)
+                {
+                    if (Time.realtimeSinceStartup - t0 > Timeout) { Fail("the battle scene never started the match"); yield break; }
+                    yield return null;
+                    if (SceneFlow.Leaving || SceneFlow.InRole(SceneRole.Title)) continue;
+                    mb = FindFirstObjectByType<MatchBootstrap>(FindObjectsInactive.Include);
+                }
+            }
 
             // the deployment: wait until it is the player's to end, then [作戦開始]
             t0 = Time.realtimeSinceStartup;

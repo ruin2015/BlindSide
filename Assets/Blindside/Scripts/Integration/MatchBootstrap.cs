@@ -662,30 +662,40 @@ namespace Blindside.Integration
             battleDirector.CinematicChanged = on => { if (sel != null) sel.SetCinematic(on); };
         }
 
+        // (the registry first — Resources/BlindsideAssetRegistry, what a player build has; the project path only in the editor before it exists)
         static BattleCamProfile LoadBattleCamProfile()
         {
+            var r = BuildAssetRegistry.CamProfile;
+            if (r != null) return r;
 #if UNITY_EDITOR
             return UnityEditor.AssetDatabase.LoadAssetAtPath<BattleCamProfile>("Assets/Blindside/Data/Cinematic/BattleCamProfile.asset");
 #else
-            return Resources.Load<BattleCamProfile>("BattleCamProfile");
+            Debug.LogError("[Blindside] BattleCamProfile missing from BlindsideAssetRegistry");
+            return null;
 #endif
         }
 
         static WeaponData LoadWeapon(string assetName)
         {
+            var r = BuildAssetRegistry.Weapon(assetName);
+            if (r != null) return r;
 #if UNITY_EDITOR
             return UnityEditor.AssetDatabase.LoadAssetAtPath<WeaponData>($"Assets/Blindside/Data/Weapons/{assetName}.asset");
 #else
-            return Resources.Load<WeaponData>(assetName);
+            Debug.LogError($"[Blindside] weapon {assetName} missing from BlindsideAssetRegistry");
+            return null;
 #endif
         }
 
         static OperatorData LoadOperator(string key)
         {
+            var r = BuildAssetRegistry.Operator(key);
+            if (r != null) return r;
 #if UNITY_EDITOR
             return UnityEditor.AssetDatabase.LoadAssetAtPath<OperatorData>($"Assets/Blindside/Data/Operators/Operator_{key}.asset");
 #else
-            return Resources.Load<OperatorData>($"Operator_{key}");
+            Debug.LogError($"[Blindside] operator {key} missing from BlindsideAssetRegistry");
+            return null;
 #endif
         }
 
@@ -694,10 +704,13 @@ namespace Blindside.Integration
 
         static GameObject LoadUnitPrefab()
         {
+            var r = BuildAssetRegistry.UnitPrefab;
+            if (r != null) return r;
 #if UNITY_EDITOR
             return UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Blindside/Prefabs/Units/Unit_Simple.prefab");
 #else
-            return Resources.Load<GameObject>("Unit_Simple");
+            Debug.LogError("[Blindside] Unit_Simple missing from BlindsideAssetRegistry");
+            return null;
 #endif
         }
 

@@ -281,7 +281,12 @@ namespace Blindside.UI
 
         // ---- build -------------------------------------------------------------------------------------------------------------
         const float FillX = 0f, InfoX = 116f;
-        float InfoRight => MapW - 34f - MapButtonW - 10f;
+        /// <summary>Draws the title as a build does (no マップエディタ block; the map card takes its row). Set by UIPreview's build state.</summary>
+        public static bool buildLayout;
+        // a build has no map editor (its scene is editor-only): the map card spans the whole row
+        static bool HasEditor => !buildLayout && Application.isEditor;
+        float MapCardW => HasEditor ? MapW : W;
+        float InfoRight => MapCardW - 34f - MapButtonW - 10f;
         const float MapButtonW = 140f, MapButtonH = 40f;
 
         /// <summary>Builds the blocks on this object (once; the prefab holds only the root).</summary>
@@ -294,7 +299,7 @@ namespace Blindside.UI
 
             blocks[0] = Block("SideA", 0f, 0f, SideW, SideH, 0);
             blocks[1] = Block("SideB", SideW + Gap, 0f, SideW, SideH, 1);
-            blocks[2] = Block("MapCard", 0f, SideH + RowGap, MapW, RowH, 2);
+            blocks[2] = Block("MapCard", 0f, SideH + RowGap, MapCardW, RowH, 2);
             blocks[3] = Block("EditorButton", MapW + Gap, SideH + RowGap, EdW, RowH, 3);
             blocks[4] = Block("WinBox", 0f, SideH + RowH + 2f * RowGap, SideW, BoxH, 4);
             blocks[5] = Block("Deploy", SideW + Gap, SideH + RowH + 2f * RowGap, SideW, BoxH, 5);
@@ -449,7 +454,7 @@ namespace Blindside.UI
             UILayout.Place(mapSize.rectTransform, InfoX, top + 39f, iw, 16f);
 
             mapButton = TacticalButton.Create(body, "MapSelect", "▣", "マップ選択", "MAP", null, new Vector2(MapButtonW, MapButtonH));
-            UILayout.Place((RectTransform)mapButton.transform, MapW - 34f - MapButtonW, (RowH - MapButtonH) * .5f, MapButtonW, MapButtonH);
+            UILayout.Place((RectTransform)mapButton.transform, MapCardW - 34f - MapButtonW, (RowH - MapButtonH) * .5f, MapButtonW, MapButtonH);
             mapButton.onClick.AddListener(() => { if (screen != null) screen.OpenMapList(); });
 
             var pt = body.gameObject.AddComponent<KitPointer>();
@@ -471,6 +476,7 @@ namespace Blindside.UI
             var pt = body.gameObject.AddComponent<KitPointer>();
             pt.onHover = on => Hover(ref edT, on, HoverTime);
             pt.onClick = () => { if (screen != null) screen.OpenMapEditor(); };
+            if (!HasEditor) block.gameObject.SetActive(false);   // a build has no map editor (MapCardW: the map card takes the row)
         }
 
         void BuildWinBox(RectTransform block)

@@ -599,10 +599,13 @@ namespace Blindside.Integration
         static GameObject LoadPrefab(GameObject assigned, string name)
         {
             if (assigned != null) return assigned;
+            var r = Blindside.Data.BuildAssetRegistry.UiPrefab(name);
+            if (r != null) return r;
 #if UNITY_EDITOR
             return UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Blindside/Prefabs/UI/{name}.prefab");
 #else
-            return Resources.Load<GameObject>(name);
+            Debug.LogError($"[Blindside] UI prefab {name} missing from BlindsideAssetRegistry");
+            return null;
 #endif
         }
 

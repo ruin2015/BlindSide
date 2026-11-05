@@ -86,6 +86,8 @@ namespace Blindside.UITools.EditorTools
                 var tt = (KitTitleTop)c;
                 var T = UITheme.Current.title;
                 Vector2[] want = { T.sideCard, T.sideCard, T.mapCard, T.editorButton, T.winCondition, T.startButton };
+                // a build's title (no editor block): the map card takes the whole row (KitTitleTop.MapCardW)
+                if (tt.blocks[3] != null && !tt.blocks[3].gameObject.activeSelf) want[2] = new Vector2(KitTitleTop.W, T.mapCard.y);
                 string[] names = { "side card A", "side card B", "map card", "editor button", "win condition", "deploy" };
                 for (int i = 0; i < want.Length && i < tt.blocks.Length; i++)
                     if (tt.blocks[i] != null) Add(l, tt.blocks[i], want[i], "KitTitleTop " + names[i]);

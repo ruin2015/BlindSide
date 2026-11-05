@@ -81,6 +81,14 @@ namespace Blindside.Integration
             BattlefieldCamera.Deactivate();
             PlaySession.End();
             RestoreDefaultWorld();
+            // scene flow: the title is its own scene (only the old one-scene flow shows it in place)
+            var role = Blindside.Flow.SceneFlow.ActiveRole;
+            if (Application.isPlaying && role != null && role != Blindside.Flow.SceneRole.Title)
+            {
+                Blindside.Tutorial.TutorialDirector.Disarm(this);
+                Blindside.Flow.SceneFlow.GoTitle();
+                return;
+            }
             if (title != null) title.ShowAgain();
         }
 
@@ -107,6 +115,14 @@ namespace Blindside.Integration
             BattlefieldCamera.Deactivate();
             PlaySession.End();
             RestoreDefaultWorld();
+            if (Blindside.Flow.SceneFlow.InRole(Blindside.Flow.SceneRole.Tutorial))
+            {
+                // the tutorial scene: the operation is the battle scene's, on the default house with its intro (the briefing flag carries over)
+                Blindside.Tutorial.TutorialDirector.Disarm(this);
+                Blindside.Flow.SceneFlow.GoBattle(new Blindside.Flow.LaunchRequest
+                    { team = Blindside.Data.OperatorTeam.Attack, map = Blindside.Map.MapLibrary.LoadDefault() });
+                return;
+            }
             if (title != null) title.LaunchMainOperation();
         }
 

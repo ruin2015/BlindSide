@@ -6,7 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Blindside/Scenes/Title.unity
+    guid: d342d0e5b679b83428418435aeefa1cf
+  - enabled: 1
+    path: Assets/Blindside/Scenes/Tutorial.unity
+    guid: c49635851b761534b84c4a00034de4d6
+  - enabled: 1
+    path: Assets/Blindside/Scenes/Battle.unity
+    guid: 18a5ebdac6dd2c548accbda3ddd27bd6
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

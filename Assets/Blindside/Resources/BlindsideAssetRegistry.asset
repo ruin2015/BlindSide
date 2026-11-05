@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ea67585b88a95c42bcbb5fdc7387cbb, type: 3}
+  m_Name: BlindsideAssetRegistry
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.BuildAssetRegistry
+  operators:
+  - {fileID: 11400000, guid: d73efedb3b7766f4b96ee781cc088ae2, type: 2}
+  - {fileID: 11400000, guid: 5c05f4140bd30ba49bed35659eccd398, type: 2}
+  - {fileID: 11400000, guid: d99545b0ddfb2eb43becbcc00d657989, type: 2}
+  - {fileID: 11400000, guid: 7d2001add14484445ae2df1f88369c44, type: 2}
+  - {fileID: 11400000, guid: 3d07495d9ffeb3641b52a0f7897c9815, type: 2}
+  - {fileID: 11400000, guid: e5aaec82e043764439aa4259128cca10, type: 2}
+  - {fileID: 11400000, guid: 8371b39ad1a708d44953c1f8b5d8e02c, type: 2}
+  - {fileID: 11400000, guid: 13d27ca78f1e67b4995fc0c1b03798f7, type: 2}
+  - {fileID: 11400000, guid: d3a3be2be59d2234cb9ab0c9d2b5f7db, type: 2}
+  - {fileID: 11400000, guid: aaaf30949f79ff944a1b53275413d795, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: 58d25e3d8b3e24944a68c19128655d12, type: 2}
+  - {fileID: 11400000, guid: 80c62c3684e767c419cdbc193bd12395, type: 2}
+  - {fileID: 11400000, guid: 154b52bd39b058247aa0b5e9c2ed6147, type: 2}
+  - {fileID: 11400000, guid: b30abb1c7b359e94ea802eb2c9244e66, type: 2}
+  - {fileID: 11400000, guid: cc3bb0dd2ef755d4e8799bd430762d72, type: 2}
+  - {fileID: 11400000, guid: c0bf6070590f7944fa268f3087fe147f, type: 2}
+  - {fileID: 11400000, guid: c4276e3d96e87b5478e394986fd6af14, type: 2}
+  - {fileID: 11400000, guid: 1584b870cc6775a4293f6e222bd26b61, type: 2}
+  - {fileID: 11400000, guid: f6baa203d5d1d7746859a9853974ede8, type: 2}
+  - {fileID: 11400000, guid: 4013bf403fb17a6479d2afc833394cc4, type: 2}
+  - {fileID: 11400000, guid: dac64392578455c47ba94107f5863da7, type: 2}
+  - {fileID: 11400000, guid: f25e44da0e7128a4697fefcb3e33a18a, type: 2}
+  - {fileID: 11400000, guid: 4a63a8208aa3be1499110999d6f80184, type: 2}
+  - {fileID: 11400000, guid: d029576fd1bde3944b004b477d7e5357, type: 2}
+  - {fileID: 11400000, guid: cd5b21e5839098e46b37a3999b0e6e1d, type: 2}
+  - {fileID: 11400000, guid: ddc85ad36f5c63c489aca3e3a4b1c318, type: 2}
+  unitPrefab: {fileID: 3136713706085333491, guid: ad3e89947b356d64b8dc405603bc1d5c, type: 3}
+  battleCamProfile: {fileID: 11400000, guid: c1f594e0089d6734daa9ce2796950754, type: 2}
+  uiPrefabs:
+  - {fileID: 4507451933207828919, guid: a2f6b20b99d083a4da6f56da480de7e1, type: 3}
+  - {fileID: 7623080406918665707, guid: ed3c4f1f12dfc0740b73a498a488c4ca, type: 3}
+  - {fileID: 6508397166918671058, guid: fbd5184024de3f84983cf8d242349ca8, type: 3}
+  - {fileID: 3425729807964260447, guid: 64154fdf3046e4840ba5d7c0f7d5fc2e, type: 3}
+  - {fileID: 5274844866484950524, guid: 878262d68fa28e6419752161bbba6876, type: 3}
+  - {fileID: 4786051314456500512, guid: 8d701de5da7fe7d40bb97ce01000c419, type: 3}
+  - {fileID: 345610806269536167, guid: 523dc37bec3198041bd6344689ef8b3d, type: 3}
+  - {fileID: 5551107467648542742, guid: 26d39a66e054dcc4bbd26e4b0ed6b3e1, type: 3}
+  - {fileID: 5485309117784438786, guid: a970028c25e29964ba9b038ceb1d6884, type: 3}
+  - {fileID: 7822442080281538929, guid: e1e2b2c281938944aa1a518eb0e5b949, type: 3}
+  - {fileID: 1721650087338381279, guid: ef4eed3231207114eaa5528f59b161e7, type: 3}
+  - {fileID: 8584797838021956354, guid: d6c37205d572b804c86553103d3bd70c, type: 3}
+  - {fileID: 8494866913373204202, guid: d62377cb1a872ef4999f70e012f429fb, type: 3}
+  - {fileID: 3231045100281260950, guid: 0cd5cd7f55f09e848bf68e61edd1bc0b, type: 3}
+  - {fileID: 6186902512768382712, guid: 52ed90b8494e5194bb8c879dda6be5f2, type: 3}
+  - {fileID: 6493780394898954910, guid: 5beb78f59d899b444a2cb67740855ba7, type: 3}
+  - {fileID: 5043700649460369180, guid: 26cd377b3394286478e8e805f8220759, type: 3}
+  - {fileID: 1270395174440049456, guid: 9152711c11c77d24da211d7e3b761c93, type: 3}
+  - {fileID: 4147028738200021181, guid: 80ba98172552b264ba8a15940f3a0c7c, type: 3}
+  - {fileID: 7303080850508912441, guid: aee210dfd4c7c724e8be0a4c24f6793c, type: 3}
