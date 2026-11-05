@@ -60,7 +60,7 @@ namespace Blindside.Save
         {
             Current = SaveData.Fresh();
             sessionMark = Time.realtimeSinceStartup;
-            Write(false);
+            Write(false, notify: false);     // (no notice: the scene is changing to the tutorial)
             return Current;
         }
 
@@ -83,8 +83,9 @@ namespace Blindside.Save
         /// <summary>The session ends (nothing is written).</summary>
         public static void EndSession() => Current = null;
 
-        /// <summary>Writes the session's save; false (and a warning) when it could not be written or there is no session.</summary>
-        public static bool Write(bool auto)
+        /// <summary>Writes the session's save; false (and a warning) when it could not be written or there is no session. `notify`:
+        /// raise Saved (the save notice) after it.</summary>
+        public static bool Write(bool auto, bool notify = true)
         {
             if (Current == null) return false;
             float now = Time.realtimeSinceStartup;
@@ -114,7 +115,7 @@ namespace Blindside.Save
                 Debug.LogWarning("[Save] could not write " + FilePath + ": " + e.Message);
                 return false;
             }
-            Saved?.Invoke(auto);
+            if (notify) Saved?.Invoke(auto);
             return true;
         }
 
@@ -180,7 +181,7 @@ namespace Blindside.Save
         /// <summary>The app is closing: the play time so far.</summary>
         public static void Quitting()
         {
-            if (SaveSystem.Current != null) SaveSystem.Write(true);
+            if (SaveSystem.Current != null) SaveSystem.Write(true, notify: false);
         }
     }
 }

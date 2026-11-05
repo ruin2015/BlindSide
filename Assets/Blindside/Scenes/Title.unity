@@ -6093,8 +6093,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.UI.MainMenuScreen
   title: {fileID: 2058683964}
+  background: {fileID: 2800000, guid: 6e83053904edd754b9cecb97e3310936, type: 3}
   wipe: 1
   content: {fileID: 0}
+  backgroundImage: {fileID: 0}
   logo: {fileID: 0}
   newGameButton: {fileID: 0}
   loadButton: {fileID: 0}

@@ -224,7 +224,11 @@ namespace Blindside.Integration
             var kb = Keyboard.current;
             if (kb != null)
             {
-                if (kb.escapeKey.wasPressedThisFrame) CancelMode();
+                if (kb.escapeKey.wasPressedThisFrame)
+                {
+                    // something to cancel: ESC is the cancel's; nothing (or not the player's turn): it is left to the game menu (PauseMenu)
+                    if (PlayerCanAct() && HasSomethingToCancel) { CancelMode(); Blindside.UI.EscapeGate.Consume(); }
+                }
                 else if (kb.tabKey.wasPressedThisFrame) CycleUnit();
                 else if (kb.fKey.wasPressedThisFrame && mode == Mode.Facing) HintAction("lock");
                 else if (mode == Mode.Menu && uiUnit != null)
@@ -377,6 +381,12 @@ namespace Blindside.Integration
         /// <summary>Port of cancelMode(): facing → restore the facing (and end the unit if it was the
         /// end-of-action prompt); menu/idle → deselect; fire → restore the facing; move/fire → back to
         /// the unit's command menu (deselect if it can no longer act).</summary>
+        /// <summary>ESC would cancel something now: a selected unit, a command mode, a press in progress.</summary>
+        public bool HasSomethingToCancel => mode != Mode.Idle || uiUnit != null || downActive;
+
+        /// <summary>The game waits for the player's input (their turn or their deployment), nothing busy, no dialog: the game menu may open.</summary>
+        public bool WaitingForPlayer => PlayerCanAct();
+
         public void CancelMode()
         {
             if (!PlayerCanAct()) return;

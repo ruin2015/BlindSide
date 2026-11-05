@@ -154,7 +154,7 @@ namespace Blindside.Cinematic
         static bool SkipPressed()
         {
             var kb = Keyboard.current;
-            if (kb != null && kb.anyKey.wasPressedThisFrame) return true;
+            if (kb != null && kb.anyKey.wasPressedThisFrame && !kb.escapeKey.wasPressedThisFrame) return true;   // (ESC is the game menu's)
             var mouse = Mouse.current;
             return mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame);
         }

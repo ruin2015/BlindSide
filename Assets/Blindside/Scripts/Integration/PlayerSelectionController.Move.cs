@@ -584,7 +584,7 @@ namespace Blindside.Integration
             var kb = Keyboard.current;
             if (kb == null) return;
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.yKey.wasPressedThisFrame) AnswerDialog(DialogResult.Yes);
-            else if (kb.escapeKey.wasPressedThisFrame) AnswerDialog(DialogResult.Escape);
+            else if (kb.escapeKey.wasPressedThisFrame) { Blindside.UI.EscapeGate.Consume(); AnswerDialog(DialogResult.Escape); }
             else if (kb.nKey.wasPressedThisFrame) AnswerDialog(DialogResult.No);
         }
 

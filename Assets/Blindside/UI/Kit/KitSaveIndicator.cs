@@ -18,7 +18,8 @@ namespace Blindside.UI
     public class KitSaveIndicator : MonoBehaviour, ITimedEffect
     {
         public const float W = 220f, H = 40f, Right = 20f, Bottom = 96f, InTime = .25f, OutAt = 1.7f, OutTime = .3f, Shift = 24f;
-        public const string TagText = "AUTO SAVE", LabelText = "保存しました";
+        public const string TagText = "AUTO SAVE", ManualTagText = "SAVE", LabelText = "保存しました";
+        public TMP_Text tag, label;
 
         public static KitSaveIndicator Instance { get; private set; }
 
@@ -37,9 +38,9 @@ namespace Blindside.UI
 
         static void OnSaved(bool auto)
         {
-            if (!auto || !Application.isPlaying) return;
+            if (!Application.isPlaying) return;
             if (Instance == null) Install();
-            Instance.Play();
+            Instance.Play(auto);
         }
 
         static void Install()
@@ -86,12 +87,12 @@ namespace Blindside.UI
             v.icon.sizeDelta = new Vector2(9f, 9f);
             HudKit.AddImage(v.icon, theme.blue);
 
-            var tag = HudKit.AddText(v.chip, TagText, 11f, theme.blue, true, TextAlignmentOptions.MidlineLeft, "Tag", UITheme.TextRole.Display);
+            var tag = v.tag = HudKit.AddText(v.chip, TagText, 11f, theme.blue, true, TextAlignmentOptions.MidlineLeft, "Tag", UITheme.TextRole.Display);
             tag.characterSpacing = 10f;
             tag.textWrappingMode = TextWrappingModes.NoWrap;
             float tw = Mathf.Ceil(tag.GetPreferredValues(TagText).x) + 1f;
             UILayout.Place(tag.rectTransform, 44f, 0f, tw, H);
-            var label = HudKit.AddText(v.chip, LabelText, 13f, Color.white, false, TextAlignmentOptions.MidlineLeft, "Label", UITheme.TextRole.Body);
+            var label = v.label = HudKit.AddText(v.chip, LabelText, 13f, Color.white, false, TextAlignmentOptions.MidlineLeft, "Label", UITheme.TextRole.Body);
             label.textWrappingMode = TextWrappingModes.NoWrap;
             UILayout.Place(label.rectTransform, 44f + tw + 10f, 0f, W - (44f + tw + 10f) - 14f, H);
 
@@ -99,11 +100,21 @@ namespace Blindside.UI
             return v;
         }
 
-        /// <summary>Shows the chip from the start (an autosave just happened).</summary>
-        public void Play()
+        /// <summary>Shows the chip from the start: AUTO SAVE after an autosave, SAVE after the game menu's 保存.</summary>
+        public void Play(bool auto = true)
         {
+            SetTag(auto ? TagText : ManualTagText);
             clock = 0f; running = true;
             Evaluate(0f);
+        }
+
+        void SetTag(string s)
+        {
+            if (tag == null || tag.text == s) return;
+            tag.text = s;
+            float tw = Mathf.Ceil(tag.GetPreferredValues(s).x) + 1f;
+            UILayout.Place(tag.rectTransform, 44f, 0f, tw, H);
+            UILayout.Place(label.rectTransform, 44f + tw + 10f, 0f, W - (44f + tw + 10f) - 14f, H);
         }
 
         void Update()

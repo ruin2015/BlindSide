@@ -142,7 +142,7 @@ namespace Blindside.Flow.EditorTools
             bool added = EnsureMainMenu(scene);
             if (added) { EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); }
             if (!string.IsNullOrEmpty(back) && back != path) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
-            Debug.Log(added ? "[SceneSet] title scene: main menu added" : "[SceneSet] title scene already has its main menu");
+            Debug.Log(added ? "[SceneSet] title scene: main menu added / its key art set" : "[SceneSet] title scene already has its main menu (and its key art, or none is there yet)");
         }
 
         // the main menu (Blindside.UI.MainMenuScreen): an empty full-screen object, last under the title canvas (over the select screen);
@@ -150,8 +150,16 @@ namespace Blindside.Flow.EditorTools
         static bool EnsureMainMenu(UnityEngine.SceneManagement.Scene scene)
         {
             var roots = scene.GetRootGameObjects();
+            var art = AssetDatabase.LoadAssetAtPath<Texture>(Blindside.UI.MainMenuScreen.BackgroundPath);
             foreach (var r in roots)
-                if (r.GetComponentInChildren<Blindside.UI.MainMenuScreen>(true) != null) return false;
+            {
+                var existing = r.GetComponentInChildren<Blindside.UI.MainMenuScreen>(true);
+                if (existing == null) continue;
+                if (existing.background != null || art == null) return false;
+                existing.background = art;              // the key art arrived after the menu was added
+                EditorUtility.SetDirty(existing);
+                return true;
+            }
             var canvas = roots.FirstOrDefault(r => r.name == "BlindsideCanvas");
             if (canvas == null) { Debug.LogWarning("[SceneSet] no BlindsideCanvas in " + scene.path); return false; }
             var go = new GameObject("MainMenu", typeof(RectTransform));
@@ -162,6 +170,8 @@ namespace Blindside.Flow.EditorTools
             rt.SetAsLastSibling();
             var menu = go.AddComponent<Blindside.UI.MainMenuScreen>();
             menu.title = canvas.GetComponentInChildren<Blindside.UI.TitleSelectScreen>(true);
+            menu.background = art;
+            if (art == null) Debug.LogWarning("[SceneSet] no key art at " + Blindside.UI.MainMenuScreen.BackgroundPath + " — the menu shows the plain background until it is there (then run Add Main Menu to Title again)");
             return true;
         }
 

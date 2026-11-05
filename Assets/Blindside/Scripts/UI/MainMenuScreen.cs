@@ -1,19 +1,22 @@
 // The title scene's main menu (in front of the side / map select screen, TitleSelectScreen), built at runtime on a full-screen object
 // under the title canvas (1440×810):
-//   DecoBg      the title background #0a0c0f over the whole screen (takes the clicks the select screen behind it must not get)
-//   DecoDiag    the title's hazard stripes, 560×12 at the bottom left (acc .85, 14 / 28, scrolling 1.6s), right edge leaning 20
-//   Logo        KitMenuLogo, centred: TAC-OS line, BLINDSIDE 150 as a glitch, the logo bar (y 200, 205 high)
-//   Buttons     TacticalButton 340×48, centred, 10 apart, from y 445:
-//                 01 ニューゲーム / NEW GAME   a fresh save (asks first when one exists: it is overwritten), then the tutorial
-//                 02 読み込み / LOAD          only when a save exists; its date on the right (yyyy.MM.dd HH:mm). The save becomes the
-//                                             session's and the select screen opens on its last side and map
-//                 03 ゲーム終了 / EXIT         asks, then quits (the editor leaves Play mode)
-//               entrance: .5s each from .7s, 60ms apart — fade + 80 from the right (the title blocks' sdIn)
-//   Dialog      DialogView (はい / いいえ) for the questions above and a save that cannot be read
+//   DecoBg       the title background #0a0c0f (takes the clicks the select screen behind it must not get)
+//   Background   the key art (`background`, Inspector) over the whole screen, cropped to fill (EnvelopeParent); the squad on the left,
+//                the empty right half is where the menu sits
+//   DecoDiag     the title's hazard stripes, 560×12 at the bottom right (acc .85, 14 / 28, scrolling 1.6s), left edge leaning 20
+//   Column       the right side, x 820, 560 wide, centred vertically:
+//     Logo       KitMenuLogo at 96: TAC-OS line, BLINDSIDE, the logo bar. The first time the menu shows in a run it plays its heavy
+//                glitch intro (1.6s), then (and on every later show) the calm glitch loop
+//     Entries    text only (KitTextButton, Title 26, #c7ced6 → white and ×1.18 under the pointer), centred in the column, 44 high,
+//                14 apart, 48 under the logo:
+//                  ニューゲーム   a fresh save (asks first when one exists: it is overwritten), then the tutorial
+//                  読み込み       only when a save exists: it becomes the session's, the select screen opens on its last side and map
+//                  ゲーム終了     asks, then quits (the editor leaves Play mode)
+//                entrance: fade + 40 from the right, .5s each, 60ms apart, after the logo (1.2s after a heavy intro, .15s otherwise)
+//   Dialog       DialogView (はい / いいえ) for the questions above and a save that cannot be read
 // Screen changes play KitWipe (the title's wipe) and switch at its middle. The select screen comes back to this menu with ESC (when no
 // window / dialog of its own is open). A title scene opened while a save session is on (back from a match) shows the select screen
 // at once. Motion: ITimedEffect.Evaluate(t) on an unscaled clock; no allocation per frame.
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -27,20 +30,26 @@ namespace Blindside.UI
     [AddComponentMenu("Blindside/UI/Main Menu Screen")]
     public class MainMenuScreen : MonoBehaviour, ITimedEffect
     {
-        public const float ScreenW = 1440f, ScreenH = 810f, LogoTop = 200f, ButtonW = 340f, ButtonH = 48f, ButtonGap = 10f, ButtonsGap = 40f;
-        public const float ButtonsDelay = .7f, ButtonStep = .06f, ButtonTime = .5f, EnterShift = 80f;
+        public const float ScreenW = 1440f, ScreenH = 810f, ColX = 820f, ColW = 560f, LogoSize = 96f;
+        public const float EntryFont = 26f, EntryH = 44f, EntryGap = 14f, EntriesGap = 48f;
+        public const float HeavyDelay = 1.2f, CalmDelay = .15f, EntryStep = .06f, EntryTime = .5f, EnterShift = 40f;
         const float Never = -100f;
         static readonly Color Bg = new Color32(0x0a, 0x0c, 0x0f, 0xff);
+        /// <summary>Where the key art is expected (the scene builder and the previews take it from here).</summary>
+        public const string BackgroundPath = "Assets/Blindside/UI/Title/TitleBackground.png";
 
         [Tooltip("The side / map select screen behind this menu (found in the scene when empty).")]
         public TitleSelectScreen title;
+        [Tooltip("The key art behind the menu (cropped to fill the screen). Empty: the plain title background.")]
+        public Texture background;
         [Tooltip("Screen changes play the title's wipe (KitWipe).")]
         public bool wipe = true;
 
         // built
         public RectTransform content;
+        public RawImage backgroundImage;
         public KitMenuLogo logo;
-        public TacticalButton newGameButton, loadButton, quitButton;
+        public KitTextButton newGameButton, loadButton, quitButton;
         public DialogView dialog;
         public HazardStripe diag;
         readonly RectTransform[] rows = new RectTransform[3];
@@ -48,14 +57,23 @@ namespace Blindside.UI
         readonly CanvasGroup[] rowGroups = new CanvasGroup[3];
         int rowCount;
 
-        float clock, enterStart = Never;
+        float clock, enterStart = Never, entriesDelay = CalmDelay;
         bool busy;
         System.Action pendingYes;
+
+        /// <summary>The heavy logo intro plays once per run (the first time the menu shows).</summary>
+        static bool heavyPlayed;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => heavyPlayed = false;
 
         /// <summary>The menu is showing (false while the select screen is).</summary>
         public bool MenuVisible => content != null && content.gameObject.activeSelf;
 
-        public float Duration => ButtonsDelay + 2f * ButtonStep + ButtonTime;
+        public float Duration => entriesDelay + 2f * EntryStep + EntryTime;
+
+        float ColumnHeight(int entries) => (logo != null ? logo.Height : 154f) + EntriesGap + entries * EntryH + (entries - 1) * EntryGap;
+        float ColumnTop(int entries) => Mathf.Round((ScreenH - ColumnHeight(entries)) * .5f);
 
         // ---- lifecycle ---------------------------------------------------------------------------------------------------------
         void Awake()
@@ -78,14 +96,15 @@ namespace Blindside.UI
         void HandleEscape()
         {
             var kb = Keyboard.current;
-            if (kb == null || !kb.escapeKey.wasPressedThisFrame || busy) return;
-            if (dialog != null && dialog.Visible) { CloseDialog(); return; }
+            if (kb == null || !kb.escapeKey.wasPressedThisFrame || busy || EscapeGate.Consumed) return;
+            if (dialog != null && dialog.Visible) { EscapeGate.Consume(); CloseDialog(); return; }
             if (MenuVisible || title == null || !title.gameObject.activeInHierarchy) return;
             // the select screen's own windows take ESC first (they close themselves)
             if (ModalDialog.Any || (MapBrowserWindow.Instance != null && MapBrowserWindow.Instance.gameObject.activeInHierarchy)) return;
             var options = title.GetComponentInChildren<KitOptionsPanel>(false);
             if (options != null && options.IsOpen) return;
             if (title.screenGroup != null && !title.screenGroup.blocksRaycasts) return;    // a sortie / the tutorial is starting
+            EscapeGate.Consume();
             BackToMenu();
         }
 
@@ -94,12 +113,13 @@ namespace Blindside.UI
         public void ShowMenu()
         {
             Build(SaveSystem.Peek());
-            RebuildButtons(SaveSystem.Peek());
+            RebuildEntries(SaveSystem.Peek());
             if (title != null) title.gameObject.SetActive(false);
             content.gameObject.SetActive(true);
             CloseDialog();
             busy = false;
-            PlayEnter();
+            PlayEnter(!heavyPlayed);
+            heavyPlayed = true;
         }
 
         /// <summary>The select screen on the session's last side and map (the menu hidden).</summary>
@@ -154,7 +174,7 @@ namespace Blindside.UI
             {
                 Debug.LogWarning("[MainMenu] the save could not be read: " + why);
                 Ask("読み込み", "LOAD", "セーブデータを読み込めませんでした。", null, "確認", "キャンセル");
-                RebuildButtons(SaveSystem.Peek());
+                RebuildEntries(SaveSystem.Peek());
                 return;
             }
             busy = true;
@@ -167,7 +187,7 @@ namespace Blindside.UI
             Ask("ゲーム終了", "EXIT", "ゲームを終了しますか？", QuitNow);
         }
 
-        static void QuitNow()
+        public static void QuitNow()
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.ExitPlaymode();
@@ -202,18 +222,21 @@ namespace Blindside.UI
         }
 
         // ---- motion ------------------------------------------------------------------------------------------------------------
-        public void PlayEnter()
+        /// <summary>The entrance from the start: heavy = the logo's strong glitch intro (the first show in a run).</summary>
+        public void PlayEnter(bool heavy)
         {
+            entriesDelay = heavy ? HeavyDelay : CalmDelay;
             clock = 0f; enterStart = 0f;
-            if (logo != null) logo.PlayEnter();
+            if (logo != null) logo.PlayEnter(heavy);
             Evaluate(0f);
         }
 
         /// <summary>Previews (edit mode): the menu `t` seconds into its entrance (the logo too).</summary>
-        public void PoseAt(float t)
+        public void PoseAt(float t, bool heavy)
         {
+            entriesDelay = heavy ? HeavyDelay : CalmDelay;
             clock = t; enterStart = 0f;
-            if (logo != null) logo.PoseAt(t);
+            if (logo != null) logo.PoseAt(t, heavy);
             Evaluate(t);
         }
 
@@ -223,8 +246,8 @@ namespace Blindside.UI
             bool entering = enterStart > Never;
             for (int i = 0; i < rowCount; i++)
             {
-                float p = t - enterStart - ButtonsDelay - i * ButtonStep;
-                float e = !entering ? 1f : p <= 0f ? 0f : reduce ? 1f : UIEase.Tactical(p / ButtonTime);
+                float p = t - enterStart - entriesDelay - i * EntryStep;
+                float e = !entering ? 1f : p <= 0f ? 0f : reduce ? 1f : UIEase.Tactical(p / EntryTime);
                 if (rowGroups[i].alpha != e) rowGroups[i].alpha = e;
                 bool on = e >= 1f;
                 if (rowGroups[i].blocksRaycasts != on) rowGroups[i].blocksRaycasts = on;
@@ -234,17 +257,18 @@ namespace Blindside.UI
         }
 
         // ---- build -------------------------------------------------------------------------------------------------------------
-        /// <summary>A menu under `canvas` (a 1440×810 menu canvas), built for `save` (null: no save, no 読み込み).</summary>
-        public static MainMenuScreen Create(Transform canvas, SaveData save)
+        /// <summary>A menu under `canvas` (a 1440×810 menu canvas), built for `save` (null: no save, no 読み込み) over `art`.</summary>
+        public static MainMenuScreen Create(Transform canvas, SaveData save, Texture art)
         {
             var root = HudKit.NewRect("MainMenu", canvas);
             HudKit.Stretch(root);
             var m = root.gameObject.AddComponent<MainMenuScreen>();      // (Play mode: Awake builds from the save on disk)
+            m.background = art;
             m.Build(save);
             return m;
         }
 
-        /// <summary>Builds the menu once; the button rows follow `save`.</summary>
+        /// <summary>Builds the menu once; the entries follow `save`.</summary>
         public void Build(SaveData save)
         {
             if (content != null) return;
@@ -258,29 +282,44 @@ namespace Blindside.UI
             HudKit.Stretch(bg);
             HudKit.AddImage(bg, Bg, raycast: true);
 
+            // the key art, cropped to fill
+            var art = HudKit.NewRect("Background", content);
+            art.anchorMin = art.anchorMax = art.pivot = new Vector2(.5f, .5f);
+            art.sizeDelta = new Vector2(ScreenW, ScreenH);
+            backgroundImage = art.gameObject.AddComponent<RawImage>();
+            backgroundImage.raycastTarget = false;
+            backgroundImage.texture = background;
+            backgroundImage.enabled = background != null;
+            var fit = art.gameObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fit.aspectRatio = background != null && background.height > 0 ? (float)background.width / background.height : 16f / 9f;
+            art.gameObject.AddComponent<LintIgnoreOverlap>().reason = "the full-screen key art; the menu sits on its empty right half";
+            art.gameObject.AddComponent<LintIgnoreClip>().reason = "the key art is cropped to fill the screen on purpose";
+
             var dm = HudKit.NewRect("DecoDiag", content);
-            UILayout.Place(dm, 0f, ScreenH - 12f, 560f, 12f);
+            UILayout.Place(dm, ScreenW - 560f, ScreenH - 12f, 560f, 12f);
             HudKit.AddImage(dm, Color.white);
-            dm.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.RightEdge, 20f);
+            dm.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.LeftEdge, 20f);
             dm.gameObject.AddComponent<Mask>().showMaskGraphic = false;
             var acc = theme.acc;
             diag = HazardStripe.Create(dm, "DecoDiagStripes", new Color(acc.r, acc.g, acc.b, .85f), new Color(0f, 0f, 0f, 0f), 14f, 28f, 1.6f);
             diag.over = Bg;
 
             var lr = HudKit.NewRect("Logo", content);
-            UILayout.Place(lr, 0f, LogoTop, ScreenW, KitMenuLogo.Height);
+            UILayout.Place(lr, ColX, 0f, ColW, 160f);                      // (moved once the entries are known)
             logo = lr.gameObject.AddComponent<KitMenuLogo>();
+            logo.size = LogoSize;
             logo.Build();
 
             dialog = DialogView.Build(root, OnDialogYes, CloseDialog);
 
-            RebuildButtons(save);
+            RebuildEntries(save);
             enterStart = Never;
             Evaluate(0f);
         }
 
-        /// <summary>The button column for `save`: 読み込み only when there is one (with its date).</summary>
-        void RebuildButtons(SaveData save)
+        /// <summary>The entries for `save` (読み込み only when there is one), the column re-centred for their count.</summary>
+        void RebuildEntries(SaveData save)
         {
             for (int i = 0; i < rows.Length; i++)
                 if (rows[i] != null)
@@ -290,24 +329,28 @@ namespace Blindside.UI
                     rows[i] = null;
                 }
             rowCount = 0;
-            newGameButton = AddRow("NewGame", "ニューゲーム", "NEW GAME", null, NewGame);
-            loadButton = save != null ? AddRow("Load", "読み込み", "LOAD", save.SavedLocal.ToString("yyyy.MM.dd HH:mm"), Load) : null;
-            quitButton = AddRow("Quit", "ゲーム終了", "EXIT", null, Quit);
+            int n = save != null ? 3 : 2;
+            float top = ColumnTop(n);
+            UILayout.Place((RectTransform)logo.transform, ColX, top, ColW, logo.Height);
+            float y0 = top + logo.Height + EntriesGap;
+            newGameButton = AddRow("NewGame", "ニューゲーム", y0, NewGame);
+            loadButton = save != null ? AddRow("Load", "読み込み", y0 + (EntryH + EntryGap), Load) : null;
+            quitButton = AddRow("Quit", "ゲーム終了", y0 + (n - 1) * (EntryH + EntryGap), Quit);
             Evaluate(enterStart > Never ? clock : 0f);
         }
 
-        // a row (the entrance moves / fades it) holding the button (its own CanvasGroup stays the button's: disabled look)
-        TacticalButton AddRow(string name, string label, string sub, string value, UnityEngine.Events.UnityAction onClick)
+        // a row (the entrance moves / fades it) holding the text entry (its own scale is the hover's)
+        KitTextButton AddRow(string name, string label, float y, UnityEngine.Events.UnityAction onClick)
         {
             int i = rowCount++;
             var row = HudKit.NewRect(name + "Row", content);
-            float y = LogoTop + KitMenuLogo.Height + ButtonsGap + i * (ButtonH + ButtonGap);
-            UILayout.Place(row, Mathf.Round((ScreenW - ButtonW) * .5f), y, ButtonW, ButtonH);
+            UILayout.Place(row, ColX, y, ColW, EntryH);
             homes[i] = row.anchoredPosition;
             rowGroups[i] = row.gameObject.AddComponent<CanvasGroup>();
-            var b = TacticalButton.Create(row, name, (i + 1).ToString("00"), label, sub, value, new Vector2(ButtonW, ButtonH));
-            UILayout.Place((RectTransform)b.transform, 0f, 0f, ButtonW, ButtonH);
-            b.onClick.AddListener(onClick);
+            var b = KitTextButton.Create(row, name, label, EntryFont, EntryH, .5f, onClick);
+            var rt = (RectTransform)b.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
+            rt.anchoredPosition = Vector2.zero;
             rows[i] = row;
             return b;
         }

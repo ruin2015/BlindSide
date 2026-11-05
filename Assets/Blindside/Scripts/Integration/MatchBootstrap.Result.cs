@@ -76,6 +76,12 @@ namespace Blindside.Integration
             title.Restart();
         }
 
+        /// <summary>The game menu's タイトルへ / 読み込み: the match is dropped where it is (nothing recorded) and the title comes back.</summary>
+        public void AbandonToTitle() => ReturnToTitle();
+
+        /// <summary>The game menu's エディタへ (a test play): the match is dropped and the map editor resumes.</summary>
+        public void AbandonToEditor() => ReturnToEditor();
+
         /// <summary>[タイトルへ] — back to the faction-select screen with the world reset behind it (and the default map the current one again).</summary>
         void ReturnToTitle()
         {

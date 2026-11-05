@@ -36,7 +36,7 @@ namespace Blindside.UI
         static void Play(ref AudioClip clip, System.Func<AudioClip> build)
         {
             if (clip == null) clip = build();
-            Instance().src.PlayOneShot(clip);
+            Instance().src.PlayOneShot(clip, Blindside.Settings.GameSettings.SfxVolume);
         }
 
         static SfxNoise Instance()

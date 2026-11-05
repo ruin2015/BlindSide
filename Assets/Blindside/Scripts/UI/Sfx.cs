@@ -19,7 +19,7 @@ namespace Blindside.UI
         public static void Alert()
         {
             if (alertClip == null) alertClip = BuildAlert();
-            Instance().src.PlayOneShot(alertClip);
+            Instance().src.PlayOneShot(alertClip, Blindside.Settings.GameSettings.SfxVolume);
         }
 
         static AudioClip uiClip, stepClip;
@@ -28,7 +28,7 @@ namespace Blindside.UI
         public static void Ui()
         {
             if (uiClip == null) uiClip = BuildSweep("sfx_ui", 1200f, 1800f, .06f, .05f, false);
-            Instance().src.PlayOneShot(uiClip);
+            Instance().src.PlayOneShot(uiClip, Blindside.Settings.GameSettings.SfxVolume);
         }
 
         /// <summary>sfx('step') — `tone(180,120,.03,.02,'triangle')`, the landing thud.
@@ -36,7 +36,7 @@ namespace Blindside.UI
         public static void Step()
         {
             if (stepClip == null) stepClip = BuildSweep("sfx_step", 180f, 120f, .03f, .02f, true);
-            Instance().src.PlayOneShot(stepClip, 4f);
+            Instance().src.PlayOneShot(stepClip, 4f * Blindside.Settings.GameSettings.SfxVolume);
         }
 
         // tone(f0,f1,len,vol,wave): frequency f0→f1 exponentially, gain vol→.001 exponentially over len.

@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 01:52
+Screen 1440x810 · 0 issues · generated 2026-11-06 02:23
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -20,10 +20,17 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | title_build | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_save | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_nosave | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| menu_logo_enter | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_logo_heavy | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_hover | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_confirm | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | save_indicator | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| pause_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| pause_menu_test | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| pause_confirm | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| options_controls | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| options_display | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| options_effects | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_spot_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_logo | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_selected | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -98,41 +105,45 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 52종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 56종)
 
-- Brighten ×4
-- Chip ×416
-- CornerBrackets ×17
-- CutCornerGraphic ×65
+- Brighten ×6
+- Chip ×483
+- CornerBrackets ×23
+- CutCornerGraphic ×95
 - EngagePreview ×3
-- HazardStripe ×131
+- HazardStripe ×162
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
-- KitBannerStrip ×27
-- KitBrighten ×14
-- KitChoice ×2
-- KitCommandMenu ×3
+- KitBannerStrip ×33
+- KitBrighten ×24
+- KitChoice ×5
+- KitCommandMenu ×9
 - KitGradient ×10
-- KitMenuLogo ×5
-- KitOptionsPanel ×2
+- KitMenuLogo ×6
+- KitOptionsPanel ×5
 - KitPointer ×49
-- KitRoster ×24
+- KitRoster ×30
 - KitSaveIndicator ×1
-- KitShadow ×78
-- KitSweep ×98
+- KitShadow ×100
+- KitSlider ×6
+- KitStepper ×1
+- KitSweep ×132
 - KitSwitch ×4
-- KitTint ×225
+- KitTextButton ×53
+- KitTint ×267
 - KitTitleLeft ×5
-- LintIgnoreClip ×654
-- LintIgnoreOverlap ×217
-- MainMenuScreen ×5
+- LintIgnoreClip ×763
+- LintIgnoreOverlap ×241
+- MainMenuScreen ×6
+- PauseMenu ×6
 - ResultScreen ×3
-- SegmentedBar ×237
-- SlantedGraphic ×1999
-- SlantedMask ×222
-- TacticalPanel ×812
+- SegmentedBar ×267
+- SlantedGraphic ×2416
+- SlantedMask ×258
+- TacticalPanel ×999
 - TitleSelectScreen ×5
 - TutorialDroneCard ×2
 - TutorialGuide ×3
@@ -142,15 +153,15 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialSiren ×1
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
-- UIContactAlert ×24
-- UIGlitchImage ×232
-- UIGlitchName ×33
-- UIGlitchText ×84
-- UIHeadshotBadge ×24
+- UIContactAlert ×30
+- UIGlitchImage ×274
+- UIGlitchName ×45
+- UIGlitchText ×108
+- UIHeadshotBadge ×30
 - UIPerspective ×3
 - UIPerspectiveVertex ×150
-- UIPhaseBanner ×24
-- UIPulse ×24
+- UIPhaseBanner ×30
+- UIPulse ×30
 - WallIllustration ×5
 
 ## 미리보기 상태 (Render Previews)
@@ -162,10 +173,17 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | title_build | 1440x810 | タイトル — ビルド (マップエディタなし) |
 | menu_save | 1440x810 | メインメニュー — セーブあり |
 | menu_nosave | 1440x810 | メインメニュー — セーブなし |
-| menu_logo_enter | 1440x810 | メインメニュー — ロゴ登場 (t=0.3s) |
-| menu_glitch | 1440x810 | メインメニュー — ロゴ グリッチ |
+| menu_logo_heavy | 1440x810 | メインメニュー — 初回ロゴ グリッチ (t=0.4s) |
+| menu_glitch | 1440x810 | メインメニュー — ロゴ グリッチ (常時) |
+| menu_hover | 1440x810 | メインメニュー — ニューゲームにカーソル |
 | menu_confirm | 1440x810 | メインメニュー — 上書き確認 |
 | save_indicator | 1440x810 | オートセーブ表示 (t=0.8s) |
+| pause_menu | 1440x810 | ゲームメニュー (ESC) |
+| pause_menu_test | 1440x810 | ゲームメニュー — テストプレイ |
+| pause_confirm | 1440x810 | ゲームメニュー — タイトルへ確認 |
+| options_controls | 1440x810 | 設定 — 操作 |
+| options_display | 1440x810 | 設定 — 画面 |
+| options_effects | 1440x810 | 設定 — 演出 |
 | title_spot_glitch | 1440x810 | タイトル — スポットライト グリッチ (t=0.21s) |
 | title_logo | 1440x810 | タイトル — ロゴ演出 (t=0.3s) |
 | hud_selected | 1440x810 | HUD — 隊員選択 (CRUSHER) |

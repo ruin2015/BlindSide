@@ -127,14 +127,16 @@ namespace Blindside.Rendering
             {
                 // Web deltaY>0 (wheel toward the user) zooms out; Input System scroll.y is the opposite sign.
                 float sy = mouse.scroll.ReadValue().y;
-                if (sy != 0f) h = Mathf.Clamp(h * (sy < 0f ? 1.1f : .9f), MinH, MaxH);
+                // one notch: ±10% of the height, scaled by the ズーム感度 option (×0.5–2)
+                float z = .1f * Blindside.Settings.GameSettings.ZoomSpeed;
+                if (sy != 0f) h = Mathf.Clamp(h * (sy < 0f ? 1f + z : 1f - z), MinH, MaxH);
             }
 
             var kb = Keyboard.current;
             if (kb != null)
             {
                 float dt = Mathf.Min(50f, Time.unscaledDeltaTime * 1000f);
-                float sp = .012f * dt * h / 20f;
+                float sp = .012f * dt * h / 20f * Blindside.Settings.GameSettings.CameraPanSpeed;   // × カメラ移動速度
                 if (kb.wKey.isPressed || kb.upArrowKey.isPressed) y -= sp;
                 if ((kb.sKey.isPressed && !SKeyReserved) || kb.downArrowKey.isPressed) y += sp;
                 if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) x -= sp;
@@ -188,7 +190,7 @@ namespace Blindside.Rendering
         // (the main loop's `G.shake*=.86`). Separate from the cinematic override's Kick().
         float gameShake;
         /// <summary>`G.shake=amount` for the game camera.</summary>
-        public void Shake(float amount) => gameShake = amount;
+        public void Shake(float amount) => gameShake = Blindside.Settings.GameSettings.ScreenShake ? amount : 0f;   // (画面の揺れ off: none)
 
         /// <summary>The pose Apply() would write for the current x/y/h, with the game FOV.</summary>
         public CamPose GamePose

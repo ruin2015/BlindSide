@@ -1,12 +1,14 @@
-// Render Previews of the title scene's main menu (MainMenuScreen + KitMenuLogo) and the autosave notice (KitSaveIndicator), all posed
-// at fixed times (nothing runs on a clock) from a sample save, never the one on disk:
-//   menu_save        settled, a save exists (ニューゲーム / 読み込み with its date / ゲーム終了)
-//   menu_nosave      settled, no save (ニューゲーム / ゲーム終了)
-//   menu_logo_enter  0.3s into the entrance: the logo letters in their steps glitch, the buttons not in yet
-//   menu_glitch      settled, inside a glitch burst of the logo loop (letters split, a strip of the word slid)
-//   menu_confirm     ニューゲーム over a save: the overwrite question
-//   save_indicator   the AUTO SAVE chip 0.8s into its run, over the HUD-coloured backdrop
-// "Blindside > UI > Measure Main Menu GC" poses the menu (entrance + glitch loop) and the save chip for 300 frames and logs the managed
+// Render Previews of the title scene's main menu (MainMenuScreen + KitMenuLogo + KitTextButton) and the autosave notice
+// (KitSaveIndicator), all posed at fixed times (nothing runs on a clock) from a sample save, never the one on disk, over the key art at
+// MainMenuScreen.BackgroundPath (the plain background when it is not there yet):
+//   menu_save         settled, a save exists (ニューゲーム / 読み込み / ゲーム終了)
+//   menu_nosave       settled, no save (ニューゲーム / ゲーム終了)
+//   menu_logo_heavy   0.4s into the first show: the heavy glitch intro (letters jumping and split, strips sliding, the word shaking)
+//   menu_glitch       settled, inside a burst of the calm glitch loop
+//   menu_hover        settled, the pointer over ニューゲーム (the text grown and white)
+//   menu_confirm      ニューゲーム over a save: the overwrite question
+//   save_indicator    the AUTO SAVE chip 0.8s into its run, over the HUD-coloured backdrop
+// "Blindside > UI > Measure Main Menu GC" poses the menu (heavy intro + calm loop) and the save chip for 300 frames and logs the managed
 // bytes allocated (should be 0).
 using UnityEditor;
 using UnityEngine;
@@ -17,11 +19,11 @@ namespace Blindside.UITools.EditorTools
 {
     public static class UIPreviewMainMenu
     {
-        public const string Save = "menu_save", NoSave = "menu_nosave", LogoEnter = "menu_logo_enter", Glitch = "menu_glitch",
-            Confirm = "menu_confirm", Indicator = "save_indicator";
-        public const float LogoEnterT = .3f, SettledT = 3f, IndicatorT = .8f;
+        public const string Save = "menu_save", NoSave = "menu_nosave", LogoHeavy = "menu_logo_heavy", Glitch = "menu_glitch",
+            Hover = "menu_hover", Confirm = "menu_confirm", Indicator = "save_indicator";
+        public const float HeavyT = .4f, SettledT = 3f, IndicatorT = .8f;
 
-        // a fixed save for the 読み込み button's date
+        // a fixed save
         static SaveData Sample()
         {
             var d = SaveData.Fresh();
@@ -33,26 +35,34 @@ namespace Blindside.UITools.EditorTools
         static MainMenuScreen Menu(UIPreview.Stage s, bool withSave)
         {
             var canvas = s.NewCanvas("BlindsideCanvas", UITheme.CanvasKind.Menu, 0);
-            return MainMenuScreen.Create(canvas.transform, withSave ? Sample() : null);
+            var art = AssetDatabase.LoadAssetAtPath<Texture>(MainMenuScreen.BackgroundPath);
+            return MainMenuScreen.Create(canvas.transform, withSave ? Sample() : null, art);
         }
 
-        public static void BuildSave(UIPreview.Stage s) => Menu(s, true).PoseAt(SettledT);
-        public static void BuildNoSave(UIPreview.Stage s) => Menu(s, false).PoseAt(SettledT);
-        public static void BuildLogoEnter(UIPreview.Stage s) => Menu(s, true).PoseAt(LogoEnterT);
+        public static void BuildSave(UIPreview.Stage s) => Menu(s, true).PoseAt(SettledT, false);
+        public static void BuildNoSave(UIPreview.Stage s) => Menu(s, false).PoseAt(SettledT, false);
+        public static void BuildLogoHeavy(UIPreview.Stage s) => Menu(s, true).PoseAt(HeavyT, true);
 
-        /// <summary>A time inside the logo's glitch burst (the second loop's window, a few steps in).</summary>
-        public static float GlitchT(KitMenuLogo l) => l.EnterTime + KitMenuLogo.Period * (1f + KitMenuLogo.BurstFrom) + KitMenuLogo.StepTime * 2.5f;
+        /// <summary>A time inside the calm loop's burst (the second loop's window, a step in).</summary>
+        public static float GlitchT(KitMenuLogo l) => l.EnterTime + KitMenuLogo.Period * (1f + KitMenuLogo.BurstFrom) + KitMenuLogo.StepTime * 1.5f;
 
         public static void BuildGlitch(UIPreview.Stage s)
         {
             var m = Menu(s, true);
-            m.PoseAt(GlitchT(m.logo));
+            m.PoseAt(KitMenuLogo.CalmIn + KitMenuLogo.Period * (1f + KitMenuLogo.BurstFrom) + KitMenuLogo.StepTime * 1.5f, false);
+        }
+
+        public static void BuildHover(UIPreview.Stage s)
+        {
+            var m = Menu(s, true);
+            m.PoseAt(SettledT, false);
+            m.newGameButton.PoseHover(true);
         }
 
         public static void BuildConfirm(UIPreview.Stage s)
         {
             var m = Menu(s, true);
-            m.PoseAt(SettledT);
+            m.PoseAt(SettledT, false);
             m.AskOverwrite();
         }
 
@@ -77,7 +87,8 @@ namespace Blindside.UITools.EditorTools
                 {
                     if (frame == 30) start = System.GC.GetAllocatedBytesForCurrentThread();
                     float t = frame * (1f / 60f);
-                    m.PoseAt(t * 2f); _ = m.Duration;            // (×2: the entrance and well into the glitch loop)
+                    m.PoseAt(t * 2f, true); _ = m.Duration;      // (×2: the heavy intro and well into the calm loop)
+                    m.newGameButton.Evaluate(t % .2f);
                     ind.Evaluate(t % ind.Duration);
                     Canvas.ForceUpdateCanvases();
                 }
