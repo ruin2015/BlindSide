@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7303080850508912441
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 630019508420580843}
+  - component: {fileID: 216642111501682396}
+  m_Layer: 5
+  m_Name: TITLE_Top
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &630019508420580843
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7303080850508912441}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 720, y: -34}
+  m_SizeDelta: {x: 696, y: 372}
+  m_Pivot: {x: 0, y: 1}
+--- !u!114 &216642111501682396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7303080850508912441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc192db86db5ca44bb106d9ef67dd6e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.UI.KitTitleTop
+  screen: {fileID: 0}
+  blocks:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  bodies:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  groups:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  sides:
+  - body: {fileID: 0}
+    bg: {fileID: 0}
+    wedge: {fileID: 0}
+    fill: {fileID: 0}
+    fillPanel: {fileID: 0}
+    photo: {fileID: 0}
+    scrim: {fileID: 0}
+    tagBox: {fileID: 0}
+    tag: {fileID: 0}
+    kr: {fileID: 0}
+    en: {fileID: 0}
+    desc: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 0}
+  - body: {fileID: 0}
+    bg: {fileID: 0}
+    wedge: {fileID: 0}
+    fill: {fileID: 0}
+    fillPanel: {fileID: 0}
+    photo: {fileID: 0}
+    scrim: {fileID: 0}
+    tagBox: {fileID: 0}
+    tag: {fileID: 0}
+    kr: {fileID: 0}
+    en: {fileID: 0}
+    desc: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 0}
+  minimap: {fileID: 0}
+  minimapFit: {fileID: 0}
+  mapTag: {fileID: 0}
+  mapStatus: {fileID: 0}
+  mapName: {fileID: 0}
+  mapSize: {fileID: 0}
+  mapButton: {fileID: 0}
+  edBody: {fileID: 0}
+  startBody: {fileID: 0}
+  edBg: {fileID: 0}
+  arrow: {fileID: 0}
+  edTag: {fileID: 0}
+  startEn: {fileID: 0}
+  winLines: {fileID: 0}
+  winNote: {fileID: 0}
+  startSweep: {fileID: 0}
+  startPointer: {fileID: 0}

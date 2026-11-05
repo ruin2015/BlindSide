@@ -1,0 +1,10 @@
+# mode=AIvsAI
+seed=1001 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[atk4,WRAITH,atk3,atk2,VOLT]
+seed=1002 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[atk4,atk2,atk3]
+seed=1003 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[atk4,atk3,atk2]
+# attackWins=0 defenseWins=3 exceptions=0
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=1001 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[atk4,WRAITH,VOLT]
+seed=1002 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[atk1]
+seed=1003 winner=DefenseWins reason="공격팀 전원이 제압되었습니다." rounds=8 deaths=[atk3,atk2,VOLT,atk1,atk4,ARGUS,atk5]
+# attackWins=0 defenseWins=3 exceptions=0

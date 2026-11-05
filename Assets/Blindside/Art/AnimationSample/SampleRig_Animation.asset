@@ -1,0 +1,115 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b21f0a3d7729a5e4890663c5c8dcac12, type: 3}
+  m_Name: SampleRig_Animation
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Rendering.UnitAnimationProfile
+  idle: {fileID: 7400000, guid: 52138ee1439d41b4ea294153811900a3, type: 2}
+  aim: {fileID: 7400000, guid: 48d3b7ff53e6d994d9b0eabe935eba90, type: 2}
+  aimWhenSelected: 1
+  moveUpperBody: {fileID: 0}
+  walkForward: {fileID: 7400000, guid: f7b6ac2c40c4c5d4aa371876fe6e2018, type: 2}
+  walkForwardLeft: {fileID: 0}
+  walkForwardRight: {fileID: 0}
+  strafeLeft: {fileID: 0}
+  strafeRight: {fileID: 0}
+  walkBackward: {fileID: 7400000, guid: 7da2b9c50bc44974dad79b82262d42cc, type: 2}
+  walkBackwardLeft: {fileID: 0}
+  walkBackwardRight: {fileID: 0}
+  walkClipSpeed: 1
+  fire: {fileID: 7400000, guid: 20b2ced0aa2fc33409de3119c5b1dffa, type: 2}
+  reload: {fileID: 7400000, guid: d097cb902f9838142ae027cf800f41ee, type: 2}
+  hit: {fileID: 7400000, guid: 2eb8a7d2601fd8b439428f6b98500e6d, type: 2}
+  hitUpperBodyOnly: 1
+  dodge: {fileID: 0}
+  block: {fileID: 0}
+  fireSpeed: 1
+  hitSpeed: 1
+  dodgeSpeed: 1
+  blockSpeed: 1
+  dodgeStartTime: 0
+  dodgePeakTime: 0.5
+  dodgeSide: 0
+  death: {fileID: 7400000, guid: 91d7ca79649e96d4c99aab948b73db52, type: 2}
+  abilities:
+  - abilityKey: hammer
+    clip: {fileID: 7400000, guid: 3c96eb0e7ec0a0f488266a6e57b28238, type: 2}
+    fullBody: 1
+    speed: 1
+  - abilityKey: launcher
+    clip: {fileID: 0}
+    fullBody: 1
+    speed: 1
+  - abilityKey: thermite
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: stim
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: shield
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: shock
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: gas
+    clip: {fileID: 0}
+    fullBody: 1
+    speed: 1
+  - abilityKey: ghost
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: mirror
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: cam
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: drone
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  upperBodyMask: {fileID: 0}
+  upperBodyRootBone: Spine
+  spineBones:
+  - Spine
+  - Spine1
+  - Spine2
+  maxSpineTwist: 90
+  backpedalAngle: 115
+  modelHeight: 1
+  muzzleTransform: Muzzle
+  gripCalibrated: 0
+  gripBarrel: {x: 0, y: 0, z: 0}
+  gripUp: {x: 0, y: 0, z: 0}
+  gripPalm: {x: 0, y: 0, z: 0}
+  gripLeftRot: {x: 0, y: 0, z: 0, w: 1}
+  gripLeftPalm: {x: 0, y: 0, z: 0}
+  adsShoulderPocket: {x: -0.03, y: -0.01, z: 0.05}
+  adsEyeOffset: {x: 0.03, y: 0.07, z: 0.09}
+  adsEyeDrop: 0.035
+  adsHeadPitch: 12
+  adsHeadRoll: 7
+  adsBlade: 30
+  adsLean: 0
+  walkFeetNarrow: 0.6
+  walkToeOut: 6
+  crossFade: 0.15
+  aimHoldSeconds: 4
+  reloadAfterVolley: 1
+  keepBodyAfterDeath: 0

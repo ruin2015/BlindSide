@@ -1,0 +1,39 @@
+# map=작은 방 16x12
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=DefenseWins reason="공격팀 전원이 제압되었습니다." rounds=4 deaths=[ARGUS,VOLT,atk5,MIASMA,atk3,atk4,atk1,atk2] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=s+e]
+seed=2002 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=3 deaths=[ARGUS,VOLT,MIASMA,WRAITH,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=s+e]
+seed=2003 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=5 deaths=[ARGUS,VOLT,MIASMA,WRAITH,atk2,atk3,atk4,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=e+w]
+seed=2004 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=11 deaths=[VOLT,ARGUS,atk2,MIASMA,atk4,atk1,atk3,WRAITH] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=n+s]
+seed=2005 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=4 deaths=[ARGUS,VOLT,MIASMA,WRAITH,atk4,atk1,atk2,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=s+w]
+seed=2006 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=5 deaths=[ARGUS,atk2,VOLT,WRAITH,atk3,MIASMA,atk4,atk1,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=n+e]
+seed=2007 winner=DefenseWins reason="공격팀 전원이 제압되었습니다." rounds=5 deaths=[atk4,atk2,ARGUS,VOLT,MIASMA,atk3,atk1,atk5] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=e+s]
+seed=2008 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=3 deaths=[ARGUS,VOLT,MIASMA,WRAITH,atk2,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=s+w]
+seed=2009 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=4 deaths=[ARGUS,VOLT,MIASMA,WRAITH,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=e+w]
+seed=2010 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=9 deaths=[atk4,atk2,atk1,WRAITH,ARGUS,MIASMA,VOLT,atk5,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3)] drop=[zones n/s/w/e=48/40/20/20 used=n+w]
+# attackWins=8 defenseWins=2 exceptions=0 unfinished=0 maxRounds=11 over15=0
+# map=여러 방의 저택 30x24
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=2 deaths=[VOLT,ARGUS,atk4,WRAITH,OBSIDIAN,MIASMA] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=s+e]
+seed=2002 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=4 deaths=[WRAITH,atk5,atk3,VOLT,atk4,MIASMA,ARGUS,atk1,OBSIDIAN] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=s+e]
+seed=2003 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=7 deaths=[VOLT,atk4,atk2,MIASMA,atk3,OBSIDIAN,atk1,ARGUS,WRAITH] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=e+w]
+seed=2004 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=5 deaths=[MIASMA,atk3,VOLT,WRAITH,atk4,atk5,atk2,ARGUS,OBSIDIAN] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=n+s]
+seed=2005 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=5 deaths=[MIASMA,VOLT,WRAITH,atk3,ARGUS,atk2,OBSIDIAN] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=s+w]
+seed=2006 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=6 deaths=[atk4,VOLT,atk3,OBSIDIAN,MIASMA,ARGUS,atk2,WRAITH] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=n+e]
+seed=2007 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=3 deaths=[VOLT,MIASMA,WRAITH,OBSIDIAN,atk3,ARGUS] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=e+s]
+seed=2008 winner=DefenseWins reason="공격팀 전원이 제압되었습니다." rounds=6 deaths=[VOLT,MIASMA,WRAITH,atk1,atk4,OBSIDIAN,atk3,atk5,atk2] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=s+w]
+seed=2009 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=4 deaths=[VOLT,atk1,MIASMA,ARGUS,OBSIDIAN,WRAITH] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=e+w]
+seed=2010 winner=AttackWins reason="방어팀 전원이 제압되었습니다." rounds=12 deaths=[VOLT,MIASMA,atk4,atk2,atk3,ARGUS,OBSIDIAN,atk1,WRAITH] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20)] drop=[zones n/s/w/e=82/82/53/54 used=n+w]
+# attackWins=9 defenseWins=1 exceptions=0 unfinished=0 maxRounds=12 over15=0
+# map=밀폐된 방 20x16
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=s+e]
+seed=2002 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=s+e]
+seed=2003 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=e+w]
+seed=2004 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=n+s]
+seed=2005 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=s+w]
+seed=2006 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=n+e]
+seed=2007 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=e+s]
+seed=2008 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=s+w]
+seed=2009 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=e+w]
+seed=2010 winner=DefenseWins reason="제한 시간이 종료되었습니다. 공격팀이 인질을 구출하지 못했습니다." rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8)] drop=[zones n/s/w/e=60/60/32/32 used=n+w]
+# attackWins=0 defenseWins=10 exceptions=0 unfinished=0 maxRounds=16 over15=10

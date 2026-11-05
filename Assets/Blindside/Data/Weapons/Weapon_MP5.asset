@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb2f45441b7375b41b0bef21709b321e, type: 3}
+  m_Name: Weapon_MP5
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
+  key: MP5
+  weaponName: "MP5 \u77ED\u6A5F\u95A2\u9283"
+  weaponClass: SMG
+  damage: 13
+  shots: 5
+  accuracy: 74
+  range: 6
+  mobility: 1
+  breach: 0
+  accuracyFalloffPerTile: 13
+  damageFalloffStart: 5
+  damageFalloffPerTile: 6
+  minDamagePercent: 55
+  model: {fileID: 919132149155446097, guid: 304f571dfd93d4344accfc02da7f80f6, type: 3}
+  modelForwardSign: 1
+  modelLength: 0.68
+  gripFromRear: 0.31
+  gripHeight: 0.38
+  foregripFromRear: 0.72
+  foregripHeight: 0.6
+  foregripRoll: 0
+  sightHeight: 0.75
+  buttHeight: 0.5

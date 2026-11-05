@@ -1,0 +1,39 @@
+# map=小部屋 16x12
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[MIASMA,atk1,atk4,atk2,ARGUS,atk3] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1MIASMA(8,4)] drop=[zones n/s/w/e=48/40/20/20 used=w+n]
+seed=2002 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=6 deaths=[VOLT,ARGUS,MIASMA,atk2,WRAITH,atk3,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1VOLT(7,4)] drop=[zones n/s/w/e=48/40/20/20 used=n+w]
+seed=2003 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=3 deaths=[WRAITH,atk2,MIASMA,OBSIDIAN,VOLT,ARGUS] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1MIASMA(8,4)] drop=[zones n/s/w/e=48/40/20/20 used=n+e]
+seed=2004 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=3 deaths=[atk3,MIASMA,atk2,atk1,atk4,atk5] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1MIASMA(8,4)] drop=[zones n/s/w/e=48/40/20/20 used=s+n]
+seed=2005 winner=AttackWins reason="人質を救出地点まで無事に護送しました。" rounds=6 deaths=[VOLT,ARGUS,atk4,MIASMA,atk2,atk3,WRAITH] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1VOLT(7,4)] drop=[zones n/s/w/e=48/40/20/20 used=w+e]
+seed=2006 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=4 deaths=[VOLT,ARGUS,MIASMA,WRAITH,atk3,atk4,atk2,OBSIDIAN] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1VOLT(7,4)] drop=[zones n/s/w/e=48/40/20/20 used=w+s]
+seed=2007 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=5 deaths=[atk2,MIASMA,ARGUS,VOLT,atk1,atk4,atk3,atk5] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1MIASMA(8,4)] drop=[zones n/s/w/e=48/40/20/20 used=e+w]
+seed=2008 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=4 deaths=[atk4,VOLT,atk3,WRAITH,atk2,MIASMA,ARGUS,atk1,atk5] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1VOLT(7,4)] drop=[zones n/s/w/e=48/40/20/20 used=n+w]
+seed=2009 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=4 deaths=[MIASMA,atk1,atk2,atk4,atk3,atk5] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1MIASMA(8,4)] drop=[zones n/s/w/e=48/40/20/20 used=w+n]
+seed=2010 winner=AttackWins reason="人質を救出地点まで無事に護送しました。" rounds=7 deaths=[ARGUS,VOLT,atk1,MIASMA,atk2,WRAITH] prep=[R=10 E=2(6,4)(9,4) C=1(8,5) M=(6,3) P=1VOLT(7,4)] drop=[zones n/s/w/e=48/40/20/20 used=w+n]
+# attackWins=5 defenseWins=5 exceptions=0 unfinished=0 maxRounds=16 over15=1
+# map=部屋の多い邸宅 30x24
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=AttackWins reason="人質を救出地点まで無事に護送しました。" rounds=6 deaths=[WRAITH,VOLT,atk4,atk1,OBSIDIAN,atk3,ARGUS] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,16)WRAITH(9,16)] drop=[zones n/s/w/e=82/82/53/54 used=w+s]
+seed=2002 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=6 deaths=[VOLT,atk4,atk2,WRAITH,OBSIDIAN,ARGUS,atk1,MIASMA] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,15)WRAITH(8,16)] drop=[zones n/s/w/e=82/82/53/54 used=n+s]
+seed=2003 winner=AttackWins reason="人質を救出地点まで無事に護送しました。" rounds=7 deaths=[MIASMA,WRAITH,OBSIDIAN,VOLT,atk1,atk2,atk3] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=3MIASMA(21,14)WRAITH(7,14)ARGUS(16,9)] drop=[zones n/s/w/e=82/82/53/54 used=e+n]
+seed=2004 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=5 deaths=[MIASMA,WRAITH,VOLT,atk4,ARGUS,OBSIDIAN] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,15)WRAITH(6,16)] drop=[zones n/s/w/e=82/82/53/54 used=w+e]
+seed=2005 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=6 deaths=[VOLT,atk4,WRAITH,atk2,atk3,MIASMA,OBSIDIAN,ARGUS] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(21,15)WRAITH(7,17)] drop=[zones n/s/w/e=82/82/53/54 used=w+s]
+seed=2006 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=9 deaths=[MIASMA,atk3,VOLT,atk4,atk1,atk2,WRAITH,atk5] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,15)WRAITH(6,17)] drop=[zones n/s/w/e=82/82/53/54 used=w+e]
+seed=2007 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=3 deaths=[OBSIDIAN,atk5,VOLT,MIASMA,atk3,WRAITH,ARGUS] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,16)WRAITH(8,15)] drop=[zones n/s/w/e=82/82/53/54 used=s+e]
+seed=2008 winner=AttackWins reason="人質を救出地点まで無事に護送しました。" rounds=5 deaths=[OBSIDIAN,VOLT,atk4,MIASMA,ARGUS] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,16)WRAITH(7,17)] drop=[zones n/s/w/e=82/82/53/54 used=s+n]
+seed=2009 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=11 deaths=[VOLT,atk4,WRAITH,atk2,atk3,atk1,OBSIDIAN,atk5] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,16)WRAITH(8,16)] drop=[zones n/s/w/e=82/82/53/54 used=n+w]
+seed=2010 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=5 deaths=[atk4,VOLT,WRAITH,atk2,ARGUS,MIASMA,OBSIDIAN] prep=[R=10 E=2(12,19)(16,19) C=2(7,16)(21,16) M=(13,20) P=2MIASMA(22,16)WRAITH(7,14)] drop=[zones n/s/w/e=82/82/53/54 used=w+s]
+# attackWins=8 defenseWins=2 exceptions=0 unfinished=0 maxRounds=11 over15=0
+# map=密閉された部屋 20x16
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=s+e]
+seed=2002 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=s+e]
+seed=2003 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=e+w]
+seed=2004 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=n+s]
+seed=2005 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=s+w]
+seed=2006 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=n+e]
+seed=2007 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=e+s]
+seed=2008 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=s+w]
+seed=2009 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=e+w]
+seed=2010 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[] prep=[R=4 E=2(9,7)(10,10) C=2(12,8)(7,7) M=(9,8) P=0] drop=[zones n/s/w/e=60/60/32/32 used=n+w]
+# attackWins=0 defenseWins=10 exceptions=0 unfinished=0 maxRounds=16 over15=10

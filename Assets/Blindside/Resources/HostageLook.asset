@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f17992447bc5fb439346b24b5583f78, type: 3}
+  m_Name: HostageLook
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Rendering.HostageLook
+  model: {fileID: 919132149155446097, guid: d6b804d2967232b4697c366985fcacb7, type: 3}
+  sit: {fileID: -203655887218126122, guid: 7723bb7d6f5255e4fabc26fbe14110f1, type: 3}
+  walk: {fileID: -203655887218126122, guid: 78f69eccb4f89e248b3868fcab99a9fc, type: 3}
+  profile: {fileID: 11400000, guid: 6eab83972285f4345b99f103a1f660df, type: 2}
+  walkClipSpeed: 1.1
+  standPose: 0.19

@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b21f0a3d7729a5e4890663c5c8dcac12, type: 3}
+  m_Name: Hostage_Animation
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Rendering.UnitAnimationProfile
+  idle: {fileID: 0}
+  aim: {fileID: 0}
+  aimWhenSelected: 0
+  moveUpperBody: {fileID: 0}
+  walkForward: {fileID: 0}
+  walkForwardLeft: {fileID: 0}
+  walkForwardRight: {fileID: 0}
+  strafeLeft: {fileID: 0}
+  strafeRight: {fileID: 0}
+  walkBackward: {fileID: 0}
+  walkBackwardLeft: {fileID: 0}
+  walkBackwardRight: {fileID: 0}
+  walkClipSpeed: 1.2
+  fire: {fileID: 0}
+  reload: {fileID: 0}
+  hit: {fileID: 0}
+  hitUpperBodyOnly: 1
+  dodge: {fileID: 0}
+  block: {fileID: 0}
+  fireSpeed: 1
+  hitSpeed: 1
+  dodgeSpeed: 1
+  blockSpeed: 1
+  dodgeStartTime: 0
+  dodgePeakTime: 0.5
+  dodgeSide: 0
+  death: {fileID: 0}
+  abilities: []
+  upperBodyMask: {fileID: 0}
+  upperBodyRootBone: Spine
+  spineBones:
+  - Spine
+  - Spine1
+  - Spine2
+  maxSpineTwist: 90
+  backpedalAngle: 115
+  modelHeight: 1.649
+  muzzleTransform: Muzzle
+  gripCalibrated: 0
+  gripBarrel: {x: 0, y: 0, z: 0}
+  gripUp: {x: 0, y: 0, z: 0}
+  gripPalm: {x: 0, y: 0, z: 0}
+  gripLeftRot: {x: 0, y: 0, z: 0, w: 1}
+  gripLeftPalm: {x: 0, y: 0, z: 0}
+  adsShoulderPocket: {x: 0.04, y: -0.01, z: 0.05}
+  adsEyeOffset: {x: 0.03, y: 0.07, z: 0.09}
+  adsEyeDrop: 0.035
+  adsHeadPitch: 12
+  adsHeadRoll: 7
+  adsBlade: 30
+  adsLean: 0
+  walkFeetNarrow: 0.6
+  walkToeOut: 6
+  crossFade: 0.15
+  aimHoldSeconds: 4
+  reloadAfterVolley: 1
+  keepBodyAfterDeath: 0

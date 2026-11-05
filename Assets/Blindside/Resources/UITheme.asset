@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d4bdd26e6ebd3a42bd99f182bdd30ed, type: 3}
+  m_Name: UITheme
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.UI.UITheme
+  ink: {r: 0.078431375, g: 0.08627451, b: 0.101960786, a: 1}
+  ink2: {r: 0.11764706, g: 0.13333334, b: 0.15686275, a: 1}
+  ink3: {r: 0.16470589, g: 0.1882353, b: 0.21960784, a: 1}
+  paper: {r: 0.9254902, g: 0.93333334, b: 0.9411765, a: 1}
+  paper2: {r: 0.8352941, g: 0.8509804, b: 0.8666667, a: 1}
+  blue: {r: 0.12156863, g: 0.5882353, b: 0.9098039, a: 1}
+  foe: {r: 0.8980392, g: 0.21176471, b: 0.3019608, a: 1}
+  acc: {r: 1, g: 0.78431374, b: 0.11764706, a: 1}
+  dim: {r: 0.3647059, g: 0.39215687, b: 0.42352942, a: 1}
+  glitchRed: {r: 1, g: 0.24313726, b: 0.36078432, a: 1}
+  glitchBlue: {r: 0.15294118, g: 0.7058824, b: 1, a: 1}
+  slantLarge: 22
+  slantCardMin: 14
+  slantCardMax: 16
+  slantSmallMin: 10
+  slantSmallMax: 12
+  displayFont: {fileID: 11400000, guid: 5b6035d14ce51874aba4336a573aded6, type: 2}
+  displayFallbacks:
+  - {fileID: 11400000, guid: b81f6ad9a849f124b8bb00738d86f280, type: 2}
+  - {fileID: 11400000, guid: 2315fa5742b834c4dab14182b53628d0, type: 2}
+  bodyFont: {fileID: 11400000, guid: 4cbafb95d2d2265489a2b226fa4da388, type: 2}
+  bodyFallbacks:
+  - {fileID: 11400000, guid: 2315fa5742b834c4dab14182b53628d0, type: 2}
+  titleFont: {fileID: 11400000, guid: b81f6ad9a849f124b8bb00738d86f280, type: 2}
+  titleFallbacks:
+  - {fileID: 11400000, guid: 2315fa5742b834c4dab14182b53628d0, type: 2}
+  minTextSize: 11
+  menuReference: {x: 1440, y: 810}
+  hudReference: {x: 1800, y: 1013}
+  canvasMatch: 0.5
+  hud:
+    rosterCard: {x: 250, y: 62}
+    rosterFace: 62
+    rosterGap: 5
+    rosterOrigin: {x: 20, y: 76}
+    commandButton: {x: 226, y: 40}
+    commandGap: 3
+    unitPanel: {x: 430, y: 190}
+    unitPanelFace: 104
+    unitPanelFaceRise: 30
+    artCard: {x: 300, y: 500}
+    artCardTag: 30
+    artCardName: 96
+    endTurn: {x: 300, y: 56}
+    topbarHeight: 46
+    logoWidth: 280
+    phaseWidth: 290
+    roundWidth: 160
+    objective: {x: 480, y: 58}
+    hint: {x: 400, y: 48}
+    logLineHeight: 24
+    logWidth: 400
+    bannerHeight: 140
+    dialogWidth: 420
+  title:
+    sideCard: {x: 343, y: 176}
+    mapCard: {x: 520, y: 74}
+    editorButton: {x: 166, y: 74}
+    winCondition: {x: 343, y: 106}
+    startButton: {x: 343, y: 106}
+    squadRow: {x: 696, y: 60}
+    squadFace: {x: 72, y: 60}
+    squadStats: 196
+    spotlight: {x: 474, y: 330}
+  motion:
+    cardGlitch: 0.8
+    cardReveal: 0.26
+    cardIn: 0.5
+    cardInStagger: 0.06
+    commandIn: 0.32
+    commandStagger: 0.04
+    banner: 1.9
+    dialog: 0.32
+    screenWipe: 0.95
+    hitShake: 0.42
+    hpGhostDelay: 0.45
+    hpGhost: 0.8

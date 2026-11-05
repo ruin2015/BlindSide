@@ -1,0 +1,115 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b21f0a3d7729a5e4890663c5c8dcac12, type: 3}
+  m_Name: MIRA_Animation
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Rendering.UnitAnimationProfile
+  idle: {fileID: -203655887218126122, guid: 377159b4ac9dee34481f51f9b7736ee6, type: 3}
+  aim: {fileID: -203655887218126122, guid: e6b090474de921b4e97693725a52de37, type: 3}
+  aimWhenSelected: 1
+  moveUpperBody: {fileID: -203655887218126122, guid: a1cfc55645f5b38419734de3ad297812, type: 3}
+  walkForward: {fileID: -203655887218126122, guid: a1cfc55645f5b38419734de3ad297812, type: 3}
+  walkForwardLeft: {fileID: -203655887218126122, guid: d64f61a1f73162a4eb09ffb59dc420d3, type: 3}
+  walkForwardRight: {fileID: -203655887218126122, guid: ad786733aaab2924284676f29a2ef8e1, type: 3}
+  strafeLeft: {fileID: -203655887218126122, guid: 703d9c01ab352d5429004385273ebefc, type: 3}
+  strafeRight: {fileID: -203655887218126122, guid: 38baebd24dbcc5d4e9e3107ccedca559, type: 3}
+  walkBackward: {fileID: -203655887218126122, guid: 077dee896c0131a4f80bd4dc6587349e, type: 3}
+  walkBackwardLeft: {fileID: -203655887218126122, guid: 6c340464a97c59f469c2865bd691eb2e, type: 3}
+  walkBackwardRight: {fileID: -203655887218126122, guid: 6cc446798ec5ebd4a8538e2872114411, type: 3}
+  walkClipSpeed: 2.4
+  fire: {fileID: -203655887218126122, guid: 3f3dea803e73d1d4c8ab97003e90837e, type: 3}
+  reload: {fileID: -203655887218126122, guid: 0944ca680bad98b4b81333f6ef3678f5, type: 3}
+  hit: {fileID: -203655887218126122, guid: 0f9eee4260760724db933e32eb2da706, type: 3}
+  hitUpperBodyOnly: 1
+  dodge: {fileID: -203655887218126122, guid: 19e3624e80fa8e4488e7ae3a2f36c42a, type: 3}
+  block: {fileID: -203655887218126122, guid: 3cfab6e8a6c95d54ea3f9dee13c743d6, type: 3}
+  fireSpeed: 1.6
+  hitSpeed: 2
+  dodgeSpeed: 2.2
+  blockSpeed: 1.8
+  dodgeStartTime: 0.35
+  dodgePeakTime: 0.7
+  dodgeSide: 0
+  death: {fileID: -203655887218126122, guid: d68d1efc7c1c4964799dc3259f3d0e39, type: 3}
+  abilities:
+  - abilityKey: hammer
+    clip: {fileID: 0}
+    fullBody: 1
+    speed: 1
+  - abilityKey: launcher
+    clip: {fileID: 0}
+    fullBody: 1
+    speed: 1
+  - abilityKey: thermite
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: stim
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: shield
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: shock
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: gas
+    clip: {fileID: 0}
+    fullBody: 1
+    speed: 1
+  - abilityKey: ghost
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: mirror
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: cam
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  - abilityKey: drone
+    clip: {fileID: 0}
+    fullBody: 0
+    speed: 1
+  upperBodyMask: {fileID: 0}
+  upperBodyRootBone: Spine
+  spineBones:
+  - Spine
+  - Spine1
+  - Spine2
+  maxSpineTwist: 90
+  backpedalAngle: 115
+  modelHeight: 1.7
+  muzzleTransform: Muzzle
+  gripCalibrated: 1
+  gripBarrel: {x: 0.6457292, y: 0.75248605, z: -0.12961437}
+  gripUp: {x: -0.68715376, y: 0.49865723, z: -0.52835697}
+  gripPalm: {x: -0.0020988474, y: 0.036053922, z: -0.0007369742}
+  gripLeftRot: {x: 0.20507684, y: 0.65422946, z: 0.63120854, w: -0.36263454}
+  gripLeftPalm: {x: -0.0022078364, y: 0.037082475, z: 0.0007453022}
+  adsShoulderPocket: {x: -0.03, y: -0.01, z: 0.05}
+  adsEyeOffset: {x: 0.03, y: 0.07, z: 0.09}
+  adsEyeDrop: 0.035
+  adsHeadPitch: 12
+  adsHeadRoll: 7
+  adsBlade: 30
+  adsLean: 0
+  walkFeetNarrow: 0.6
+  walkToeOut: 6
+  crossFade: 0.15
+  aimHoldSeconds: 4
+  reloadAfterVolley: 1
+  keepBodyAfterDeath: 0

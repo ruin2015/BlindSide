@@ -1,0 +1,473 @@
+{
+    "screenW": 1440,
+    "screenH": 810,
+    "total": 0,
+    "groupCount": 0,
+    "unmatched": [
+        "Brighten ×2",
+        "Chip ×407",
+        "CornerBrackets ×17",
+        "CutCornerGraphic ×61",
+        "EngagePreview ×3",
+        "HazardStripe ×123",
+        "IntroBriefing ×3",
+        "IntroHoloScreen ×1",
+        "IntroSubtitle ×6",
+        "IntroTitleAssemble ×2",
+        "KitBannerStrip ×27",
+        "KitBrighten ×12",
+        "KitChoice ×2",
+        "KitCommandMenu ×3",
+        "KitGradient ×8",
+        "KitOptionsPanel ×2",
+        "KitPointer ×40",
+        "KitRoster ×24",
+        "KitShadow ×71",
+        "KitSweep ×81",
+        "KitSwitch ×4",
+        "KitTint ×221",
+        "KitTitleLeft ×4",
+        "LintIgnoreClip ×477",
+        "LintIgnoreOverlap ×105",
+        "ResultScreen ×3",
+        "SegmentedBar ×227",
+        "SlantedGraphic ×1923",
+        "SlantedMask ×216",
+        "TacticalPanel ×794",
+        "TitleSelectScreen ×4",
+        "TutorialDroneCard ×2",
+        "TutorialGuide ×3",
+        "TutorialObjective ×2",
+        "TutorialOperatorCard ×1",
+        "TutorialRadio ×16",
+        "TutorialSiren ×1",
+        "TutorialSkipButton ×2",
+        "TutorialWallCard ×2",
+        "UIContactAlert ×24",
+        "UIGlitchImage ×229",
+        "UIGlitchName ×32",
+        "UIGlitchText ×83",
+        "UIHeadshotBadge ×24",
+        "UIPerspective ×3",
+        "UIPerspectiveVertex ×150",
+        "UIPhaseBanner ×24",
+        "UIPulse ×24",
+        "WallIllustration ×5"
+    ],
+    "states": [
+        {
+            "state": "title_attack",
+            "label": "タイトル — 攻撃選択",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "title_defense",
+            "label": "タイトル — 防衛選択",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "title_spot_glitch",
+            "label": "タイトル — スポットライト グリッチ (t=0.21s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "title_logo",
+            "label": "タイトル — ロゴ演出 (t=0.3s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_selected",
+            "label": "HUD — 隊員選択 (CRUSHER)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_unselected",
+            "label": "HUD — 選択解除",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_hit",
+            "label": "HUD — 被弾直後 (FLARE, t=0.35s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_ended",
+            "label": "HUD — 全員行動終了",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_moved",
+            "label": "HUD — 移動後 (CRUSHER 4.2/7m)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_prep",
+            "label": "HUD — 防衛準備 (PREPARATION, ROUND 00)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_cmd_long",
+            "label": "HUD — 命令メニュー 最長の能力名 (FLARE ブリーチングランチャー)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_cmd_disabled",
+            "label": "HUD — 命令メニュー 無効ボタン (CRUSHER 移動力0・能力0回)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_longdesc",
+            "label": "HUD — 最長の能力説明 (VOLT)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_hint_move",
+            "label": "HUD — 案内バー 移動中 + ログ",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_hint_fire",
+            "label": "HUD — 案内バー 攻撃選択中",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_hint_long",
+            "label": "HUD — 案内バー 長い補助文 (2行・高さ拡張)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "options_default",
+            "label": "設定パネル — 既定 (モーション軽減オフ・画面エフェクトオン・強さ中)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "options_reduce",
+            "label": "設定パネル — モーション軽減オン",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "end_normal",
+            "label": "ターン終了ボタン — 通常",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "end_hover",
+            "label": "ターン終了ボタン — ホバー (光の走査 t=0.25s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "end_disabled",
+            "label": "ターン終了ボタン — 無効 (敵の番・モーダル中)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "result_win",
+            "label": "結果画面 — 勝利",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "result_lose",
+            "label": "結果画面 — 敗北",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "result_mid",
+            "label": "結果画面 — 登場中 (t=0.3s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_log_full",
+            "label": "HUD — ログ7行 (間隔詰め・2行折返し含む)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "dialog_move",
+            "label": "移動確認ダイアログ",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "phase_banner_t01",
+            "label": "フェーズバナー (t=0.1s 帯が現れる)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "phase_banner",
+            "label": "フェーズバナー (t=0.65s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "phase_banner_t12",
+            "label": "フェーズバナー (t=1.2s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "phase_banner_t17",
+            "label": "フェーズバナー (t=1.7s 帯が消える)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "contact_alert",
+            "label": "遭遇警告 CONTACT (t=0.4s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "headshot_badge",
+            "label": "ヘッドショット バッジ (味方, t=0.5s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "headshot_lock",
+            "label": "ヘッドショット ロックオン (t=0.24s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "kit_shapes",
+            "label": "KitShapes — 斜め図形 · 分節バー",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "kit_glitch",
+            "label": "KitGlitch — カード出現グリッチ",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "kit_screenfx",
+            "label": "KitScreenFX — 画面効果",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "kit_components",
+            "label": "KitComponents — 共通コンポーネント",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "kit_cards",
+            "label": "KitCards — 隊員カード",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "kit_artcard",
+            "label": "KitArtCard — イラストカード",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_subtitle_typing",
+            "label": "イントロ 台詞 — 表示中 (t=0.9s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_subtitle",
+            "label": "イントロ 台詞 — 全文",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_holo_wipe",
+            "label": "イントロ ホログラム切替 — ワイプ途中",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_title_wide",
+            "label": "イントロ 作戦タイトル — 散らばり (t=0.1s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_title_gather",
+            "label": "イントロ 作戦タイトル — 集まる途中 (t=0.5s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_briefing_glitch",
+            "label": "イントロ 作戦概要 — 作戦名グリッチ (t=0.4s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_briefing_in",
+            "label": "イントロ 作戦概要 — 表示中 (t=0.9s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "intro_briefing",
+            "label": "イントロ 作戦概要 — 全項目",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_radio_open",
+            "label": "チュートリアル 無線 — 登場中 (t=0.15s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_radio_typing",
+            "label": "チュートリアル 無線 — 台詞表示中 (t=0.9s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_radio",
+            "label": "チュートリアル 無線 — 全文・クリック待ち",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_guide",
+            "label": "チュートリアル 案内枠・目標地点",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_drone_scan",
+            "label": "チュートリアル ドローンカード — 走査中 (t=0.6s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_drone",
+            "label": "チュートリアル ドローンカード",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_siren",
+            "label": "チュートリアル 緊急入電 (サイレン)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_radio_hq",
+            "label": "チュートリアル 無線機 (HQ)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_demo_click",
+            "label": "チュートリアル 手本のクリック表示",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_operator_card",
+            "label": "配置ブリーフィング 隊員カード (イグニス)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_objective",
+            "label": "チュートリアル 現在の目標 (移動)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_objective_fire",
+            "label": "チュートリアル 現在の目標 (射撃) · ポインター案内",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "engage_forecast",
+            "label": "先制攻撃 交戦予測 — 敵撃破予測",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "engage_forecast_ally_down",
+            "label": "先制攻撃 交戦予測 — 味方撃破予測",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_wall_card",
+            "label": "チュートリアル 壁の種類 (三種類)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_wall_card_shot",
+            "label": "チュートリアル 壁の種類 (貫通)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "deploy_wall_intel",
+            "label": "配置 — 偵察情報 (強化壁・電気)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hud_hint_undrop",
+            "label": "HUD — 案内バー 降下取り消し (ボタン2つ)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "engage_aim",
+            "label": "交戦予測 — 攻撃の照準中",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "squad_callout",
+            "label": "分隊無線 — ドローンが敵を捕捉 (フレア)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_skip",
+            "label": "チュートリアル スキップボタン",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "tutorial_skip_hold",
+            "label": "チュートリアル スキップボタン — 長押し中 (50%)",
+            "count": 0,
+            "issues": []
+        }
+    ]
+}

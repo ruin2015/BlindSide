@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb2f45441b7375b41b0bef21709b321e, type: 3}
+  m_Name: Weapon_M870
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
+  key: M870
+  weaponName: "M870 \u6563\u5F3E\u9283"
+  weaponClass: SG
+  damage: 11
+  shots: 6
+  accuracy: 62
+  range: 4
+  mobility: 0
+  breach: 1
+  accuracyFalloffPerTile: 16
+  damageFalloffStart: 3
+  damageFalloffPerTile: 12
+  minDamagePercent: 30
+  model: {fileID: 919132149155446097, guid: b7f24db44b5ff68439c81c4775cd43ca, type: 3}
+  modelForwardSign: -1
+  modelLength: 1
+  gripFromRear: 0.23
+  gripHeight: 0.45
+  foregripFromRear: 0.6
+  foregripHeight: 0.55
+  foregripRoll: 0
+  sightHeight: 0.72
+  buttHeight: 0.4

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f67f23dbc4789d647b5f3effd14abb85, type: 3}
+  m_Name: Operator_FLARE
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.OperatorData
+  key: FLARE
+  kr: "\u30D5\u30EC\u30A2"
+  role: "\u9060\u8DDD\u96E2\u30D6\u30EA\u30FC\u30C1\u30E3\u30FC"
+  team: 0
+  hp: 100
+  mv: 3
+  weapon: {fileID: 11400000, guid: f6baa203d5d1d7746859a9853974ede8, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: f6baa203d5d1d7746859a9853974ede8, type: 2}
+  - {fileID: 11400000, guid: 4a63a8208aa3be1499110999d6f80184, type: 2}
+  abilityKey: launcher
+  abilityName: "\u30D6\u30EA\u30FC\u30C1\u30F3\u30B0\u30E9\u30F3\u30C1\u30E3\u30FC"
+  charges: 4
+  color: {r: 0.972549, g: 0.34901962, b: 0.30980393, a: 1}
+  description: "\u9060\u8DDD\u96E2\u304B\u3089\u7206\u767A\u7269\u3092\u767A\u5C04\u3057\u3066\u58C1\u30FB\u5F37\u5316\u58C1\u306B\u7A74\u3092\u958B\u3051\u308B\u3002\u8996\u754C\u306E\u307F\u958B\u304D\u3001\u901A\u884C\u306F\u4E0D\u53EF\u3002"
+  modelPrefab: {fileID: 919132149155446097, guid: 22d67a7b6891746458be88bf431a9849, type: 3}
+  animationProfile: {fileID: 11400000, guid: f4bdec661c9a99e46902d5440aef93de, type: 2}

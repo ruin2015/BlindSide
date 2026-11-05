@@ -1,0 +1,116 @@
+{
+    "screenW": 1920,
+    "screenH": 1080,
+    "total": 4,
+    "groupCount": 4,
+    "unmatched": [
+        "Chip ×12",
+        "CornerBrackets ×1",
+        "CutCornerGraphic ×3",
+        "HazardStripe ×5",
+        "HudController ×1",
+        "IntroCaption ×1",
+        "KitBannerStrip ×1",
+        "KitCommandMenu ×1",
+        "KitRoster ×1",
+        "KitShadow ×3",
+        "KitSweep ×8",
+        "KitTint ×7",
+        "LetterboxBars ×1",
+        "LintIgnoreClip ×13",
+        "SegmentedBar ×5",
+        "SlantedGraphic ×59",
+        "SlantedMask ×6",
+        "TacticalPanel ×33",
+        "UIContactAlert ×1",
+        "UIGlitchImage ×7",
+        "UIGlitchName ×2",
+        "UIGlitchText ×5",
+        "UIHeadshotBadge ×1",
+        "UIPhaseBanner ×1",
+        "UIPulse ×1",
+        "UIScreenFX ×1",
+        "UIThemeCanvas ×3"
+    ],
+    "states": [
+        {
+            "state": "BlindsideHUD",
+            "label": "ScreenSpaceOverlay, order -1",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "BlindsideCanvas",
+            "label": "ScreenSpaceOverlay, order 0",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "GameplayUIBridge_Canvas",
+            "label": "ScreenSpaceOverlay, order 0",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "Marks_Canvas",
+            "label": "ScreenSpaceOverlay, order 1",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "PlayerSelection_Canvas",
+            "label": "ScreenSpaceOverlay, order 5",
+            "count": 4,
+            "issues": [
+                {
+                    "state": "PlayerSelection_Canvas",
+                    "kind": "offscreen",
+                    "element": "MatchBootstrap/PlayerSelection_Canvas/MoveHud/EndedTags/HostageLabel",
+                    "position": "x1548.2 y1327.6 39.6x16.2",
+                    "measured": "1548.2,1327.6 → 1587.8,1343.8",
+                    "expected": "within 0,0 → 1920,1080",
+                    "severity": 395.79998779296877
+                },
+                {
+                    "state": "PlayerSelection_Canvas",
+                    "kind": "offscreen",
+                    "element": "MatchBootstrap/PlayerSelection_Canvas/MoveHud/EndedTags/HostageLabel/Border",
+                    "position": "x1548.2 y1327.6 3.2x16.2",
+                    "measured": "1548.2,1327.6 → 1551.4,1343.8",
+                    "expected": "within 0,0 → 1920,1080",
+                    "severity": 395.79998779296877
+                },
+                {
+                    "state": "PlayerSelection_Canvas",
+                    "kind": "offscreen",
+                    "element": "MatchBootstrap/PlayerSelection_Canvas/MoveHud/EndedTags/HostageLabel/Text",
+                    "position": "x1556.7 y1328.7 25.8x14.1",
+                    "measured": "1556.7,1328.7 → 1582.5,1342.8",
+                    "expected": "within 0,0 → 1920,1080",
+                    "severity": 394.20001220703127
+                },
+                {
+                    "state": "PlayerSelection_Canvas",
+                    "kind": "clipped",
+                    "element": "MatchBootstrap/PlayerSelection_Canvas/MoveHud/EndedTags/HostageLabel",
+                    "position": "x1548.2 y1327.6 39.6x16.2",
+                    "measured": "x1548.2 y1327.6 39.6x16.2 (over by 263.8)",
+                    "expected": "inside parent x0 y0 1920x1080",
+                    "severity": 263.79998779296877
+                }
+            ]
+        },
+        {
+            "state": "BattleDirector_Canvas",
+            "label": "ScreenSpaceOverlay, order 6",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "ScreenFXCanvas",
+            "label": "ScreenSpaceOverlay, order 32767",
+            "count": 0,
+            "issues": []
+        }
+    ]
+}

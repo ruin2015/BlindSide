@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f67f23dbc4789d647b5f3effd14abb85, type: 3}
+  m_Name: Operator_OBSIDIAN
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.OperatorData
+  key: OBSIDIAN
+  kr: "\u30C6\u30ED\u30EA\u30B9\u30C8"
+  role: "\u60C5\u5831"
+  team: 1
+  hp: 140
+  mv: 1
+  weapon: {fileID: 11400000, guid: ddc85ad36f5c63c489aca3e3a4b1c318, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: ddc85ad36f5c63c489aca3e3a4b1c318, type: 2}
+  - {fileID: 11400000, guid: c0bf6070590f7944fa268f3087fe147f, type: 2}
+  abilityKey: mirror
+  abilityName: "\u30D6\u30E9\u30C3\u30AF\u30DF\u30E9\u30FC"
+  charges: 2
+  color: {r: 1, g: 0.05490196, b: 0.105882354, a: 1}
+  description: "\u96A3\u63A5\u3059\u308B\u58C1\u306B\u7247\u9762\u9632\u5F3E\u30DF\u30E9\u30FC\u3092\u8A2D\u7F6E\u3059\u308B\u3002\u9632\u885B\u30C1\u30FC\u30E0\u3060\u3051\u304C\u5411\u3053\u3046\u5074\u3092\u898B\u3089\u308C\u308B\u3002"
+  displayName: UNKNOWN
+  artKey: TERRORIST
+  modelPrefab: {fileID: 919132149155446097, guid: 5c4e85400aca3144982183230c40b87c, type: 3}
+  animationProfile: {fileID: 11400000, guid: 27ab92da8bf6cb54aa8ab42771f6e675, type: 2}

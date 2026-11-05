@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f67f23dbc4789d647b5f3effd14abb85, type: 3}
+  m_Name: Operator_CRUSHER
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.OperatorData
+  key: CRUSHER
+  kr: "\u30AF\u30E9\u30C3\u30B7\u30E3\u30FC"
+  role: "\u30D6\u30EA\u30FC\u30C1\u30E3\u30FC"
+  team: 0
+  hp: 120
+  mv: 2
+  weapon: {fileID: 11400000, guid: 154b52bd39b058247aa0b5e9c2ed6147, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: 154b52bd39b058247aa0b5e9c2ed6147, type: 2}
+  - {fileID: 11400000, guid: f25e44da0e7128a4697fefcb3e33a18a, type: 2}
+  abilityKey: hammer
+  abilityName: "\u30D6\u30EA\u30FC\u30C1\u30F3\u30B0\u30CF\u30F3\u30DE\u30FC"
+  charges: 5
+  color: {r: 0.91764706, g: 0.6862745, b: 0.1254902, a: 1}
+  description: "\u96A3\u63A5\u3059\u308B\u901A\u5E38\u306E\u58C1\u3092\u30CF\u30F3\u30DE\u30FC\u3067\u7834\u58CA\u3057\u3001\u901A\u308C\u308B\u65B0\u3057\u3044\u901A\u8DEF\u3092\u4F5C\u308B\u3002"
+  modelPrefab: {fileID: 919132149155446097, guid: efba0771686036947a214ffc8d30085d, type: 3}
+  animationProfile: {fileID: 11400000, guid: 515d99212d25f3f4aa1e2237e2b927c1, type: 2}

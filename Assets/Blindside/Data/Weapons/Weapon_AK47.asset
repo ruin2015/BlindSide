@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb2f45441b7375b41b0bef21709b321e, type: 3}
+  m_Name: Weapon_AK47
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
+  key: AK47
+  weaponName: "AK47 \u7A81\u6483\u9283"
+  weaponClass: AR
+  damage: 24
+  shots: 3
+  accuracy: 70
+  range: 8
+  mobility: -0.5
+  breach: 0
+  accuracyFalloffPerTile: 12
+  damageFalloffStart: 9
+  damageFalloffPerTile: 4
+  minDamagePercent: 70
+  model: {fileID: 919132149155446097, guid: 8526720893ce7904f9e5055f789d4e7c, type: 3}
+  modelForwardSign: -1
+  modelLength: 0.9
+  gripFromRear: 0.29
+  gripHeight: 0.4
+  foregripFromRear: 0.62
+  foregripHeight: 0.52
+  foregripRoll: 60
+  sightHeight: 0.75
+  buttHeight: 0.5

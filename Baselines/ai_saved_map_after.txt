@@ -1,0 +1,13 @@
+# map=저장맵 세 개의 방 30x22
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=2001 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=5 deaths=[VOLT,atk4,atk1] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=s+e]
+seed=2002 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=7 deaths=[atk2,atk1,atk4,atk5] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=s+e]
+seed=2003 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=9 deaths=[atk2,atk4,atk3,VOLT,OBSIDIAN,atk5] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=e+w]
+seed=2004 winner=DefenseWins reason="공격팀 전원이 제압되었습니다." rounds=5 deaths=[atk4,atk1,atk3,atk5,VOLT,WRAITH,atk2] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=n+s]
+seed=2005 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=9 deaths=[atk2,atk3,MIASMA,atk4,atk5] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=s+w]
+seed=2006 winner=DefenseWins reason="공격팀 전원이 제압되었습니다." rounds=5 deaths=[VOLT,atk3,atk2,ARGUS,atk1,WRAITH,atk4,atk5] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=n+e]
+seed=2007 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=6 deaths=[atk2,atk4,atk1] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=e+s]
+seed=2008 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=9 deaths=[WRAITH,atk4,atk2,MIASMA,atk3] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=s+w]
+seed=2009 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=7 deaths=[atk2,atk4,atk1] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=e+w]
+seed=2010 winner=AttackWins reason="인질을 구출 지점까지 무사히 호송했습니다." rounds=7 deaths=[atk4,atk2,atk1,atk5] prep=[R=10 E=2(17,18)(11,10) C=2(18,8)(14,16) M=(11,11)] drop=[zones n/s/w/e=126/73/63/105 used=n+w]
+# attackWins=8 defenseWins=2 exceptions=0 unfinished=0 maxRounds=9 over15=0

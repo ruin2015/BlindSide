@@ -1,0 +1,11 @@
+# map=基本邸宅 26x20
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=1001 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=5 deaths=[atk2,MIASMA,OBSIDIAN,atk1,WRAITH,VOLT,ARGUS] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(8,9)MIASMA(17,10)] drop=[zones n/s/w/e=82/18/28/28 used=e+s]
+seed=1002 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=4 deaths=[atk4,atk2,atk1,atk3,atk5] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(18,10)MIASMA(10,9)] drop=[zones n/s/w/e=82/18/28/28 used=w+s]
+seed=1003 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[atk3,MIASMA,atk2] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(8,9)MIASMA(17,10)] drop=[zones n/s/w/e=82/18/28/28 used=w+s]
+seed=1004 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[atk4,atk2,atk3,atk1] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(17,8)MIASMA(7,10)] drop=[zones n/s/w/e=82/18/28/28 used=w+s]
+seed=1005 winner=AttackWins reason="人質を救出地点まで無事に護送しました。" rounds=9 deaths=[MIASMA,ARGUS,WRAITH,atk4,atk2,OBSIDIAN,atk3] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(19,10)MIASMA(8,9)] drop=[zones n/s/w/e=82/18/28/28 used=s+w]
+seed=1006 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=6 deaths=[VOLT,ARGUS,atk4,MIASMA,atk3,atk1,atk2,atk5] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(19,10)MIASMA(7,10)] drop=[zones n/s/w/e=82/18/28/28 used=w+e]
+seed=1007 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=7 deaths=[atk2,MIASMA,ARGUS,atk1,atk3,atk4,WRAITH,atk5] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(8,9)MIASMA(19,9)] drop=[zones n/s/w/e=82/18/28/28 used=w+e]
+seed=1008 winner=DefenseWins reason="制限時間が終了しました。攻撃チームは人質を救出できませんでした。" rounds=16 deaths=[atk1,VOLT] prep=[R=10 E=2(11,14)(15,16) C=2(8,12)(19,15) M=(14,13) P=2VOLT(17,9)MIASMA(8,10)] drop=[zones n/s/w/e=82/18/28/28 used=w+e]
+# attackWins=2 defenseWins=6 exceptions=0 unfinished=0 maxRounds=16 over15=3

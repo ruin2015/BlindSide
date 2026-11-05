@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29b2e8802c6f508479d3e620217736c9, type: 3}
+  m_Name: BattleCamProfile
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Cinematic.BattleCamProfile
+  cameraHeight: 2.4
+  distanceFactor: 0.9
+  distanceOffset: 3
+  minDistance: 4.5
+  maxDistance: 14
+  fov: 30
+  normalFov: 38
+  shooterScreenX: 0.33333334
+  frameHeight: 0.75
+  candidateDistanceScales:
+  - 1
+  - 0.8
+  - 1.25
+  enterSeconds: 0.4
+  exitSeconds: 0.4
+  hitCutSeconds: 0.25
+  counterSeconds: 0.25
+  manyShotThreshold: 4
+  hitCutDistance: 3.2
+  hitCutHeight: 1.7
+  headshotFov: 22
+  headshotDistance: 2.2
+  headshotSeconds: 0.45
+  headshotBlendIn: 0.08
+  headshotSlowmoScale: 0.3
+  headshotSlowmoSeconds: 0.35
+  zoomPunchFactor: 0.93
+  zoomPunchSeconds: 0.32
+  deathSlowmoScale: 0.25
+  deathSlowmoSeconds: 0.5
+  deathOrbitDegrees: 25
+  deathOrbitSeconds: 0.9
+  kiaSeconds: 1.3
+  shotShake: 0.03
+  headshotShake: 0.08
+  letterboxHeight: 0.08
+  mapDarkness: 0.6
+  saturation: -25
+  hudAlpha: 0.25
+  occluderAlpha: 0.25
+  useBattleStage: 1
+  stageZoomSeconds: 0.3
+  stageZoomHold: 0.6
+  stageZoomDistance: 3.4
+  stageZoomHeight: 1.6
+  stageZoomFov: 26
+  stageFadeOutSeconds: 0.3
+  stageFadeInSeconds: 0.3
+  stageShotSeconds: 0.34
+  stageBurstShotSeconds: 0.14
+  stageDeathSeconds: 1.2
+  stageFov: 30
+  shortZoomFov: 34

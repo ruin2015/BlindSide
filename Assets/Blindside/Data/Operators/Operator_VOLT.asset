@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f67f23dbc4789d647b5f3effd14abb85, type: 3}
+  m_Name: Operator_VOLT
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.OperatorData
+  key: VOLT
+  kr: "\u30C6\u30ED\u30EA\u30B9\u30C8"
+  role: "\u96FB\u5B50\u6226"
+  team: 1
+  hp: 120
+  mv: 2
+  weapon: {fileID: 11400000, guid: ddc85ad36f5c63c489aca3e3a4b1c318, type: 2}
+  weapons:
+  - {fileID: 11400000, guid: ddc85ad36f5c63c489aca3e3a4b1c318, type: 2}
+  - {fileID: 11400000, guid: c0bf6070590f7944fa268f3087fe147f, type: 2}
+  abilityKey: shock
+  abilityName: "\u30B7\u30E7\u30C3\u30AF\u30EF\u30A4\u30E4\u30FC"
+  charges: 5
+  color: {r: 0.9372549, g: 0.50980395, b: 0.007843138, a: 1}
+  description: "\u5186\u5F62\u306E\u96FB\u754C\u3092\u8A2D\u7F6E\u3059\u308B\u3002\u7BC4\u56F2\u5185\u306E\u6575\u30AC\u30B8\u30A7\u30C3\u30C8\u3092\u7834\u58CA\u3057\u3001\u5F37\u5316\u58C1\u306B\u96FB\u6D41\u3092\u6D41\u3057\u3066\u7206\u85AC\u306E\u8A2D\u7F6E\u3092\u59A8\u3052\u308B\u3002"
+  displayName: UNKNOWN
+  artKey: TERRORIST
+  modelPrefab: {fileID: 919132149155446097, guid: 5c4e85400aca3144982183230c40b87c, type: 3}
+  animationProfile: {fileID: 11400000, guid: 27ab92da8bf6cb54aa8ab42771f6e675, type: 2}

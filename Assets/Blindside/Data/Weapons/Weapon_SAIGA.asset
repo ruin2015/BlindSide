@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb2f45441b7375b41b0bef21709b321e, type: 3}
+  m_Name: Weapon_SAIGA
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
+  key: SAIGA
+  weaponName: "SAIGA \u6563\u5F3E\u9283"
+  weaponClass: SG
+  damage: 9
+  shots: 7
+  accuracy: 58
+  range: 4
+  mobility: -0.5
+  breach: 1
+  accuracyFalloffPerTile: 16
+  damageFalloffStart: 3
+  damageFalloffPerTile: 12
+  minDamagePercent: 30
+  model: {fileID: 919132149155446097, guid: 3b7b625174f084e4cab725547a5ccbae, type: 3}
+  modelForwardSign: -1
+  modelLength: 0.95
+  gripFromRear: 0.3
+  gripHeight: 0.38
+  foregripFromRear: 0.67
+  foregripHeight: 0.62
+  foregripRoll: 0
+  sightHeight: 0.8
+  buttHeight: 0.5

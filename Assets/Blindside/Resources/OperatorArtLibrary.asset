@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 976bf4b7424c3f34793c8da6addb0483, type: 3}
+  m_Name: OperatorArtLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.UI.OperatorArtLibrary
+  entries:
+  - key: BASTION
+    body: {fileID: 21300000, guid: 123851b3a868086428deb284bf8d1638, type: 3}
+    face: {fileID: 21300000, guid: dcda9c057e9fcc641b9306781a3d5d25, type: 3}
+  - key: CRUSHER
+    body: {fileID: 21300000, guid: 63f5f61ae994d27479a26582b2efb650, type: 3}
+    face: {fileID: 21300000, guid: 3ac46365a5e06c946983eaaf7dc936f3, type: 3}
+  - key: FLARE
+    body: {fileID: 21300000, guid: 1ec1968c2c82ce44990afb7a2191f443, type: 3}
+    face: {fileID: 21300000, guid: d810796e70eb0be4781fff4418a2cd88, type: 3}
+  - key: IGNIS
+    body: {fileID: 21300000, guid: 6bb657b669f5b6048af7ac6d5f7cd76a, type: 3}
+    face: {fileID: 21300000, guid: 12e1b0c833ed4a3479e8e8fcaae0d45b, type: 3}
+  - key: SERUM
+    body: {fileID: 21300000, guid: af900bc8e2ce0e344929542b5b63c5eb, type: 3}
+    face: {fileID: 21300000, guid: 8a63ba775f61c40459b1e5a8b79cf093, type: 3}
+  - key: TERRORIST
+    body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
+    face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}
+  - key: ARGUS
+    body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
+    face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}
+  - key: MIASMA
+    body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
+    face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}
+  - key: OBSIDIAN
+    body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
+    face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}
+  - key: VOLT
+    body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
+    face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}
+  - key: WRAITH
+    body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
+    face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}
