@@ -61,6 +61,24 @@ namespace Blindside.UITools.EditorTools
         public static void BuildFilling(UIPreview.Stage s) => Build(s, OperationResultScreen.ResultStart + 1.6f);
         public static void BuildFinal(UIPreview.Stage s) => Build(s, OperationResultScreen.ResultStart + OperationResultScreen.ButtonAt + 1f);
 
+        public const string Growth = "growth_panel";
+
+        /// <summary>growth_panel: the HQ's growth panel on CRUSHER (Lv 3, 4 points left, some already given, AR15 mastery Lv 4) over the title.</summary>
+        public static void BuildGrowth(UIPreview.Stage s)
+        {
+            UIPreview.BuildTitleAttack(s);
+            var canvas = s.NewCanvas("Growth_Canvas", UITheme.CanvasKind.Menu, 50);
+            var root = Blindside.UI.HudKit.NewRect("Screen", canvas.transform);
+            Blindside.UI.HudKit.Stretch(root);
+            var d = Blindside.Save.SaveData.Fresh();
+            var p = d.OperatorOf("CRUSHER"); p.level = 3; p.exp = 180; p.points = 4; p.hp = 1; p.atk = 1;
+            var op = BuildAssetRegistry.Operator("CRUSHER");
+            var gun = op != null ? Loadout.Of(op, false) : null;
+            var w = d.WeaponOf(gun != null ? gun.key : ""); w.level = 4; w.exp = 60;
+            var panel = KitGrowthPanel.Build(root);
+            panel.Open(op, d);
+        }
+
         [MenuItem("Blindside/UI/Measure Result GC")]
         public static void MeasureGc()
         {

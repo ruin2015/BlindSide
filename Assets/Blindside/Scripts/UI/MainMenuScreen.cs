@@ -103,6 +103,7 @@ namespace Blindside.UI
             if (ModalDialog.Any || (MapBrowserWindow.Instance != null && MapBrowserWindow.Instance.gameObject.activeInHierarchy)) return;
             var options = title.GetComponentInChildren<KitOptionsPanel>(false);
             if (options != null && options.IsOpen) return;
+            if (title.GrowthPanel != null && title.GrowthPanel.IsOpen) return;
             if (title.screenGroup != null && !title.screenGroup.blocksRaycasts) return;    // a sortie / the tutorial is starting
             EscapeGate.Consume();
             BackToMenu();

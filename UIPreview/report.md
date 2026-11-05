@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 03:31
+Screen 1440x810 · 0 issues · generated 2026-11-06 04:06
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -28,6 +28,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_banner | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_filling | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_final | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| growth_panel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu_test | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_confirm | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -108,48 +109,49 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 58종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 59종)
 
 - Brighten ×6
-- Chip ×516
+- Chip ×520
 - ClickRelay ×3
 - CornerBrackets ×26
-- CutCornerGraphic ×126
+- CutCornerGraphic ×130
 - EngagePreview ×3
-- HazardStripe ×177
+- HazardStripe ×180
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×36
-- KitBrighten ×24
+- KitBrighten ×38
 - KitChoice ×5
 - KitCommandMenu ×12
-- KitGradient ×10
+- KitGradient ×12
+- KitGrowthPanel ×1
 - KitMenuLogo ×6
 - KitOptionsPanel ×5
-- KitPointer ×49
+- KitPointer ×59
 - KitRoster ×33
 - KitSaveIndicator ×1
-- KitShadow ×109
+- KitShadow ×117
 - KitSlider ×6
 - KitStepper ×1
-- KitSweep ×158
+- KitSweep ×161
 - KitSwitch ×4
 - KitTextButton ×53
-- KitTint ×288
-- KitTitleLeft ×5
-- LintIgnoreClip ×814
-- LintIgnoreOverlap ×264
+- KitTint ×292
+- KitTitleLeft ×6
+- LintIgnoreClip ×854
+- LintIgnoreOverlap ×286
 - MainMenuScreen ×6
 - OperationResultScreen ×3
 - PauseMenu ×6
 - ResultScreen ×3
-- SegmentedBar ×282
-- SlantedGraphic ×2642
-- SlantedMask ×276
-- TacticalPanel ×1100
-- TitleSelectScreen ×5
+- SegmentedBar ×292
+- SlantedGraphic ×2700
+- SlantedMask ×282
+- TacticalPanel ×1105
+- TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialGuide ×3
 - TutorialObjective ×2
@@ -159,9 +161,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
 - UIContactAlert ×33
-- UIGlitchImage ×295
-- UIGlitchName ×51
-- UIGlitchText ×121
+- UIGlitchImage ×298
+- UIGlitchName ×52
+- UIGlitchText ×122
 - UIHeadshotBadge ×33
 - UIPerspective ×3
 - UIPerspectiveVertex ×150
@@ -186,6 +188,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_banner | 1440x810 | 作戦成功 — バナー (t=1.0s) |
 | result_filling | 1440x810 | 作戦結果 — 経験値の加算中 |
 | result_final | 1440x810 | 作戦結果 — 完了 (昇進・LEVEL UP) |
+| growth_panel | 1440x810 | 隊員強化 (本部) |
 | pause_menu | 1440x810 | ゲームメニュー (ESC) |
 | pause_menu_test | 1440x810 | ゲームメニュー — テストプレイ |
 | pause_confirm | 1440x810 | ゲームメニュー — タイトルへ確認 |

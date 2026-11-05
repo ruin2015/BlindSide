@@ -144,7 +144,14 @@ namespace Blindside.UI
             optionsPanel = KitOptionsPanel.Build(screenGroup.transform);
             KitOptionsPanel.CreateOpener(screenGroup.transform, optionsPanel);
             optionsPanel.transform.SetAsLastSibling();
+            // the operator growth panel: a click on a squad row opens it (KitTitleSquad.RowClicked)
+            growthPanel = KitGrowthPanel.Build(screenGroup.transform);
+            if (kitSquad != null) kitSquad.RowClicked += op => { if (Application.isPlaying) growthPanel.Open(op); };
         }
+
+        KitGrowthPanel growthPanel;
+        /// <summary>The growth panel (MainMenuScreen leaves ESC to it while it is open).</summary>
+        public KitGrowthPanel GrowthPanel => growthPanel;
 
         public void OpenMapEditor()
         {

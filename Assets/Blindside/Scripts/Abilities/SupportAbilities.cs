@@ -20,7 +20,7 @@ namespace Blindside.Abilities
             var a = target.Ally;
             int hpAdded = Mathf.Min(a.MaxHP, a.HP + 50) - a.HP;
             a.HP = Mathf.Min(a.MaxHP, a.HP + 50);
-            float moveAdded = Blindside.Data.WeaponData.MoveRangeOf(a.Mv, a.Weapon) * 0.5f;
+            float moveAdded = Blindside.Combat.CombatModifiers.MoveRange(a.Mv, a.Weapon, a) * 0.5f;
             a.MoveLeft += moveAdded;
             a.Stim = true;
             if (a is Blindside.Turns.ITurnUnit tu) tu.Ended = false;   // a.ended=false: an ended ally can move again

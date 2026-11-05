@@ -89,7 +89,7 @@ namespace Blindside.Turns
         /// <summary>Fires once, the first time CheckWin finds a terminal condition — port of finish()'s `if(G.over) return` guard.</summary>
         public event System.Action<MatchResult, string> OnFinish;
 
-        static float MoveRange(ITurnUnit u) => Blindside.Data.WeaponData.MoveRangeOf(u.Mv, u.Weapon);
+        static float MoveRange(ITurnUnit u) => Blindside.Combat.CombatModifiers.MoveRange(u.Mv, u.Weapon, u);   // (+ 機動力)
 
         static OperatorTeam? TeamForPhase(MatchPhase phase) => phase switch
         {

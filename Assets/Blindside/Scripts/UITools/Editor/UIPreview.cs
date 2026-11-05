@@ -53,6 +53,7 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewResult.Banner, label = "作戦成功 — バナー (t=1.0s)", build = UIPreviewResult.BuildBanner },
             new State { name = UIPreviewResult.Filling, label = "作戦結果 — 経験値の加算中", build = UIPreviewResult.BuildFilling },
             new State { name = UIPreviewResult.Final, label = "作戦結果 — 完了 (昇進・LEVEL UP)", build = UIPreviewResult.BuildFinal },
+            new State { name = UIPreviewResult.Growth, label = "隊員強化 (本部)", build = UIPreviewResult.BuildGrowth },
             new State { name = UIPreviewPause.Menu, label = "ゲームメニュー (ESC)", build = UIPreviewPause.BuildMenu },
             new State { name = UIPreviewPause.MenuTest, label = "ゲームメニュー — テストプレイ", build = UIPreviewPause.BuildMenuTest },
             new State { name = UIPreviewPause.Confirm, label = "ゲームメニュー — タイトルへ確認", build = UIPreviewPause.BuildConfirm },

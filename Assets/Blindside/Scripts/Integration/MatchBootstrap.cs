@@ -18,8 +18,13 @@ using Blindside.Cinematic;
 
 namespace Blindside.Integration
 {
-    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable
+    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers
     {
+        // growth (Progress.ProgressBonus: the player's operators in a real match); neutral for everyone else
+        public float DamageScale { get; set; } = 1f;
+        public float AccuracyBonus { get; set; }
+        public float DamageTakenScale { get; set; } = 1f;
+        public float MoveBonus { get; set; }
         public string Id { get; set; }
         // X/Y/Facing/Alive raise Changed when their value actually changes — the cue for anything that
         // derives from them (the vision polygon) to recompute instead of polling every frame.
@@ -408,6 +413,9 @@ namespace Blindside.Integration
                 if (gun != null) u.Weapon = gun;
                 u.AbilityKey = u.Op.abilityKey; u.Charges = u.Op.charges;
             }
+            // the player's operators grow (levels' stat points, weapon mastery) — a real match with a save session only
+            if (playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest)
+                foreach (var u in units) if (u.Team == playerTeam.Value) Blindside.Progress.ProgressBonus.Apply(u);
 
             // startGame() (attack side): `for(const a of G.units) if(a.team==='atk') a.placed=false` — the squad is
             // still aboard the helicopter: not in the scene, no sight, until it is dropped in the deploy phase.

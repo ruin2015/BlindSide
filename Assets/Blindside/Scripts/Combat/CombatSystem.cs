@@ -159,6 +159,7 @@ namespace Blindside.Combat
             if (d > w.range) c -= (d - w.range) * w.accuracyFalloffPerTile;
             c -= path.Walls * 22f;
             if (preempt) c += 15f;
+            if (attacker is ICombatModifiers m && m.AccuracyBonus != 0f) c += m.AccuracyBonus;   // growth (精密力 / mastery)
             return JsRound(c, 5, 95);
         }
 
@@ -272,6 +273,9 @@ namespace Blindside.Combat
             int hsChance = HeadshotChance(attacker, target, path, preempt);
             // the gun's damage at this distance (its own falloff curve), ×1.4 on a preemptive shot
             int dmg = Mathf.RoundToInt(w.DamageAt(w.damage, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
+            // growth: the shooter's 攻撃力 / mastery, the target's 防御力 (only when set: a unit without growth keeps the exact numbers)
+            if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+            float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
             bool blocked = ShieldBlocks(target, attacker);
 
             // combatShow(a,t,chance,dmg,w.shots,o.preempt,tr.walls,blocked,blocked?0:hsC); await sleep(700);
@@ -303,6 +307,7 @@ namespace Blindside.Combat
                     {
                         crit = Blindside.Core.GameRng.Range(0f, 100f) < hsChance;
                         int d = crit ? dmg * 2 : dmg;
+                        if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
                         dealt = d;
                         hits++; total += d;
                         target.HP = Mathf.Max(FloorHP, target.HP - d);

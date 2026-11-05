@@ -7,7 +7,8 @@
 //           the top), Name 21 display + Kana · role 12.5 (body, dim) on its baseline, Desc 12.5 one line with an ellipsis within 392,
 //           Stats 196 at the right (ink2, only its left edge leaning 22): HP and MOV, each a label 12 (#9aa3ad), a SegmentedBar 88×8
 //           (6 / 2) at HP ÷ 140 and MOV ÷ 10 in the operator colour, the value 12 ("120", "7m") right-aligned.
-//           Hover: 14 to the left in .2s and the operator goes to the spotlight (unless already there); click: the same. The shown
+//           Hover: 14 to the left in .2s and the operator goes to the spotlight (unless already there); click: the same, then RowClicked
+//           (the title opens the operator's growth panel, KitGrowthPanel). The shown
 //           operator's row stays 14 to the left with the 18 band.
 //           Entrance (sqIn): from +90 and transparent in .5s, row i after i × 65ms — when the title opens and whenever the side changes.
 // The rows follow the title's state: Bind hooks TitleSelectScreen.Changed; a new side refills the rows in roster order (GetSquad: attack
@@ -62,6 +63,9 @@ namespace Blindside.UI
         public Row[] rows = new Row[5];
 
         readonly List<OperatorData> squad = new List<OperatorData>(5);
+
+        /// <summary>A row was clicked (after it went to the spotlight): the title opens that operator's growth panel.</summary>
+        public event System.Action<OperatorData> RowClicked;
         Tween[] hoverT = new Tween[5], pickT = new Tween[5];
         float clock, enterStart = Never, headerStart = Never;
         bool running, bound;
@@ -322,7 +326,7 @@ namespace Blindside.UI
 
             var pt = panel.gameObject.AddComponent<KitPointer>();
             pt.onHover = on => Hover(index, on);
-            pt.onClick = () => Select(index);
+            pt.onClick = () => { Select(index); if (index < squad.Count) RowClicked?.Invoke(squad[index]); };
             return r;
         }
 

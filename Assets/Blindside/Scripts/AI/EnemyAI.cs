@@ -80,7 +80,7 @@ namespace Blindside.Turns
         static int Idx(int x, int y) => y * MapGrid.Width + x;
         bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < MapGrid.Width && y < map.Height;
         static float Dist(float ax, float ay, float bx, float by) => Mathf.Sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
-        static float MoveRange(ITurnUnit u) => WeaponData.MoveRangeOf(u.Mv, u.Weapon);
+        static float MoveRange(ITurnUnit u) => Blindside.Combat.CombatModifiers.MoveRange(u.Mv, u.Weapon, u);
 
         /// <summary>
         /// Port of distField(goals,passFn): 4-directional unit-cost BFS from a set of seed cells.

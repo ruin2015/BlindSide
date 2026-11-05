@@ -471,7 +471,7 @@ namespace Blindside.Integration
         //  commands(u)
         // ================================================================
         static string M1(float v) => (Mathf.Floor(v * 10f + 0.5f) / 10f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-        static string MoveRange(SimUnit u) => M1(WeaponData.MoveRangeOf(u.Mv, u.Weapon)).Replace(".0", "");
+        static string MoveRange(SimUnit u) => M1(Blindside.Combat.CombatModifiers.MoveRange(u.Mv, u.Weapon, u)).Replace(".0", "");
         static string SpeedOf(SimUnit u) => M1(u.Speed).Replace(".0", "");
 
         public List<Command> Commands(SimUnit u)

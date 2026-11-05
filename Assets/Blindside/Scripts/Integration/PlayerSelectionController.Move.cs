@@ -262,6 +262,9 @@ namespace Blindside.Integration
             chance = Blindside.Combat.CombatSystem.HitChance(a, t, path, preempt);
             hs = Blindside.Combat.CombatSystem.HeadshotChance(a, t, path, preempt);
             dmg = Mathf.RoundToInt(w.DamageAt(w.damage, dist) * (preempt ? 1.4f : 1f));
+            // growth, as CombatSystem.Shoot applies it
+            if (a is Blindside.Combat.ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+            if (t is Blindside.Combat.ICombatModifiers tm && tm.DamageTakenScale != 1f) dmg = Mathf.Max(1, Mathf.RoundToInt(dmg * tm.DamageTakenScale));
             if (a.ShieldUp || !Blindside.Combat.CombatSystem.CanShoot(a, t, path) || Blindside.Combat.CombatSystem.ShieldBlocks(t, a)) return 0f;
             return w.shots * (chance / 100f) * dmg * (1f + hs / 100f);
         }
