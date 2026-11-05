@@ -457,6 +457,7 @@ namespace Blindside.UI
             if (data == null) { RefreshMapSelection(); return; }
             var cat = MapCatalog.Find(MapCatalog.IdOf(selectedMap.stem));   // an exported map plays in its own scene
             deployScene = cat != null && !string.IsNullOrEmpty(cat.sceneName) ? cat.sceneName : null;
+            Blindside.Save.AutoSave.Sortie(SelectedTeam, selectedMap.IsDefault ? "" : selectedMap.stem);   // (no session: nothing)
             if (!deployWipe || !Application.isPlaying) { Launch(SelectedTeam, data, null); return; }
             // the wipe covers the screen, then the match starts as before (Launch: title away, intro); no clicks meanwhile
             deploying = true;

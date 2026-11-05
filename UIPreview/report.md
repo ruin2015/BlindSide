@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 01:08
+Screen 1440x810 · 0 issues · generated 2026-11-06 01:52
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -18,6 +18,12 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | title_attack | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_defense | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_build | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_save | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_nosave | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_logo_enter | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_confirm | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| save_indicator | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_spot_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | title_logo | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_selected | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -92,14 +98,14 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 49종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 52종)
 
-- Brighten ×2
-- Chip ×411
+- Brighten ×4
+- Chip ×416
 - CornerBrackets ×17
-- CutCornerGraphic ×62
+- CutCornerGraphic ×65
 - EngagePreview ×3
-- HazardStripe ×126
+- HazardStripe ×131
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
@@ -109,21 +115,24 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitChoice ×2
 - KitCommandMenu ×3
 - KitGradient ×10
+- KitMenuLogo ×5
 - KitOptionsPanel ×2
 - KitPointer ×49
 - KitRoster ×24
-- KitShadow ×77
-- KitSweep ×84
+- KitSaveIndicator ×1
+- KitShadow ×78
+- KitSweep ×98
 - KitSwitch ×4
 - KitTint ×225
 - KitTitleLeft ×5
-- LintIgnoreClip ×517
-- LintIgnoreOverlap ×127
+- LintIgnoreClip ×654
+- LintIgnoreOverlap ×217
+- MainMenuScreen ×5
 - ResultScreen ×3
 - SegmentedBar ×237
-- SlantedGraphic ×1967
+- SlantedGraphic ×1999
 - SlantedMask ×222
-- TacticalPanel ×798
+- TacticalPanel ×812
 - TitleSelectScreen ×5
 - TutorialDroneCard ×2
 - TutorialGuide ×3
@@ -151,6 +160,12 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | title_attack | 1440x810 | タイトル — 攻撃選択 |
 | title_defense | 1440x810 | タイトル — 防衛選択 |
 | title_build | 1440x810 | タイトル — ビルド (マップエディタなし) |
+| menu_save | 1440x810 | メインメニュー — セーブあり |
+| menu_nosave | 1440x810 | メインメニュー — セーブなし |
+| menu_logo_enter | 1440x810 | メインメニュー — ロゴ登場 (t=0.3s) |
+| menu_glitch | 1440x810 | メインメニュー — ロゴ グリッチ |
+| menu_confirm | 1440x810 | メインメニュー — 上書き確認 |
+| save_indicator | 1440x810 | オートセーブ表示 (t=0.8s) |
 | title_spot_glitch | 1440x810 | タイトル — スポットライト グリッチ (t=0.21s) |
 | title_logo | 1440x810 | タイトル — ロゴ演出 (t=0.3s) |
 | hud_selected | 1440x810 | HUD — 隊員選択 (CRUSHER) |

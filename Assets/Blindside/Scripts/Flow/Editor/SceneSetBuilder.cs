@@ -3,6 +3,7 @@
 //      each a copy of Assets/Scenes/SampleScene.unity with its SceneEntry; a scene that already exists is left alone (it may have been
 //      edited since). Also the flow settings and the map catalog under Resources, and the Build Settings.
 //  Blindside > Scenes > Strip Title Scene — removes the match systems / world / intro / HUD from the title scene (done on creation too).
+//  Blindside > Scenes > Add Main Menu to Title — the main menu (MainMenuScreen) over the select screen (done on creation too).
 //  Blindside > Scenes > Apply Build Settings —Title first, Tutorial, Battle, then every listed catalog map's scene; never MapEditor.
 //  Blindside > Scenes > Export Saved Map to Map Scene… — a map saved by the map editor (persistentDataPath/Maps/*.json) becomes
 //      Assets/Blindside/Maps/{id}.json + Assets/Blindside/Scenes/Maps/{id}.unity (a copy of Battle playing it) + a catalog entry, so a build
@@ -81,7 +82,7 @@ namespace Blindside.Flow.EditorTools
             var entry = go.AddComponent<SceneEntry>();
             entry.role = role;
             go.transform.SetSiblingIndex(0);
-            if (role == SceneRole.Title) StripTitle(scene);
+            if (role == SceneRole.Title) { StripTitle(scene); EnsureMainMenu(scene); }
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             return true;
@@ -127,6 +128,41 @@ namespace Blindside.Flow.EditorTools
                 n++;
             }
             return n;
+        }
+
+        [MenuItem("Blindside/Scenes/Add Main Menu to Title")]
+        public static void AddMainMenuToTitle()
+        {
+            if (EditorApplication.isPlaying) { Debug.LogWarning("[SceneSet] leave Play mode first"); return; }
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            string path = PathOf(Settings().titleScene);
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) { Debug.LogWarning("[SceneSet] missing " + path); return; }
+            string back = EditorSceneManager.GetActiveScene().path;
+            var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+            bool added = EnsureMainMenu(scene);
+            if (added) { EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); }
+            if (!string.IsNullOrEmpty(back) && back != path) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+            Debug.Log(added ? "[SceneSet] title scene: main menu added" : "[SceneSet] title scene already has its main menu");
+        }
+
+        // the main menu (Blindside.UI.MainMenuScreen): an empty full-screen object, last under the title canvas (over the select screen);
+        // it builds itself when the scene plays
+        static bool EnsureMainMenu(UnityEngine.SceneManagement.Scene scene)
+        {
+            var roots = scene.GetRootGameObjects();
+            foreach (var r in roots)
+                if (r.GetComponentInChildren<Blindside.UI.MainMenuScreen>(true) != null) return false;
+            var canvas = roots.FirstOrDefault(r => r.name == "BlindsideCanvas");
+            if (canvas == null) { Debug.LogWarning("[SceneSet] no BlindsideCanvas in " + scene.path); return false; }
+            var go = new GameObject("MainMenu", typeof(RectTransform));
+            go.layer = canvas.layer;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(canvas.transform, false);
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero;
+            rt.SetAsLastSibling();
+            var menu = go.AddComponent<Blindside.UI.MainMenuScreen>();
+            menu.title = canvas.GetComponentInChildren<Blindside.UI.TitleSelectScreen>(true);
+            return true;
         }
 
         [MenuItem("Blindside/Scenes/Apply Build Settings")]

@@ -4,12 +4,12 @@
     "total": 0,
     "groupCount": 0,
     "unmatched": [
-        "Brighten ×2",
-        "Chip ×411",
+        "Brighten ×4",
+        "Chip ×416",
         "CornerBrackets ×17",
-        "CutCornerGraphic ×62",
+        "CutCornerGraphic ×65",
         "EngagePreview ×3",
-        "HazardStripe ×126",
+        "HazardStripe ×131",
         "IntroBriefing ×3",
         "IntroHoloScreen ×1",
         "IntroSubtitle ×6",
@@ -19,21 +19,24 @@
         "KitChoice ×2",
         "KitCommandMenu ×3",
         "KitGradient ×10",
+        "KitMenuLogo ×5",
         "KitOptionsPanel ×2",
         "KitPointer ×49",
         "KitRoster ×24",
-        "KitShadow ×77",
-        "KitSweep ×84",
+        "KitSaveIndicator ×1",
+        "KitShadow ×78",
+        "KitSweep ×98",
         "KitSwitch ×4",
         "KitTint ×225",
         "KitTitleLeft ×5",
-        "LintIgnoreClip ×517",
-        "LintIgnoreOverlap ×127",
+        "LintIgnoreClip ×654",
+        "LintIgnoreOverlap ×217",
+        "MainMenuScreen ×5",
         "ResultScreen ×3",
         "SegmentedBar ×237",
-        "SlantedGraphic ×1967",
+        "SlantedGraphic ×1999",
         "SlantedMask ×222",
-        "TacticalPanel ×798",
+        "TacticalPanel ×812",
         "TitleSelectScreen ×5",
         "TutorialDroneCard ×2",
         "TutorialGuide ×3",
@@ -70,6 +73,42 @@
         {
             "state": "title_build",
             "label": "タイトル — ビルド (マップエディタなし)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_save",
+            "label": "メインメニュー — セーブあり",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_nosave",
+            "label": "メインメニュー — セーブなし",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_logo_enter",
+            "label": "メインメニュー — ロゴ登場 (t=0.3s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_glitch",
+            "label": "メインメニュー — ロゴ グリッチ",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_confirm",
+            "label": "メインメニュー — 上書き確認",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "save_indicator",
+            "label": "オートセーブ表示 (t=0.8s)",
             "count": 0,
             "issues": []
         },

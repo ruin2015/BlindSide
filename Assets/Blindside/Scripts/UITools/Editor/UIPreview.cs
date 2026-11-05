@@ -43,6 +43,12 @@ namespace Blindside.UITools.EditorTools
             new State { name = "title_attack", label = "タイトル — 攻撃選択", build = s => BuildTitle(s, OperatorTeam.Attack) },
             new State { name = "title_defense", label = "タイトル — 防衛選択", build = s => BuildTitle(s, OperatorTeam.Defense) },
             new State { name = "title_build", label = "タイトル — ビルド (マップエディタなし)", build = BuildTitleAsBuild },
+            new State { name = UIPreviewMainMenu.Save, label = "メインメニュー — セーブあり", build = UIPreviewMainMenu.BuildSave },
+            new State { name = UIPreviewMainMenu.NoSave, label = "メインメニュー — セーブなし", build = UIPreviewMainMenu.BuildNoSave },
+            new State { name = UIPreviewMainMenu.LogoEnter, label = "メインメニュー — ロゴ登場 (t=0.3s)", build = UIPreviewMainMenu.BuildLogoEnter },
+            new State { name = UIPreviewMainMenu.Glitch, label = "メインメニュー — ロゴ グリッチ", build = UIPreviewMainMenu.BuildGlitch },
+            new State { name = UIPreviewMainMenu.Confirm, label = "メインメニュー — 上書き確認", build = UIPreviewMainMenu.BuildConfirm },
+            new State { name = UIPreviewMainMenu.Indicator, label = "オートセーブ表示 (t=0.8s)", build = UIPreviewMainMenu.BuildIndicator },
             new State { name = UIPreviewKitTitleSquad.Name, label = "タイトル — スポットライト グリッチ (t=0.21s)", build = UIPreviewKitTitleSquad.Build },
             new State { name = UIPreviewKitTitleLeft.Name, label = "タイトル — ロゴ演出 (t=0.3s)", build = UIPreviewKitTitleLeft.Build },
             new State { name = "hud_selected", label = "HUD — 隊員選択 (CRUSHER)", build = s => BuildHud(s, HudState.Selected) },
@@ -366,11 +372,15 @@ namespace Blindside.UITools.EditorTools
             return written;
         }
 
-        /// <summary>All states on one page: two columns of half-size shots, each under its label.</summary>
+        /// <summary>All states on one page: half-size shots, each under its label — two columns, more when the page would be taller
+        /// than a render texture can be (8192 kept as the limit, under every GPU's maximum).</summary>
         static Texture2D MakeSheet(List<(State st, Texture2D tex)> shots)
         {
-            const int Cols = 2, LabelH = 30, Pad = 8;
-            int cw = W / 2, ch = H / 2, rows = (shots.Count + Cols - 1) / Cols;
+            const int LabelH = 30, Pad = 8, MaxSheetH = 8192;
+            int cw = W / 2, ch = H / 2;
+            int Cols = 2;
+            while (((shots.Count + Cols - 1) / Cols) * (ch + LabelH + Pad) + Pad > MaxSheetH) Cols++;
+            int rows = (shots.Count + Cols - 1) / Cols;
             int sw = Cols * cw + (Cols + 1) * Pad, sh = rows * (ch + LabelH) + (rows + 1) * Pad;
             using (var stage = new Stage(sw, sh, new Color32(0x11, 0x13, 0x16, 0xff)))
             {

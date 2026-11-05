@@ -49,6 +49,9 @@ namespace Blindside.Integration
             try { yield return new WaitForSecondsRealtime(ResultDelaySeconds); }
             finally { ReleaseEngagementState(); }
 
+            // the save's record (a real match only: not the tutorial's, not the editor's test play)
+            if (!tutorialMode && !PlaySession.IsTest) Blindside.Save.AutoSave.MatchEnded(win);
+
             if (resultScreen == null) resultScreen = GetComponent<ResultScreen>();
             if (resultScreen == null) resultScreen = gameObject.AddComponent<ResultScreen>();
             resultScreen.Show(win, reason, turns.Round, KillsBy(side), losses, Retry, ReturnToTitle, PlaySession.IsTest ? (System.Action)ReturnToEditor : null);
@@ -110,6 +113,7 @@ namespace Blindside.Integration
         public void TutorialToMainOperation(bool deployBriefing = false)
         {
             Blindside.Tutorial.TutorialDeployGuide.Pending = deployBriefing;
+            Blindside.Save.AutoSave.TutorialFinished();     // the save: tutorial done, the next sortie the default house's attack
             var title = FindAnyObjectByType<TitleSelectScreen>(FindObjectsInactive.Include);
             ClearMatch();
             BattlefieldCamera.Deactivate();
