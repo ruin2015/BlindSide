@@ -208,6 +208,9 @@ namespace Blindside.Integration
                 if (endTurnPulse != null) endTurnPulse.SetOn(false);
                 if (endTurnButton != null) endTurnButton.gameObject.SetActive(false);
                 if (phaseBanner == null) return;
+                // the player's own win: the radio and 作戦成功 (OperationResultScreen) take its place
+                var mb = FindAnyObjectByType<MatchBootstrap>();
+                if (mb != null && mb.PlayerWonRealMatch(result)) return;
                 string main = result == MatchResult.AttackWins ? "ATTACKER VICTORY" : "DEFENDER VICTORY";
                 phaseBanner.Play(main, result == MatchResult.AttackWins ? "攻撃チーム勝利" : "防衛チーム勝利", reason, UIPalette.Accent);
             };

@@ -57,7 +57,26 @@ namespace Blindside.UITools.EditorTools
             return r;
         }
 
-        public static void BuildBanner(UIPreview.Stage s) => Build(s, 1f);
+        public static void BuildBanner(UIPreview.Stage s) => Build(s, OperationResultScreen.BannerFrom + 1f);
+
+        public const string ExpGain = "battle_exp_gain";
+
+        /// <summary>battle_exp_gain: the experience beat after an exchange — CRUSHER (a kill: level up, mastery up) and FLARE, 1.0s in.</summary>
+        public static void BuildExpGain(UIPreview.Stage s)
+        {
+            UIPreview.BuildHudSelected(s);
+            var canvas = s.NewCanvas("ExpGain_Canvas", UITheme.CanvasKind.Menu, 95);
+            var host = new GameObject("ExpGainHost", typeof(RectTransform));
+            host.transform.SetParent(canvas.transform, false);
+            var p = host.AddComponent<ExpGainPopup>();
+            p.externalCanvas = canvas;
+            var gains = new System.Collections.Generic.List<ProgressLive.Gain>
+            {
+                new ProgressLive.Gain { rec = Rec("CRUSHER", "AR15", 0, 1, 0, 1, 0, 120), exp = 190, killsNow = 1, levelFrom = 1, expFrom = 40, wLevelFrom = 2, wExpFrom = 90 },
+                new ProgressLive.Gain { rec = Rec("FLARE", "MX50", 12, 1, 0, 0, 1, 30), exp = 70, levelFrom = 2, expFrom = 20, wLevelFrom = 1, wExpFrom = 10 },
+            };
+            p.PoseAt(gains, 1.0f);
+        }
         public static void BuildFilling(UIPreview.Stage s) => Build(s, OperationResultScreen.ResultStart + 1.6f);
         public static void BuildFinal(UIPreview.Stage s) => Build(s, OperationResultScreen.ResultStart + OperationResultScreen.ButtonAt + 1f);
 

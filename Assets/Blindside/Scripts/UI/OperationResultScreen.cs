@@ -1,9 +1,12 @@
 // A won operation's ending (MatchBootstrap.FinishRoutine → Play(report)), on its own Screen Space Overlay canvas (menu 1440×810, order
 // 100 like the old result screen), one unscaled clock (ITimedEffect.Evaluate(t)):
-//   0 – 3.6s   the radio: the squad leader (attack: CRUSHER) says 「作戦完了。みんな、ご苦労だった。」 (TutorialRadio, Play mode only), and
-//              作戦成功 in the middle of the screen: an ink band 150 high opens (.35s), "OPERATION SUCCESS" 14 display (blue) over
-//              「作戦成功」 64 Title (white) with a glitch burst; the band closes from 3.0s. A click skips to the result.
-//   3.6s –     the result over a dimmed screen (rgba(4,6,9,.97)):
+//   (it starts once the finishing exchange's cinematic is over and the camera is back on the map — MatchBootstrap waits for it)
+//   0 – 2.6s   the radio alone, the map still in view: the squad leader (attack: CRUSHER) says 「作戦完了。みんな、ご苦労だった。」
+//              (TutorialRadio, Play mode only)
+//   2.6 – 5.8s 作戦成功 in the middle of the screen: an ink band 150 high opens (.35s), "OPERATION SUCCESS" 14 display (blue) over
+//              「作戦成功」 64 Title (white) with a glitch burst; the band closes from 5.2s. (No ATTACKER / DEFENDER VICTORY banner then.)
+//              A click skips: the radio to the banner, the banner to the result.
+//   5.8s –     the result over a dimmed screen (rgba(4,6,9,.97)):
 //     Head     "OPERATION RESULT" 12 display (blue) · 「作戦成功」 30 Title · the stage's name, at x 112 y 34
 //     Cards    one card per operator of the player's side (232 wide, 14 apart, centred, y 108): the photo (OperatorArt.Body, cover,
 //              top-pinned, greyed with 戦闘不能 when down), name 22 display + kana, Lv + "+N EXP" and its bar, the weapon's mastery and
@@ -29,7 +32,8 @@ namespace Blindside.UI
     public class OperationResultScreen : MonoBehaviour, ITimedEffect, IPointerClickHandler
     {
         public const float ScreenW = 1440f, ScreenH = 810f;
-        public const float BannerIn = .35f, BannerOut = 3.0f, BannerEnd = 3.4f, ResultStart = 3.6f;
+        // the radio alone first (RadioEnd), then 作戦成功 (from BannerFrom), then the result
+        public const float RadioEnd = 2.6f, BannerFrom = 2.6f, BannerIn = .35f, BannerOut = BannerFrom + 2.6f, BannerEnd = BannerFrom + 3.0f, ResultStart = BannerFrom + 3.2f;
         public const float CardW = 232f, CardGap = 14f, CardY = 108f, PhotoH = 186f, NameH = 54f;
         public const float CardIn = .5f, CardStep = .08f, FillFrom = .9f, FillTo = 2.4f, MoneyFrom = 2.4f, MoneyTo = 3.2f, RankFrom = 2.6f, RankTo = 3.8f, ButtonAt = 4.0f;
         public const string RadioLine = "作戦完了。みんな、ご苦労だった。";
@@ -50,7 +54,7 @@ namespace Blindside.UI
         AwardReport report;
         Action onHq;
         Blindside.Tutorial.TutorialRadio radio;
-        float clock; bool running, radioClosed;
+        float clock; bool running, radioClosed, bannerBurst;
 
         class Card
         {
@@ -76,7 +80,7 @@ namespace Blindside.UI
         public void Play(AwardReport report, OperatorTeam side, Action onHq)
         {
             Build(report, onHq);
-            clock = 0f; running = Application.isPlaying; radioClosed = false;
+            clock = 0f; running = Application.isPlaying; radioClosed = false; bannerBurst = false;
             if (Application.isPlaying)
             {
                 if (radio == null) radio = Blindside.Tutorial.TutorialRadio.Build(transform);
@@ -84,7 +88,6 @@ namespace Blindside.UI
                 if (side == OperatorTeam.Attack || leader == null) radio.SetSpeaker(false);
                 else radio.SetOperator(leader.key, leader.DisplayName, leader.kr, leader.color);
                 radio.Say(RadioLine, false);
-                if (bannerGlitch != null) bannerGlitch.Burst(.8f);
             }
             Evaluate(0f);
         }
@@ -108,17 +111,19 @@ namespace Blindside.UI
         {
             if (!running) return;
             clock += Time.unscaledDeltaTime;
-            if (!radioClosed && clock >= BannerEnd) { radioClosed = true; if (radio != null && radio.IsOpen) radio.Close(); }
+            if (!radioClosed && clock >= RadioEnd) { radioClosed = true; if (radio != null && radio.IsOpen) radio.Close(); }
+            if (!bannerBurst && clock >= BannerFrom) { bannerBurst = true; if (bannerGlitch != null && Application.isPlaying) bannerGlitch.Burst(.8f); }
             if (clock >= Duration) { clock = Duration; running = false; }
             Evaluate(clock);
         }
 
         public void OnPointerClick(PointerEventData e)
         {
-            // a click skips: the banner to the result, the result's counting to its end
-            if (clock < ResultStart) clock = ResultStart;
+            // a click skips: the radio to the banner, the banner to the result, the result's counting to its end
+            if (clock < BannerFrom) clock = BannerFrom;
+            else if (clock < ResultStart) clock = ResultStart;
             else if (clock < ResultStart + ButtonAt) clock = ResultStart + ButtonAt;
-            if (!radioClosed && clock >= BannerEnd) { radioClosed = true; if (radio != null && radio.IsOpen) radio.Close(); }
+            if (!radioClosed && clock >= RadioEnd) { radioClosed = true; if (radio != null && radio.IsOpen) radio.Close(); }
             if (!running && Application.isPlaying) running = true;
             Evaluate(clock);
         }
@@ -130,17 +135,19 @@ namespace Blindside.UI
             bool reduce = UIMotionSettings.reduceMotion;
 
             // the banner
-            float bIn = Mathf.Clamp01(t / BannerIn), bOut = Mathf.Clamp01((t - BannerOut) / (BannerEnd - BannerOut));
-            float ba = t < BannerOut ? (reduce ? (t > 0f ? 1f : 0f) : UIEase.Tactical(bIn)) : 1f - bOut;
+            float tb = t - BannerFrom;
+            float bIn = Mathf.Clamp01(tb / BannerIn), bOut = Mathf.Clamp01((t - BannerOut) / (BannerEnd - BannerOut));
+            float ba = tb < 0f ? 0f : t < BannerOut ? (reduce ? 1f : UIEase.Tactical(bIn)) : 1f - bOut;
             if (bannerGroup.alpha != ba) bannerGroup.alpha = ba;
             var bs = new Vector3(1f, reduce ? 1f : Mathf.Max(.02f, UIEase.Tactical(bIn)), 1f);
             if (bannerBand.localScale != bs) bannerBand.localScale = bs;
-            bool showBanner = t < BannerEnd;
+            bool showBanner = tb >= 0f && t < BannerEnd;
             if (bannerBand.gameObject.activeSelf != showBanner) bannerBand.gameObject.SetActive(showBanner);
 
             // the dim: light under the banner, deep under the result
             float r = t - ResultStart;
-            var dc = DimC; dc.a = t < ResultStart ? .35f * Mathf.Clamp01(t / BannerIn) : Mathf.Lerp(.35f, DimC.a, Mathf.Clamp01(r / .4f));
+            // the dim: none under the radio (the map stays in view), light under the banner, deep under the result
+            var dc = DimC; dc.a = t < ResultStart ? .35f * Mathf.Clamp01(tb / BannerIn) : Mathf.Lerp(.35f, DimC.a, Mathf.Clamp01(r / .4f));
             if (dim.color != dc) dim.color = dc;
 
             bool showResult = r >= 0f;

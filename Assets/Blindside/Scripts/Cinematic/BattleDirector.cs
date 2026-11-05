@@ -185,6 +185,9 @@ namespace Blindside.Cinematic
 
         bool IsPlayer(ICombatUnit u) => u != null && !u.IsHostage && playerTeam.HasValue && u.Team == playerTeam.Value;
 
+        /// <summary>A beat played after a staged exchange, before the camera leaves the stage (the experience it gave). Null: none.</summary>
+        public System.Func<ICombatUnit, ICombatUnit, IEnumerator> AfterExchange;
+
         public IEnumerator Direct(ICombatUnit first, ICombatUnit second, IEnumerator engagement)
         {
             // the combat system's hint for this engagement (read once)
@@ -230,6 +233,8 @@ namespace Blindside.Cinematic
             {
                 Begin(k, first, second);
                 stack.Push(ExitPhase());
+                // after the exchange, still on the stage: the experience it gave (MatchBootstrap → ExpGainPopup); not for AI-only ones
+                if (AfterExchange != null && k != Kind.Instant) stack.Push(AfterExchange(first, second));
                 stack.Push(body);
                 while (stack.Count > 0)
                 {

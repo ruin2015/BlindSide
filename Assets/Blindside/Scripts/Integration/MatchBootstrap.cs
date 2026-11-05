@@ -183,6 +183,18 @@ namespace Blindside.Integration
         public AbilitySystem ActiveAbilities { get; private set; }
         /// <summary>The running match's record per operator (damage, attacks, walls, kills, assists) for the result screen.</summary>
         public Blindside.Progress.MatchRecord Record { get; private set; }
+        /// <summary>The running match's experience as it is given (null: not a real match of the player's).</summary>
+        public Blindside.Progress.ProgressLive Live { get; private set; }
+
+        // the battle cinematic's beat after an exchange: what it gave the player's operators, shown before the camera leaves the stage
+        IEnumerator ExperienceBeat(ICombatUnit first, ICombatUnit second)
+        {
+            if (Live == null) yield break;
+            var gains = Live.Flush(first, second);
+            if (gains.Count == 0) yield break;
+            var popup = ExpGainPopup.Show(gains);
+            if (battleDirector != null) yield return battleDirector.Wait(popup.Duration);
+        }
         public AbilityContext ActiveAbilityCtx { get; private set; }
         public DroneOps ActiveDroneOps { get; private set; }
 
@@ -617,6 +629,15 @@ namespace Blindside.Integration
                 Record = new Blindside.Progress.MatchRecord(units);
                 Record.Bind(combat, abilities);
             }
+            // experience as it is earned (the player's side in a real match): given after every staged exchange, shown on the stage
+            Live = null;
+            if (Record != null && playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest)
+            {
+                var save = Blindside.Save.SaveSystem.Current;
+                string stageMap = save != null ? save.lastMap ?? "" : "";
+                Live = new Blindside.Progress.ProgressLive(Record, playerTeam.Value, save, Blindside.Progress.StageRewards.For(stageMap).expScale);
+            }
+            if (battleDirector != null) battleDirector.AfterExchange = Live != null ? ExperienceBeat : (System.Func<ICombatUnit, ICombatUnit, IEnumerator>)null;
             MatchReady?.Invoke(this);
 
             IEnumerator RunGuarded()

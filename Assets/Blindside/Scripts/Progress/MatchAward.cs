@@ -37,10 +37,13 @@ namespace Blindside.Progress
 
     public static class MatchAward
     {
-        public static AwardReport Grant(MatchRecord record, OperatorTeam side, bool win)
+        /// <summary>`live`: the experience was given engagement by engagement (ProgressLive) — the rest is given now, and the report's lines
+        /// run from the match's start to now. Without it the match's whole experience is given here (a win only).</summary>
+        public static AwardReport Grant(MatchRecord record, OperatorTeam side, bool win, ProgressLive live = null)
         {
             var save = SaveSystem.Current;
-            var data = save ?? SaveData.Fresh();
+            var data = live != null ? live.Data : save ?? SaveData.Fresh();
+            if (live != null) return GrantLive(record, side, win, live, save, data);
             string map = save != null ? save.lastMap ?? "" : "";
             var stage = StageRewards.For(map);
             var rep = new AwardReport { win = win, map = map, mapLabel = stage.label ?? "", expScale = stage.expScale, saved = save != null };
@@ -68,7 +71,35 @@ namespace Blindside.Progress
                 rep.lines.Add(line);
             }
 
-            // the MVP
+            Finish(rep, data, win, StageRewards.For(map));
+            return rep;
+        }
+
+        static AwardReport GrantLive(MatchRecord record, OperatorTeam side, bool win, ProgressLive live, SaveData save, SaveData data)
+        {
+            string map = save != null ? save.lastMap ?? "" : "";
+            var stage = StageRewards.For(map);
+            var rep = new AwardReport { win = win, map = map, mapLabel = stage.label ?? "", expScale = stage.expScale, saved = save != null };
+            if (record == null) return rep;
+            live.FlushAll();
+            foreach (var r in record.Team(side))
+            {
+                var s = live.StartOf(r);
+                var op = data.OperatorOf(r.key); var wp = data.WeaponOf(r.weapon);
+                rep.lines.Add(new AwardLine
+                {
+                    rec = r, exp = live.TotalExp(r),
+                    levelFrom = s.level, expFrom = s.exp, levelTo = op.level, expTo = op.exp, pointsGained = (op.level - s.level) * ProgressRules.PointsPerLevel,
+                    wLevelFrom = s.wLevel, wExpFrom = s.wExp, wLevelTo = wp.level, wExpTo = wp.exp,
+                });
+            }
+            Finish(rep, data, win, stage);
+            return rep;
+        }
+
+        // the MVP, the money and the contribution
+        static void Finish(AwardReport rep, SaveData data, bool win, StageRewards.Entry stage)
+        {
             for (int i = 0; i < rep.lines.Count; i++)
             {
                 if (rep.mvp < 0) { rep.mvp = i; continue; }
@@ -90,7 +121,6 @@ namespace Blindside.Progress
             rep.pointsTo = data.rankPoints;
             rep.rankTo = RankTable.RankOf(data.rankPoints);
             rep.moneyTotal = data.money;
-            return rep;
         }
     }
 }

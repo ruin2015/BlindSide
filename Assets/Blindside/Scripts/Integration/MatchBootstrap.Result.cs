@@ -47,14 +47,23 @@ namespace Blindside.Integration
 
             // The finishing shot / kill / walk keeps playing out while the 1.2s runs; whatever it leaves behind
             // (slow motion, a held camera, a locked input, a frozen time scale) is released whether or not the wait completed.
-            try { yield return new WaitForSecondsRealtime(ResultDelaySeconds); }
+            // A staged finishing exchange plays to its end first — its experience beat and the camera back over the map — then a short
+            // pause (12s at most, should the stage hang).
+            try
+            {
+                yield return new WaitForSecondsRealtime(ResultDelaySeconds);
+                float until = Time.unscaledTime + 12f;
+                bool waited = false;
+                while (battleDirector != null && battleDirector.Directing && Time.unscaledTime < until) { waited = true; yield return null; }
+                if (waited) yield return new WaitForSecondsRealtime(.6f);
+            }
             finally { ReleaseEngagementState(); }
 
             // the save (a real match only: not the tutorial's, not the editor's test play): experience, mastery, money, contribution
             // (a win only) and the record, in one write
             bool real = !tutorialMode && !PlaySession.IsTest;
             Record?.Close();
-            Blindside.Progress.AwardReport report = real ? Blindside.Progress.MatchAward.Grant(Record, side, win) : null;
+            Blindside.Progress.AwardReport report = real ? Blindside.Progress.MatchAward.Grant(Record, side, win, Live) : null;
             if (real) Blindside.Save.AutoSave.MatchEnded(win);
 
             // a won operation: the radio, 作戦成功, then the operation result (the squad's experience, the MVP, the reward, the rank)
@@ -92,6 +101,12 @@ namespace Blindside.Integration
 
         /// <summary>The game menu's タイトルへ / 読み込み: the match is dropped where it is (nothing recorded) and the title comes back.</summary>
         public void AbandonToTitle() => ReturnToTitle();
+
+        /// <summary>The player won a real match (not the tutorial, not a test play): the radio and 作戦成功 replace the phase banner's
+        /// ATTACKER / DEFENDER VICTORY (GameplayUIBridge asks).</summary>
+        public bool PlayerWonRealMatch(MatchResult result) =>
+            playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest
+            && (result == MatchResult.AttackWins) == (playerTeam.Value == Blindside.Data.OperatorTeam.Attack);
 
         /// <summary>The game menu's エディタへ (a test play): the match is dropped and the map editor resumes.</summary>
         public void AbandonToEditor() => ReturnToEditor();
