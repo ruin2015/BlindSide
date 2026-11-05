@@ -18,10 +18,28 @@ namespace Blindside.Save
         public int plays, wins;
     }
 
+    /// <summary>An operator's growth: level / experience, unspent stat points and the points put into each stat (phase 2 applies them).</summary>
+    [Serializable]
+    public class OperatorProgress
+    {
+        public string key = "";
+        public int level = 1, exp;
+        public int points;                       // unspent
+        public int hp, def, atk, mob, prec;      // 体力 / 防御力 / 攻撃力 / 機動力 / 精密力
+    }
+
+    /// <summary>A weapon's mastery (shared by everyone who uses it).</summary>
+    [Serializable]
+    public class WeaponProgress
+    {
+        public string key = "";
+        public int level = 1, exp;
+    }
+
     [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;     // 2: rank points, money, operator / weapon progress
 
         public int version = CurrentVersion;
         public string createdUtc = "";      // ISO 8601 (round-trip "o")
@@ -34,6 +52,33 @@ namespace Blindside.Save
 
         public int matches, wins, losses;
         public List<MapRecord> maps = new List<MapRecord>();
+
+        public int rankPoints;                   // 貢献度, all-time (RankTable)
+        public int money;                        // yen
+        public List<OperatorProgress> operators = new List<OperatorProgress>();
+        public List<WeaponProgress> weapons = new List<WeaponProgress>();
+
+        /// <summary>`key`'s growth (made at level 1 when it has none).</summary>
+        public OperatorProgress OperatorOf(string key)
+        {
+            key = key ?? "";
+            if (operators == null) operators = new List<OperatorProgress>();
+            foreach (var o in operators) if (o != null && o.key == key) return o;
+            var made = new OperatorProgress { key = key };
+            operators.Add(made);
+            return made;
+        }
+
+        /// <summary>`key`'s mastery (made at level 1 when it has none).</summary>
+        public WeaponProgress WeaponOf(string key)
+        {
+            key = key ?? "";
+            if (weapons == null) weapons = new List<WeaponProgress>();
+            foreach (var w in weapons) if (w != null && w.key == key) return w;
+            var made = new WeaponProgress { key = key };
+            weapons.Add(made);
+            return made;
+        }
 
         public OperatorTeam LastTeam
         {
@@ -78,6 +123,14 @@ namespace Blindside.Save
             if (savedUtc == null) savedUtc = "";
             if (lastTeam != (int)OperatorTeam.Defense) lastTeam = (int)OperatorTeam.Attack;
             if (playSeconds < 0 || double.IsNaN(playSeconds)) playSeconds = 0;
+            if (operators == null) operators = new List<OperatorProgress>();
+            operators.RemoveAll(o => o == null);
+            foreach (var o in operators) { if (o.key == null) o.key = ""; if (o.level < 1) o.level = 1; if (o.exp < 0) o.exp = 0; if (o.points < 0) o.points = 0; }
+            if (weapons == null) weapons = new List<WeaponProgress>();
+            weapons.RemoveAll(w => w == null);
+            foreach (var w in weapons) { if (w.key == null) w.key = ""; if (w.level < 1) w.level = 1; if (w.exp < 0) w.exp = 0; }
+            if (rankPoints < 0) rankPoints = 0;
+            if (money < 0) money = 0;
             version = CurrentVersion;
         }
     }

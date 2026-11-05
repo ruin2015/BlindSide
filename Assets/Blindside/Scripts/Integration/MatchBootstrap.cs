@@ -176,6 +176,8 @@ namespace Blindside.Integration
         public VisionSystem ActiveVision { get; private set; }
         public CombatSystem ActiveCombat { get; private set; }
         public AbilitySystem ActiveAbilities { get; private set; }
+        /// <summary>The running match's record per operator (damage, attacks, walls, kills, assists) for the result screen.</summary>
+        public Blindside.Progress.MatchRecord Record { get; private set; }
         public AbilityContext ActiveAbilityCtx { get; private set; }
         public DroneOps ActiveDroneOps { get; private set; }
 
@@ -274,6 +276,8 @@ namespace Blindside.Integration
             if (uiBridge != null && uiBridge.endTurnButton != null) uiBridge.endTurnButton.gameObject.SetActive(false);
             BattlefieldCamera.InputLocked = false;
             if (resultScreen != null) resultScreen.Hide();
+            if (operationResult != null) operationResult.Hide();
+            Record?.Unbind();
 
             if (selection == null) selection = GetComponent<PlayerSelectionController>();
             if (selection == null) selection = gameObject.AddComponent<PlayerSelectionController>();
@@ -597,6 +601,14 @@ namespace Blindside.Integration
             // what the tutorial's director works with (TutorialDirector waits for MatchReady)
             ActiveTurns = turns; ActiveMap = map; ActiveVision = vision; ActiveCombat = combat; ActiveAbilities = abilities; ActiveAbilityCtx = abilityCtx;
             ActiveDroneOps = droneOps;
+            // the result screen's record (it only listens to the combat / ability events)
+            Record?.Unbind();
+            Record = null;
+            if (Blindside.Progress.MatchRecord.Enabled)
+            {
+                Record = new Blindside.Progress.MatchRecord(units);
+                Record.Bind(combat, abilities);
+            }
             MatchReady?.Invoke(this);
 
             IEnumerator RunGuarded()

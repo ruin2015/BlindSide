@@ -21,6 +21,7 @@ namespace Blindside.Integration
         /// <summary>G.stats — kills per team this match: [0] attack, [1] defense (non-hostage victims; gas counts for the defense).</summary>
         readonly int[] kills = new int[2];
         ResultScreen resultScreen;
+        OperationResultScreen operationResult;
 
         /// <summary>G.stats[team] — units that team has killed this match.</summary>
         public int KillsBy(Blindside.Data.OperatorTeam team) => kills[team == Blindside.Data.OperatorTeam.Attack ? 0 : 1];
@@ -49,8 +50,21 @@ namespace Blindside.Integration
             try { yield return new WaitForSecondsRealtime(ResultDelaySeconds); }
             finally { ReleaseEngagementState(); }
 
-            // the save's record (a real match only: not the tutorial's, not the editor's test play)
-            if (!tutorialMode && !PlaySession.IsTest) Blindside.Save.AutoSave.MatchEnded(win);
+            // the save (a real match only: not the tutorial's, not the editor's test play): experience, mastery, money, contribution
+            // (a win only) and the record, in one write
+            bool real = !tutorialMode && !PlaySession.IsTest;
+            Record?.Close();
+            Blindside.Progress.AwardReport report = real ? Blindside.Progress.MatchAward.Grant(Record, side, win) : null;
+            if (real) Blindside.Save.AutoSave.MatchEnded(win);
+
+            // a won operation: the radio, 作戦成功, then the operation result (the squad's experience, the MVP, the reward, the rank)
+            if (win && report != null)
+            {
+                if (operationResult == null) operationResult = GetComponent<OperationResultScreen>();
+                if (operationResult == null) operationResult = gameObject.AddComponent<OperationResultScreen>();
+                operationResult.Play(report, side, ReturnToTitle);
+                yield break;
+            }
 
             if (resultScreen == null) resultScreen = GetComponent<ResultScreen>();
             if (resultScreen == null) resultScreen = gameObject.AddComponent<ResultScreen>();
