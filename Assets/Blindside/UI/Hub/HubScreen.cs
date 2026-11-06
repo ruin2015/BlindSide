@@ -2,7 +2,8 @@
 //   Topbar   top left 24/20: ink plate 360 × 46 (blue band 12, 「本部」 18 title + "SQUAD HQ" 11 display), under it 30 high: money
 //            (¥, 14 display) and the rank (12 body) on paper2; top right 「タイトルへ」 (KitTextButton 14)
 //   Labels   a floating name over every station (HubNpc): name 15 title (white, dark outline) + caption 11 (blue); hidden past 16 m
-//            or behind the camera. A pool made once; moved every frame (no allocation)
+//            or behind the camera. A pool made once; moved every frame (no allocation). Room signs (HubSign) the same, the caption in
+//            gold, shown within 11 m
 //   Prompt   bottom centre, 150 up: ink plate 380 × 44, a key cap "F" (blue 30 × 30) + 「話す — 作戦室」 15 body; shown while a station is
 //            in reach
 //   Hint     bottom left: 「WASD 移動 · Shift 走る · 右ドラッグ 視点 · F 調べる」 11 (dim)
@@ -29,7 +30,7 @@ namespace Blindside.Hub
         Camera cam;
         Canvas canvas;
 
-        sealed class Label { public RectTransform rt; public TMP_Text name, caption; public HubNpc npc; }
+        sealed class Label { public RectTransform rt; public TMP_Text name, caption; public HubNpc npc; public Transform sign; }
         readonly List<Label> labels = new List<Label>(12);
 
         GrowthContent growthC; ShopContent shopC; TrainingContent trainC; OperationsContent opsC; LoadoutContent loadC;
@@ -151,6 +152,22 @@ namespace Blindside.Hub
             }
         }
 
+        /// <summary>A floating name for every room sign (made once, after SetStations; shown within SignRange).</summary>
+        public void SetSigns(IList<HubSign> signs)
+        {
+            var theme = UITheme.Current;
+            foreach (var s in signs)
+            {
+                if (s == null) continue;
+                var l = MakeLabel(s.name, s.displayName, s.caption);
+                l.sign = s.transform;
+                l.caption.color = Color.Lerp(theme.acc, Color.white, .2f);
+                labels.Add(l);
+            }
+        }
+
+        public const float SignRange = 11f;
+
         Label MakeLabel(string id, string name, string caption)
         {
             var theme = UITheme.Current;
@@ -194,14 +211,15 @@ namespace Blindside.Hub
             for (int i = 0; i < labels.Count; i++)
             {
                 var l = labels[i];
-                if (l.npc == null) continue;
-                var p = l.npc.LabelPoint;
+                if (l.npc == null && l.sign == null) continue;
+                var p = l.npc != null ? l.npc.LabelPoint : l.sign.position;
+                float range = l.npc != null ? LabelRange : SignRange;
                 var sp = cam.WorldToScreenPoint(p);
-                bool vis = !AnyOpen && sp.z > .2f && (p - camPos).sqrMagnitude < LabelRange * LabelRange;
+                bool vis = !AnyOpen && sp.z > .2f && (p - camPos).sqrMagnitude < range * range;
                 if (l.rt.gameObject.activeSelf != vis) l.rt.gameObject.SetActive(vis);
                 if (!vis) continue;
                 l.rt.anchoredPosition = new Vector2(sp.x / scale, sp.y / scale);
-                float a = l.npc == near ? 1f : .78f;
+                float a = l.npc == null || l.npc == near ? 1f : .78f;
                 if (l.name.alpha != a) l.name.alpha = a;
             }
         }

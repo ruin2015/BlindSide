@@ -33,6 +33,7 @@ namespace Blindside.Hub
             {
                 screen = HubScreen.Build(canvas.transform, view);
                 screen.SetStations(npcs);
+                screen.SetSigns(FindObjectsByType<HubSign>(FindObjectsInactive.Exclude));
             }
             else Debug.LogError("[Hub] no canvas");
             Time.timeScale = 1f;

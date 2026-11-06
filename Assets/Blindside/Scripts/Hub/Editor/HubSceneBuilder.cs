@@ -1,9 +1,13 @@
 // Blindside > Scenes > Build Squad Hub — makes (or remakes) Assets/Blindside/Scenes/Hub.unity, the squad's HQ in third person, and
 // adds it to the Build Settings. Everything is built from primitives (blockout — replace with art later) with URP Lit materials
 // under Art/Hub:
-//   the building 32 × 22 m, walls 4 m:  lobby (centre, the player starts here) · 作戦室 (north, the big screen and the table) ·
-//   ショップ / 装備設定 / 隊員強化 (the west wing: counter, lockers, consoles) · 訓練所 (east: mats, targets) · the lounge (south: sofas,
-//   where CRUSHER / SERUM / IGNIS / BASTION stand)
+//   the building 32 × 33 m, walls 4 m:  lobby (centre, the player starts here) · 作戦室 (north, the big screen and the table) ·
+//   ショップ / 装備設定 / 隊員強化 (the west wing: counter, lockers, consoles) · 訓練所 (east: mats, targets) · south of the lobby a
+//   corridor (z −14 … −11) to the operators' own rooms, 8 × 8 m each, a sign (HubSign) over every door:
+//     医務室 (SERUM: beds, cabinets, curtain) · トレーニングルーム (CRUSHER: bench, racks, a heavy bag) · 多目的室 (IGNIS: table,
+//     chairs, a whiteboard, crates) · 武器整備室 (BASTION: workbenches, gun racks, a shield stand)
+//   figures: sized and grounded on their baked mesh (SkinnedMeshRenderer.bounds is the import-time box, not the mesh), the toe bone's
+//   height over the sole kept for HubFigure's foot grounding
 //   the player:  FLARE's model (no gun: HubFigure hides gun nodes), CharacterController + HubPlayer, HubCamera behind
 //   the stations: HubNpc on each; staff NPCs are plain figures, the four operators their own models
 //   [SceneEntry] Hub, HubDirector, a menu canvas (UIThemeCanvas) and an EventSystem (Input System module)
@@ -85,20 +89,27 @@ namespace Blindside.Hub.EditorTools
             Staff(HubStation.Loadout, "武器係", "装備設定", new Vector3(-14.2f, 0f, 8f), 90f, new Color(.55f, .6f, .66f));
             Staff(HubStation.Growth, "分析官", "隊員強化", new Vector3(-14.2f, 0f, -7f), 90f, new Color(.4f, .85f, .55f));
             Staff(HubStation.Training, "訓練教官", "訓練所", new Vector3(10.8f, 0f, 0f), -90f, new Color(.9f, .21f, .3f));
-            var spots = new[] { new Vector3(-3.2f, 0f, -7.4f), new Vector3(-1.1f, 0f, -8.6f), new Vector3(1.3f, 0f, -8.4f), new Vector3(3.4f, 0f, -7.2f) };
             for (int i = 0; i < HubCatalog.TalkKeys.Length; i++)
             {
+                var room = RoomOf(HubCatalog.TalkKeys[i]);
                 var op = BuildAssetRegistry.Operator(HubCatalog.TalkKeys[i]);
                 var go = new GameObject("Talk_" + HubCatalog.TalkKeys[i]);
                 go.transform.SetParent(world, false);
-                go.transform.SetPositionAndRotation(spots[i], Quaternion.Euler(0f, 180f + (spots[i].x * -8f), 0f));
+                go.transform.SetPositionAndRotation(room.spot, Quaternion.Euler(0f, room.yaw, 0f));
                 Figure(go.transform, op, op != null ? op.color : Color.gray);
                 Blocker(go.transform);
                 var n = go.AddComponent<HubNpc>();
                 n.station = HubStation.Talk; n.operatorKey = HubCatalog.TalkKeys[i];
                 n.displayName = op != null ? op.DisplayName : HubCatalog.TalkKeys[i];
                 n.caption = "会話";
-                n.radius = 1.9f;
+                n.radius = 2.2f;
+            }
+            foreach (var r in Rooms)
+            {
+                var s = new GameObject("Sign_" + r.key).AddComponent<HubSign>();
+                s.transform.SetParent(world, false);
+                s.transform.position = new Vector3(r.x, 3.1f, CorridorZ1 + .3f);
+                s.displayName = r.name; s.caption = r.caption;
             }
 
             // UI
@@ -143,15 +154,53 @@ namespace Blindside.Hub.EditorTools
             l.type = LightType.Point; l.color = c; l.range = range; l.intensity = intensity; l.shadows = LightShadows.None;
         }
 
+        // ---- the operators' rooms ------------------------------------------------------------------------------------------------------
+        const float CorridorZ0 = -11f, CorridorZ1 = -14f, RoomsZ1 = -22f, DoorW = 2.2f;
+
+        sealed class Room
+        {
+            public string key, name, caption;
+            public float x;           // the room's centre (8 wide: x − 4 … x + 4)
+            public Vector3 spot;      // where the operator stands
+            public float yaw;
+        }
+
+        static readonly Room[] Rooms =
+        {
+            // each stands a little off the door line, turned toward the door (+z)
+            new Room { key = "SERUM",   name = "医務室",             caption = "SERUM",   x = -12f, spot = new Vector3(-11.2f, 0f, -16.8f), yaw = -15f },
+            new Room { key = "CRUSHER", name = "トレーニングルーム", caption = "CRUSHER", x = -4f,  spot = new Vector3(-3.2f, 0f, -16.6f), yaw = -10f },
+            new Room { key = "IGNIS",   name = "多目的室",           caption = "IGNIS",   x = 4f,   spot = new Vector3(4.8f, 0f, -16.8f), yaw = -20f },
+            new Room { key = "BASTION", name = "武器整備室",         caption = "BASTION", x = 12f,  spot = new Vector3(11.2f, 0f, -16.8f), yaw = 15f },
+        };
+
+        static Room RoomOf(string key)
+        {
+            foreach (var r in Rooms) if (r.key == key) return r;
+            return Rooms[0];
+        }
+
         // ---- the building ------------------------------------------------------------------------------------------------------------
         static void Building()
         {
-            Box("Floor", new Vector3(0f, -.1f, 0f), new Vector3(32.6f, .2f, 22.6f), Mat("Floor", new Color(.24f, .26f, .29f), .25f));
-            Box("Ceiling", new Vector3(0f, WallH + .1f, 0f), new Vector3(32.6f, .2f, 22.6f), Mat("Ceiling", new Color(.16f, .17f, .19f), .1f), shadows: false);
+            float zMid = (11f + RoomsZ1) * .5f, zLen = 11f - RoomsZ1 + .6f;
+            Box("Floor", new Vector3(0f, -.1f, zMid), new Vector3(32.6f, .2f, zLen), Mat("Floor", new Color(.24f, .26f, .29f), .25f));
+            Box("Ceiling", new Vector3(0f, WallH + .1f, zMid), new Vector3(32.6f, .2f, zLen), Mat("Ceiling", new Color(.16f, .17f, .19f), .1f), shadows: false);
 
             // outer walls
-            WallX(-16f, 16f, 11f); WallX(-16f, 16f, -11f);
-            WallZ(-16f, -11f, 11f); WallZ(16f, -11f, 11f);
+            WallX(-16f, 16f, 11f); WallX(-16f, 16f, RoomsZ1);
+            WallZ(-16f, RoomsZ1, 11f); WallZ(16f, RoomsZ1, 11f);
+            // the lobby's south wall, its door to the corridor in the middle
+            WallX(-16f, -1.6f, CorridorZ0); WallX(1.6f, 16f, CorridorZ0);
+            // the rooms' front wall, a door into each, and the walls between them
+            float left = -16f;
+            foreach (var r in Rooms)
+            {
+                WallX(left, r.x - DoorW * .5f, CorridorZ1);
+                left = r.x + DoorW * .5f;
+            }
+            WallX(left, 16f, CorridorZ1);
+            WallZ(-8f, RoomsZ1, CorridorZ1); WallZ(0f, RoomsZ1, CorridorZ1); WallZ(8f, RoomsZ1, CorridorZ1);
             // the west wing (x = −9), doors to 隊員強化 / ショップ / 装備設定
             WallZ(-9f, -11f, -8.2f); WallZ(-9f, -5.8f, -.2f); WallZ(-9f, 2.2f, 6.8f); WallZ(-9f, 9.2f, 11f);
             WallX(-16f, -9f, -3f); WallX(-16f, -9f, 5f);
@@ -176,6 +225,13 @@ namespace Blindside.Hub.EditorTools
             Lamp(new Vector3(-12.5f, 3.4f, -7f), new Color(.7f, 1f, .8f), 7f, 1.2f);
             Lamp(new Vector3(12.5f, 3.4f, 0f), new Color(1f, .95f, .9f), 12f, 1.6f);
             Lamp(new Vector3(0f, 3.4f, -8.5f), new Color(1f, .85f, .7f), 8f, 1.3f);
+            // the corridor and the rooms
+            Box("DecoLine_Corridor", new Vector3(0f, .005f, (CorridorZ0 + CorridorZ1) * .5f), new Vector3(31f, .01f, .12f), line, shadows: false);
+            for (int i = -12; i <= 12; i += 8) Lamp(new Vector3(i, 3.4f, -12.5f), new Color(1f, .95f, .88f), 6f, 1.1f);
+            Lamp(new Vector3(-12f, 3.4f, -18f), new Color(.85f, 1f, .95f), 8f, 1.5f);   // 医務室: clinical white-green
+            Lamp(new Vector3(-4f, 3.4f, -18f), new Color(1f, .92f, .8f), 8f, 1.5f);     // トレーニングルーム
+            Lamp(new Vector3(4f, 3.4f, -18f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 多目的室
+            Lamp(new Vector3(12f, 3.4f, -18f), new Color(1f, .85f, .65f), 8f, 1.4f);    // 武器整備室: workshop amber
         }
 
         static void WallX(float x0, float x1, float z) =>
@@ -220,10 +276,97 @@ namespace Blindside.Hub.EditorTools
                 Box("Target", new Vector3(15.2f, 1.45f, 3.5f + i * 1.8f), new Vector3(.06f, .9f, .6f), target);
             }
             Box("Barrier", new Vector3(11.5f, .5f, 6f), new Vector3(.4f, 1f, 4f), metal);
-            // the lounge: sofas and a low table
-            Box("Sofa", new Vector3(-3.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
-            Box("Sofa", new Vector3(3.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
-            Box("LowTable", new Vector3(0f, .22f, -9.6f), new Vector3(1.6f, .44f, .9f), wood);
+            // the lobby's south side: a bench by the corridor door
+            Box("Sofa", new Vector3(-4.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
+            Box("Sofa", new Vector3(4.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
+
+            MedicalRoom(-12f); GymRoom(-4f); MultiRoom(4f); ArmoryRoom(12f);
+        }
+
+        // room interiors: x is the room's centre, the room spans x − 4 … x + 4, z −22 … −14 (its door at x, z −14)
+        static void MedicalRoom(float x)
+        {
+            var white = Mat("MedWhite", new Color(.86f, .89f, .9f), .3f);
+            var green = Mat("MedGreen", new Color(.45f, .72f, .62f), .2f);
+            var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
+            var cross = Mat("MedCross", new Color(.9f, .2f, .25f), .3f, new Color(.6f, .08f, .1f));
+            Box("DecoFloor_Med", new Vector3(x, .006f, -18f), new Vector3(7.6f, .01f, 7.6f), Mat("MedFloor", new Color(.7f, .76f, .76f), .4f), shadows: false);
+            for (int i = 0; i < 2; i++)
+            {
+                float bz = -20.6f + i * 0f, bx = x - 2.6f + i * 2.4f;
+                Box("Bed", new Vector3(bx, .35f, bz), new Vector3(1f, .7f, 2.2f), metal);
+                Box("DecoMattress", new Vector3(bx, .74f, bz), new Vector3(.92f, .1f, 2.1f), white);
+                Box("DecoPillow", new Vector3(bx, .83f, bz - .8f), new Vector3(.6f, .1f, .35f), white);
+                Box("DecoBlanket", new Vector3(bx, .8f, bz + .35f), new Vector3(.95f, .06f, 1.2f), green);
+            }
+            Box("DecoCurtain", new Vector3(x - 1.4f, 1.2f, -20.4f), new Vector3(.04f, 2.2f, 2.6f), green, shadows: false);
+            Box("MedCabinet", new Vector3(x + 3.55f, 1f, -19.5f), new Vector3(.6f, 2f, 2f), white);
+            Box("DecoCabinetGlass", new Vector3(x + 3.24f, 1.3f, -19.5f), new Vector3(.02f, 1.1f, 1.8f), Mat("Glass", new Color(.6f, .8f, .9f), .9f, new Color(.05f, .12f, .15f)), shadows: false);
+            Box("DeskMed", new Vector3(x + 2.6f, .4f, -16.2f), new Vector3(1.4f, .8f, .7f), white);
+            Box("DecoCross", new Vector3(x, 2.6f, -21.82f), new Vector3(.9f, .25f, .02f), cross, shadows: false);
+            Box("DecoCross", new Vector3(x, 2.6f, -21.82f), new Vector3(.25f, .9f, .02f), cross, shadows: false);
+        }
+
+        static void GymRoom(float x)
+        {
+            var rubber = Mat("Rubber", new Color(.12f, .13f, .14f), .1f);
+            var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
+            var red = Mat("Target", new Color(.9f, .21f, .3f), .3f);
+            var bag = Mat("Leather", new Color(.35f, .12f, .1f), .35f);
+            Box("DecoFloor_Gym", new Vector3(x, .01f, -18f), new Vector3(7.6f, .02f, 7.6f), rubber, shadows: false);
+            // bench press
+            Box("Bench", new Vector3(x - 1.6f, .25f, -19.6f), new Vector3(.4f, .5f, 1.6f), Mat("Fabric", new Color(.2f, .23f, .28f), .05f));
+            Box("BenchUpright", new Vector3(x - 1.6f, .7f, -20.3f), new Vector3(1.4f, 1.4f, .08f), metal);
+            Box("Barbell", new Vector3(x - 1.6f, 1.25f, -20.25f), new Vector3(1.9f, .04f, .04f), metal);
+            for (int s = -1; s <= 1; s += 2) Box("DecoPlate", new Vector3(x - 1.6f + s * .8f, 1.25f, -20.25f), new Vector3(.06f, .4f, .4f), rubber);
+            // dumbbell rack
+            Box("DumbbellRack", new Vector3(x + 3.4f, .45f, -18.5f), new Vector3(.6f, .9f, 3f), metal);
+            for (int i = 0; i < 5; i++) Box("DecoDumbbell", new Vector3(x + 3.4f, .95f, -19.7f + i * .6f), new Vector3(.4f, .14f, .14f), rubber);
+            // heavy bag
+            Box("BagChain", new Vector3(x + 1.6f, 3.3f, -20.6f), new Vector3(.03f, 1.2f, .03f), metal, shadows: false);
+            var heavy = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            heavy.name = "HeavyBag"; heavy.transform.SetParent(world, false);
+            heavy.transform.position = new Vector3(x + 1.6f, 1.95f, -20.6f); heavy.transform.localScale = new Vector3(.45f, .65f, .45f);
+            heavy.GetComponent<Renderer>().sharedMaterial = bag; heavy.isStatic = true;
+            Box("DecoStripe", new Vector3(x, 2.4f, -21.82f), new Vector3(6f, .12f, .02f), red, shadows: false);
+        }
+
+        static void MultiRoom(float x)
+        {
+            var wood = Mat("Wood", new Color(.36f, .27f, .2f), .2f);
+            var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
+            var fabric = Mat("Fabric", new Color(.2f, .23f, .28f), .05f);
+            var board = Mat("Board", new Color(.93f, .94f, .95f), .6f);
+            var orange = Mat("Ember", new Color(.95f, .45f, .15f), .3f, new Color(.4f, .12f, .02f));
+            Box("Table", new Vector3(x, .38f, -18.6f), new Vector3(2.8f, .76f, 1.4f), wood);
+            for (int i = 0; i < 3; i++)
+            {
+                Box("Chair", new Vector3(x - 1f + i, .23f, -19.7f), new Vector3(.45f, .46f, .45f), fabric);
+                Box("Chair", new Vector3(x - 1f + i, .23f, -17.5f), new Vector3(.45f, .46f, .45f), fabric);
+            }
+            Box("Whiteboard", new Vector3(x, 1.6f, -21.8f), new Vector3(3.2f, 1.4f, .06f), board, shadows: false);
+            Box("DecoBoardFrame", new Vector3(x, .88f, -21.76f), new Vector3(3.3f, .06f, .1f), metal, shadows: false);
+            for (int i = 0; i < 4; i++) Box("Crate", new Vector3(x - 3.3f, .3f + (i / 2) * .6f, -20.8f + (i % 2) * .7f), new Vector3(.7f, .6f, .65f), i % 2 == 0 ? wood : metal);
+            Box("DecoEmber", new Vector3(x + 3.82f, 1.6f, -18f), new Vector3(.02f, .5f, 3f), orange, shadows: false);
+        }
+
+        static void ArmoryRoom(float x)
+        {
+            var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
+            var ink = Mat("Ink", new Color(.08f, .09f, .1f), .4f);
+            var steel = Mat("Steel", new Color(.55f, .58f, .62f), .7f);
+            var mat = Mat("WorkMat", new Color(.18f, .35f, .3f), .1f);
+            Box("Workbench", new Vector3(x - 1.4f, .45f, -20.9f), new Vector3(2.4f, .9f, .9f), metal);
+            Box("DecoWorkMat", new Vector3(x - 1.4f, .91f, -20.9f), new Vector3(2.2f, .02f, .8f), mat, shadows: false);
+            Box("Workbench", new Vector3(x + 3.3f, .45f, -18.6f), new Vector3(.9f, .9f, 2.4f), metal);
+            // gun racks on the back wall (silhouettes)
+            Box("GunRack", new Vector3(x + 1.8f, 1.5f, -21.78f), new Vector3(2.6f, 1.8f, .1f), ink, shadows: false);
+            for (int i = 0; i < 5; i++) Box("DecoRifle", new Vector3(x + .9f + i * .45f, 1.5f, -21.7f), new Vector3(.08f, 1.3f, .06f), steel, shadows: false);
+            // BASTION's shield on its stand
+            Box("ShieldStand", new Vector3(x - 3.2f, .5f, -17f), new Vector3(.5f, 1f, .5f), ink);
+            Box("Shield", new Vector3(x - 3.2f, 1.45f, -17f), new Vector3(.9f, 1.3f, .1f), steel);
+            Box("DecoShieldVisor", new Vector3(x - 3.2f, 1.75f, -16.94f), new Vector3(.4f, .1f, .02f), Mat("Screen", new Color(.05f, .2f, .35f), .8f, new Color(.1f, .5f, .9f) * 1.6f), shadows: false);
+            for (int i = 0; i < 3; i++) Box("AmmoCase", new Vector3(x - 3.3f, .2f + i * .4f, -20.6f), new Vector3(.8f, .38f, .5f), i % 2 == 0 ? ink : metal);
         }
 
         // ---- figures -----------------------------------------------------------------------------------------------------------------
@@ -239,18 +382,58 @@ namespace Blindside.Hub.EditorTools
             m.transform.localPosition = Vector3.zero; m.transform.localRotation = Quaternion.identity;
             foreach (var c in m.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
             HubFigure.HideGuns(m.transform);
+            // size and ground on the real (baked) mesh in the bind pose
             var b = Bounds(m);
             if (b.size.y > 1e-3f) m.transform.localScale *= PersonH / b.size.y;
             b = Bounds(m);
             m.transform.position += Vector3.up * (parent.position.y - b.min.y);
             var f = parent.gameObject.AddComponent<HubFigure>();
+            var an = m.GetComponentInChildren<Animator>();
+            var toe = an != null && an.isHuman ? an.GetBoneTransform(HumanBodyBones.LeftToes) : null;
+            if (toe != null) f.toeHeight = Mathf.Clamp(toe.position.y - parent.position.y, 0f, .2f);
             f.profile = op.animationProfile;
+            f.idle = Clip(IdleClipPath);
             f.walk = Clip(WalkClipPath);
             f.run = Clip(RunClipPath);
         }
 
-        // the HQ's own walk / run (the battle keeps the profiles' clips)
+        // the HQ's own idle / walk / run (the battle keeps the profiles' clips)
+        const string IdleClipPath = "Assets/3DModels/AnimationPack/Neutral Idle.fbx";
         const string WalkClipPath = "Assets/3DModels/AnimationPack/Walking.fbx", RunClipPath = "Assets/3DModels/AnimationPack/Running.fbx";
+
+        /// <summary>Blindside > Scenes > Set Up HQ Clips — the HQ clips as Humanoid loops (their own avatar, like the AnimationPack's
+        /// RifleRun): root rotation and height baked into the pose, the XZ travel left to the root (dropped: applyRootMotion is off, so
+        /// they play in place). Run again after replacing one of the FBX files.</summary>
+        [MenuItem("Blindside/Scenes/Set Up HQ Clips")]
+        public static void SetUpClips()
+        {
+            SetUpClip(IdleClipPath, "HubIdle");
+            SetUpClip(WalkClipPath, "Walking");
+            SetUpClip(RunClipPath, "Running");
+        }
+
+        static void SetUpClip(string path, string clipName)
+        {
+            var imp = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (imp == null) { Debug.LogWarning("[Hub] missing " + path); return; }
+            if (imp.animationType != ModelImporterAnimationType.Human || imp.avatarSetup != ModelImporterAvatarSetup.CreateFromThisModel)
+            {
+                imp.animationType = ModelImporterAnimationType.Human;
+                imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                imp.SaveAndReimport();
+                imp = (ModelImporter)AssetImporter.GetAtPath(path);
+            }
+            var src = imp.clipAnimations.Length > 0 ? imp.clipAnimations : imp.defaultClipAnimations;
+            if (src.Length == 0) { Debug.LogWarning("[Hub] no take in " + path); return; }
+            var c = src[0];
+            c.name = clipName; c.loopTime = true; c.loopPose = false;
+            c.lockRootRotation = true; c.keepOriginalOrientation = true;
+            c.lockRootHeightY = true; c.keepOriginalPositionY = true;
+            c.lockRootPositionXZ = false; c.keepOriginalPositionXZ = true;
+            c.heightFromFeet = false;
+            imp.clipAnimations = new[] { c };
+            imp.SaveAndReimport();
+        }
 
         static AnimationClip Clip(string fbx)
         {
@@ -312,15 +495,25 @@ namespace Blindside.Hub.EditorTools
             c.height = PersonH; c.radius = .3f; c.center = new Vector3(0f, PersonH * .5f, 0f);
         }
 
+        /// <summary>The world bounds of `g`'s visible geometry as it is posed now: skinned meshes baked (their `bounds` is the import-time
+        /// box, ~0.2 m off for these models), other renderers by their bounds.</summary>
         static Bounds Bounds(GameObject g)
         {
-            var rs = g.GetComponentsInChildren<Renderer>();
             Bounds b = default; bool any = false;
-            foreach (var r in rs)
+            void Add(Vector3 p) { if (!any) { b = new Bounds(p, Vector3.zero); any = true; } else b.Encapsulate(p); }
+            var baked = new Mesh();
+            foreach (var r in g.GetComponentsInChildren<Renderer>())
             {
                 if (!r.enabled) continue;
-                if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds);
+                if (r is SkinnedMeshRenderer smr && smr.sharedMesh != null)
+                {
+                    smr.BakeMesh(baked, false);            // renderer space without its scale: TransformPoint adds the full TRS
+                    var tr = smr.transform;
+                    foreach (var v in baked.vertices) Add(tr.TransformPoint(v));
+                }
+                else { Add(r.bounds.min); Add(r.bounds.max); }
             }
+            Object.DestroyImmediate(baked);
             return b;
         }
 
