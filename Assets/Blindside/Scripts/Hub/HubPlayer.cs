@@ -9,7 +9,9 @@ namespace Blindside.Hub
     [RequireComponent(typeof(CharacterController))]
     public class HubPlayer : MonoBehaviour
     {
-        public float walkSpeed = 2.4f, runSpeed = 4.6f, turnSpeed = 720f, gravity = 20f;
+        [Tooltip("m/s: walking, and running (Shift held while moving).")]
+        public float walkSpeed = 1.7f, runSpeed = 4.2f;
+        public float turnSpeed = 720f, gravity = 20f;
         [Tooltip("The camera whose yaw the movement follows (empty: Camera.main).")]
         public Transform view;
         public HubFigure figure;
@@ -21,6 +23,7 @@ namespace Blindside.Hub
         {
             cc = GetComponent<CharacterController>();
             if (figure == null) figure = GetComponentInChildren<HubFigure>();
+            if (figure != null) { figure.walkSpeed = walkSpeed; figure.runSpeed = runSpeed; }   // the blend follows this player's speeds
         }
 
         void Update()

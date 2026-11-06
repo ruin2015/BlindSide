@@ -245,6 +245,19 @@ namespace Blindside.Hub.EditorTools
             m.transform.position += Vector3.up * (parent.position.y - b.min.y);
             var f = parent.gameObject.AddComponent<HubFigure>();
             f.profile = op.animationProfile;
+            f.walk = Clip(WalkClipPath);
+            f.run = Clip(RunClipPath);
+        }
+
+        // the HQ's own walk / run (the battle keeps the profiles' clips)
+        const string WalkClipPath = "Assets/3DModels/AnimationPack/Walking.fbx", RunClipPath = "Assets/3DModels/AnimationPack/Running.fbx";
+
+        static AnimationClip Clip(string fbx)
+        {
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(fbx))
+                if (o is AnimationClip c && !c.name.StartsWith("__preview")) return c;
+            Debug.LogWarning("[Hub] no clip in " + fbx);
+            return null;
         }
 
         static void PlainFigure(Transform parent, Color color)
