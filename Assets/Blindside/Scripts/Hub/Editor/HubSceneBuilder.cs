@@ -412,9 +412,11 @@ namespace Blindside.Hub.EditorTools
             var toe = an != null && an.isHuman ? an.GetBoneTransform(HumanBodyBones.LeftToes) : null;
             if (toe != null) f.toeHeight = Mathf.Clamp(toe.position.y - parent.position.y, 0f, .2f);
             f.profile = op.animationProfile;
-            f.idle = Clip(IdleClipPath);
-            f.walk = Clip(WalkClipPath);
-            f.run = Clip(RunClipPath);
+            f.idle = Clip(IdleClipPath, "HubIdle");
+            f.walk = Clip(WalkClipPath, "Walking");
+            f.run = Clip(RunClipPath, "Running");
+            f.walkMirror = Clip(WalkClipPath, WalkMirrorName);
+            f.runMirror = Clip(RunClipPath, RunMirrorName);
         }
 
         // the HQ's own idle / walk / run (the battle keeps the profiles' clips)
@@ -428,11 +430,15 @@ namespace Blindside.Hub.EditorTools
         public static void SetUpClips()
         {
             SetUpClip(IdleClipPath, "HubIdle");
-            SetUpClip(WalkClipPath, "Walking");
-            SetUpClip(RunClipPath, "Running");
+            SetUpClip(WalkClipPath, "Walking", WalkMirrorName);
+            SetUpClip(RunClipPath, "Running", RunMirrorName);
         }
 
-        static void SetUpClip(string path, string clipName)
+        // the stride clips' mirrored takes (HubFigure takes the left leg from them, half a stride on)
+        const string WalkMirrorName = "WalkingMirror", RunMirrorName = "RunningMirror";
+
+        /// <param name="mirrorName">also a second take of the same motion, mirrored left ↔ right, under this name</param>
+        static void SetUpClip(string path, string clipName, string mirrorName = null)
         {
             var imp = AssetImporter.GetAtPath(path) as ModelImporter;
             if (imp == null) { Debug.LogWarning("[Hub] missing " + path); return; }
@@ -451,15 +457,32 @@ namespace Blindside.Hub.EditorTools
             c.lockRootHeightY = true; c.keepOriginalPositionY = true;
             c.lockRootPositionXZ = false; c.keepOriginalPositionXZ = true;
             c.heightFromFeet = false;
-            imp.clipAnimations = new[] { c };
+            c.mirror = false;
+            if (string.IsNullOrEmpty(mirrorName)) imp.clipAnimations = new[] { c };
+            else
+            {
+                // the same take, mirrored: copy every setting, then flip
+                var m = new ModelImporterClipAnimation
+                {
+                    name = mirrorName, takeName = c.takeName, firstFrame = c.firstFrame, lastFrame = c.lastFrame,
+                    loopTime = c.loopTime, loopPose = c.loopPose, cycleOffset = c.cycleOffset,
+                    lockRootRotation = c.lockRootRotation, keepOriginalOrientation = c.keepOriginalOrientation,
+                    lockRootHeightY = c.lockRootHeightY, keepOriginalPositionY = c.keepOriginalPositionY,
+                    lockRootPositionXZ = c.lockRootPositionXZ, keepOriginalPositionXZ = c.keepOriginalPositionXZ,
+                    heightFromFeet = c.heightFromFeet, rotationOffset = c.rotationOffset, heightOffset = c.heightOffset,
+                    mirror = true,
+                };
+                imp.clipAnimations = new[] { c, m };
+            }
             imp.SaveAndReimport();
         }
 
-        static AnimationClip Clip(string fbx)
+        /// <summary>The take named `name` in `fbx` (null: its first take).</summary>
+        static AnimationClip Clip(string fbx, string name = null)
         {
             foreach (var o in AssetDatabase.LoadAllAssetsAtPath(fbx))
-                if (o is AnimationClip c && !c.name.StartsWith("__preview")) return c;
-            Debug.LogWarning("[Hub] no clip in " + fbx);
+                if (o is AnimationClip c && !c.name.StartsWith("__preview") && (name == null || c.name == name)) return c;
+            Debug.LogWarning("[Hub] no clip" + (name != null ? " " + name : "") + " in " + fbx);
             return null;
         }
 
