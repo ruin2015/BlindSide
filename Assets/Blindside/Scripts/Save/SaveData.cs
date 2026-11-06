@@ -26,6 +26,29 @@ namespace Blindside.Save
         public int level = 1, exp;
         public int points;                       // unspent
         public int hp, def, atk, mob, prec;      // 体力 / 防御力 / 攻撃力 / 機動力 / 精密力
+        /// <summary>Of the stats above, how many came from the HQ's training ground (bought with money; Hub.HubCatalog.TrainCost) —
+        /// counted per stat in the same order, so the price rises with each session.</summary>
+        public int[] trained = new int[5];
+        /// <summary>The gadget the operator carries (Hub.HubCatalog.Gadgets key; "" = none). Phase 2 takes it into the match.</summary>
+        public string gadget = "";
+
+        public int StatPoints(int i)
+        {
+            switch (i) { case 0: return hp; case 1: return def; case 2: return atk; case 3: return mob; default: return prec; }
+        }
+
+        public void AddStat(int i, int n)
+        {
+            switch (i) { case 0: hp += n; break; case 1: def += n; break; case 2: atk += n; break; case 3: mob += n; break; default: prec += n; break; }
+        }
+    }
+
+    /// <summary>How many of a consumable item (a gadget) the squad holds.</summary>
+    [Serializable]
+    public class ItemCount
+    {
+        public string key = "";
+        public int count;
     }
 
     /// <summary>A weapon's mastery (shared by everyone who uses it).</summary>
@@ -39,7 +62,7 @@ namespace Blindside.Save
     [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 2;     // 2: rank points, money, operator / weapon progress
+        public const int CurrentVersion = 3;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training)
 
         public int version = CurrentVersion;
         public string createdUtc = "";      // ISO 8601 (round-trip "o")
@@ -57,6 +80,23 @@ namespace Blindside.Save
         public int money;                        // yen
         public List<OperatorProgress> operators = new List<OperatorProgress>();
         public List<WeaponProgress> weapons = new List<WeaponProgress>();
+        /// <summary>Weapons bought at the HQ's shop (WeaponData.key). Every operator's first gun is owned without being listed.</summary>
+        public List<string> ownedWeapons = new List<string>();
+        /// <summary>Gadgets in stock (bought at the shop).</summary>
+        public List<ItemCount> gadgets = new List<ItemCount>();
+
+        public bool OwnsWeapon(string key) => !string.IsNullOrEmpty(key) && ownedWeapons != null && ownedWeapons.Contains(key);
+
+        /// <summary>The stock line of gadget `key` (made at 0 when it has none).</summary>
+        public ItemCount GadgetOf(string key)
+        {
+            key = key ?? "";
+            if (gadgets == null) gadgets = new List<ItemCount>();
+            foreach (var g in gadgets) if (g != null && g.key == key) return g;
+            var made = new ItemCount { key = key };
+            gadgets.Add(made);
+            return made;
+        }
 
         /// <summary>`key`'s growth (made at level 1 when it has none).</summary>
         public OperatorProgress OperatorOf(string key)
@@ -125,7 +165,18 @@ namespace Blindside.Save
             if (playSeconds < 0 || double.IsNaN(playSeconds)) playSeconds = 0;
             if (operators == null) operators = new List<OperatorProgress>();
             operators.RemoveAll(o => o == null);
-            foreach (var o in operators) { if (o.key == null) o.key = ""; if (o.level < 1) o.level = 1; if (o.exp < 0) o.exp = 0; if (o.points < 0) o.points = 0; }
+            foreach (var o in operators)
+            {
+                if (o.key == null) o.key = ""; if (o.level < 1) o.level = 1; if (o.exp < 0) o.exp = 0; if (o.points < 0) o.points = 0;
+                if (o.trained == null || o.trained.Length != 5) { var t = new int[5]; if (o.trained != null) for (int i = 0; i < 5 && i < o.trained.Length; i++) t[i] = o.trained[i]; o.trained = t; }
+                for (int i = 0; i < 5; i++) if (o.trained[i] < 0) o.trained[i] = 0;
+                if (o.gadget == null) o.gadget = "";
+            }
+            if (ownedWeapons == null) ownedWeapons = new List<string>();
+            ownedWeapons.RemoveAll(string.IsNullOrEmpty);
+            if (gadgets == null) gadgets = new List<ItemCount>();
+            gadgets.RemoveAll(g => g == null || string.IsNullOrEmpty(g.key));
+            foreach (var g in gadgets) if (g.count < 0) g.count = 0;
             if (weapons == null) weapons = new List<WeaponProgress>();
             weapons.RemoveAll(w => w == null);
             foreach (var w in weapons) { if (w.key == null) w.key = ""; if (w.level < 1) w.level = 1; if (w.exp < 0) w.exp = 0; }

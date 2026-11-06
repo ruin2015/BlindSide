@@ -71,7 +71,7 @@ namespace Blindside.Integration
             {
                 if (operationResult == null) operationResult = GetComponent<OperationResultScreen>();
                 if (operationResult == null) operationResult = gameObject.AddComponent<OperationResultScreen>();
-                operationResult.Play(report, side, ReturnToTitle);
+                operationResult.Play(report, side, ReturnToHq);
                 yield break;
             }
 
@@ -128,6 +128,18 @@ namespace Blindside.Integration
                 return;
             }
             if (title != null) title.ShowAgain();
+        }
+
+        /// <summary>本部へ戻る (a won operation) — the squad's HQ scene when the build has it (Blindside.Hub), else the title as before.</summary>
+        void ReturnToHq()
+        {
+            if (!Application.isPlaying || !Blindside.Flow.SceneFlow.HubAvailable || Blindside.Flow.SceneFlow.ActiveRole == null) { ReturnToTitle(); return; }
+            ClearMatch();
+            BattlefieldCamera.Deactivate();
+            PlaySession.End();
+            RestoreDefaultWorld();
+            Blindside.Tutorial.TutorialDirector.Disarm(this);
+            Blindside.Flow.SceneFlow.GoHub();
         }
 
         /// <summary>[エディタへ] (test play) — the match is cleared, the world is the default one again, and the editor resumes exactly as it

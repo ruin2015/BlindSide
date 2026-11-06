@@ -179,7 +179,9 @@ namespace Blindside.UI
                 return;
             }
             busy = true;
-            Wipe(ShowSelect);
+            // a game past the tutorial goes on at the squad's HQ (when the build has it); else the select screen as before
+            if (SaveSystem.Current != null && SaveSystem.Current.tutorialDone && SceneFlow.HubAvailable) Wipe(SceneFlow.GoHub);
+            else Wipe(ShowSelect);
         }
 
         public void Quit()

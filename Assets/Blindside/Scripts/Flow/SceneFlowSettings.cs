@@ -15,6 +15,8 @@ namespace Blindside.Flow
         public string tutorialScene = "Tutorial";
         [Tooltip("A match on the default house, or on whatever map the title hands over.")]
         public string battleScene = "Battle";
+        [Tooltip("The squad's HQ (third person): where a finished operation returns, and where a loaded game starts.")]
+        public string hubScene = "Hub";
         [Tooltip("The map editor (play mode in the editor only; not in Build Settings).")]
         public string mapEditorScenePath = "Assets/Blindside/Scenes/Editor/MapEditor.unity";
 

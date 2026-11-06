@@ -186,6 +186,9 @@ namespace Blindside.Flow.EditorTools
                 if (AssetDatabase.LoadAssetAtPath<SceneAsset>(p) != null) list.Add(new EditorBuildSettingsScene(p, true));
                 else Debug.LogWarning("[SceneSet] missing " + p + " (Blindside > Scenes > Build Scene Set)");
             }
+            // the squad's HQ (Blindside > Scenes > Build Squad Hub); optional until it is made
+            if (!string.IsNullOrEmpty(s.hubScene) && AssetDatabase.LoadAssetAtPath<SceneAsset>(PathOf(s.hubScene)) != null)
+                list.Add(new EditorBuildSettingsScene(PathOf(s.hubScene), true));
             var cat = Catalog();
             foreach (var e in cat.entries)
             {

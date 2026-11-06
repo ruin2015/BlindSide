@@ -13,7 +13,7 @@ using Blindside.Map;
 
 namespace Blindside.Flow
 {
-    public enum SceneRole { Title, Battle, Tutorial, MapEditor }
+    public enum SceneRole { Title, Battle, Tutorial, MapEditor, Hub }
 
     /// <summary>The match the next Battle scene is to play.</summary>
     public sealed class LaunchRequest
@@ -46,6 +46,16 @@ namespace Blindside.Flow
         public static void GoTitle() => Load(S.titleScene);
 
         public static void GoTutorial() => Load(S.tutorialScene);
+
+        /// <summary>The squad's HQ (the third-person hub between operations) is in the build.</summary>
+        public static bool HubAvailable => !string.IsNullOrEmpty(S.hubScene) && Application.CanStreamedLevelBeLoaded(S.hubScene);
+
+        /// <summary>The squad's HQ; the title when the hub scene isn't in the build yet.</summary>
+        public static void GoHub()
+        {
+            if (HubAvailable) Load(S.hubScene);
+            else { Debug.LogWarning("[SceneFlow] no hub scene in the build (Blindside > Scenes > Build Squad Hub) — the title instead"); GoTitle(); }
+        }
 
         public static void GoBattle(LaunchRequest request)
         {

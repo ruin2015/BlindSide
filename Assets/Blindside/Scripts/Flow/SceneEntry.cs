@@ -47,6 +47,7 @@ namespace Blindside.Flow
         IEnumerator Start()
         {
             yield return null;   // every Awake / OnEnable / Start of the scene has run
+            if (role == SceneRole.Hub) yield break;   // the hub runs itself (Blindside.Hub.HubDirector); it has no title UI
             if (title == null) { if (role != SceneRole.Title) Debug.LogError("[SceneEntry] no TitleSelectScreen in the scene"); yield break; }
             switch (role)
             {
