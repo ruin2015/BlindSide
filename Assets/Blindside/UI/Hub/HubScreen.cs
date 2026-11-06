@@ -1,6 +1,9 @@
 // The HQ's screen layer (menu canvas 1440 × 810), over the third-person view:
 //   Topbar   top left 24/20: ink plate 360 × 46 (blue band 12, 「本部」 18 title + "SQUAD HQ" 11 display), under it 30 high: money
-//            (¥, 14 display) and the rank (12 body) on paper2; top right 「タイトルへ」 (KitTextButton 14)
+//            (¥, 14 display) and the rank (12 body) on paper2; right of it (392) the place the player is in: ink plate 260 × 46,
+//            ◎ (BSTactical, gold) + the HubArea name 16 title
+//   Minimap  top right (HubMinimap): the floor plan, the stations' icons, the player's arrow
+//   Menu     ESC (HubMenu): 隊員情報 (SquadInfoContent — the stat points are given there), 設定, 保存, タイトルへ, 再開
 //   Labels   a floating name over every station (HubNpc): name 15 title (white, dark outline) + caption 11 (blue); hidden past 16 m
 //            or behind the camera. A pool made once; moved every frame (no allocation). Room signs (HubSign) the same, the caption in
 //            gold, shown within 11 m
@@ -33,7 +36,10 @@ namespace Blindside.Hub
         sealed class Label { public RectTransform rt; public TMP_Text name, caption; public HubNpc npc; public Transform sign; }
         readonly List<Label> labels = new List<Label>(12);
 
-        ShopContent shopC; MedicalContent medC; TrainingContent trainC; OperationsContent opsC; ManagementContent manageC;
+        ShopContent shopC; MedicalContent medC; TrainingContent trainC; OperationsContent opsC;
+        LoadoutContent loadC; IgnisContent ignisC; SquadInfoContent squadC;
+        HubMenu menu;
+        public HubMenu Menu => menu;
 
         /// <summary>Previews: a sample save shown instead of the session's.</summary>
         public SaveData previewData;
@@ -41,7 +47,8 @@ namespace Blindside.Hub
         /// <summary>Changes are kept (a save session, or a preview's sample).</summary>
         public bool Editable => SaveSystem.Current != null || (!Application.isPlaying && previewData != null);
 
-        public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen) || leaving;
+        public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
+                               || (menu != null && menu.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
         public KitGrowthPanel Growth => growth;
@@ -64,7 +71,10 @@ namespace Blindside.Hub
             s.talk = HubTalkPanel.Build(s.root);
             s.list.EscBlocked = () => s.growth.IsOpen;
             s.shopC = new ShopContent(s); s.medC = new MedicalContent(s); s.trainC = new TrainingContent(s);
-            s.opsC = new OperationsContent(s); s.manageC = new ManagementContent(s);
+            s.opsC = new OperationsContent(s); s.loadC = new LoadoutContent(s); s.ignisC = new IgnisContent(s, s.loadC, s.shopC);
+            s.squadC = new SquadInfoContent(s);
+            s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle);
+            s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen;
             s.RefreshTopbar();
             SaveSystem.Saved += s.OnSaved;
             return s;
@@ -101,10 +111,38 @@ namespace Blindside.Hub
             rankText.textWrappingMode = TextWrappingModes.NoWrap;
             UILayout.Place(rankText.rectTransform, 160f, 0f, 150f, 30f);
 
-            var back = KitTextButton.Create(root, "ToTitle", "タイトルへ", 14f, 36f, 1f, ToTitle);
-            var brt = (RectTransform)back.transform;
-            brt.anchorMin = brt.anchorMax = new Vector2(1f, 1f);
-            brt.anchoredPosition = new Vector2(-24f, -38f);
+            // where the player is now (HubArea), right of 「本部」
+            var loc = HudKit.NewRect("Location", root);
+            UILayout.Place(loc, 392f, 20f, 260f, 46f);
+            HudKit.AddImage(loc, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .78f));
+            loc.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 14f);
+            var pin = HudKit.AddText(loc, "◎", 14f, theme.acc, true, TextAlignmentOptions.Center, "Pin", UITheme.TextRole.Display);
+            HudKit.UseSymbolFont(pin);
+            UILayout.Place(pin.rectTransform, 12f, 0f, 24f, 46f);
+            locationText = HudKit.AddText(loc, "", 16f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Name", UITheme.TextRole.Title);
+            locationText.textWrappingMode = TextWrappingModes.NoWrap; locationText.overflowMode = TextOverflowModes.Ellipsis;
+            UILayout.Place(locationText.rectTransform, 42f, 0f, 200f, 46f);
+        }
+
+        TMP_Text locationText;
+        string location;
+
+        /// <summary>The place name next to 「本部」 (only redrawn when it changes).</summary>
+        public void SetLocation(string name)
+        {
+            if (name == location) return;
+            location = name;
+            locationText.SetText(string.IsNullOrEmpty(name) ? "—" : name);
+        }
+
+        HubMinimap minimap;
+
+        /// <summary>The minimap, top right (once, from the scene's walls).</summary>
+        public void BuildMinimap(IList<Bounds> walls, IList<HubNpc> npcs, IList<HubArea> areas, Transform player)
+        {
+            if (minimap != null) HudKit.DestroySafe(minimap.gameObject);
+            minimap = HubMinimap.Build(root, walls, npcs, areas, player);
+            minimap.transform.SetSiblingIndex(labelsRoot.GetSiblingIndex() + 1);   // under the panels
         }
 
         void BuildPrompt()
@@ -147,7 +185,7 @@ namespace Blindside.Hub
         void BuildHint()
         {
             var theme = UITheme.Current;
-            var h = HudKit.AddText(root, "WASD 移動 · Shift 走る · 右ドラッグ 視点 · F 調べる · G 話す", 11f, Color.Lerp(theme.dim, Color.white, .45f), true, TextAlignmentOptions.BottomLeft, "Hint", UITheme.TextRole.Body);
+            var h = HudKit.AddText(root, "WASD 移動 · Shift 走る · マウス 視点 · F 調べる · G 話す · ESC メニュー", 11f, Color.Lerp(theme.dim, Color.white, .45f), true, TextAlignmentOptions.BottomLeft, "Hint", UITheme.TextRole.Body);
             h.textWrappingMode = TextWrappingModes.NoWrap;
             var rt = h.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = Vector2.zero;
@@ -231,6 +269,10 @@ namespace Blindside.Hub
             if (cam == null) return;
             float scale = canvas != null ? canvas.scaleFactor : 1f;
             var camPos = cam.transform.position;
+            // the minimap's corner (labels under it are hidden: it is see-through)
+            var full = root.rect;
+            float mapX = full.width - HubMinimap.Right - HubMinimap.Size - 110f, mapY = full.height - HubMinimap.Top - HubMinimap.Size - 42f;
+            bool hasMap = minimap != null;
             for (int i = 0; i < labels.Count; i++)
             {
                 var l = labels[i];
@@ -238,10 +280,12 @@ namespace Blindside.Hub
                 var p = l.npc != null ? l.npc.LabelPoint : l.sign.position;
                 float range = l.npc != null ? LabelRange : SignRange;
                 var sp = cam.WorldToScreenPoint(p);
-                bool vis = !AnyOpen && sp.z > .2f && (p - camPos).sqrMagnitude < range * range;
+                var at = new Vector2(sp.x / scale, sp.y / scale);
+                bool vis = !AnyOpen && sp.z > .2f && (p - camPos).sqrMagnitude < range * range
+                           && !(hasMap && at.x > mapX && at.y > mapY);   // (a label is 220 wide, centred; 42 high from its foot)
                 if (l.rt.gameObject.activeSelf != vis) l.rt.gameObject.SetActive(vis);
                 if (!vis) continue;
-                l.rt.anchoredPosition = new Vector2(sp.x / scale, sp.y / scale);
+                l.rt.anchoredPosition = at;
                 float a = l.npc == null || l.npc == near ? 1f : .78f;
                 if (l.name.alpha != a) l.name.alpha = a;
             }
@@ -283,7 +327,9 @@ namespace Blindside.Hub
                 case HubStation.Medical: list.Open(medC, tab); break;
                 case HubStation.Training: list.Open(trainC, tab); break;
                 case HubStation.Operations: list.Open(opsC, tab); break;
-                case HubStation.Management: case HubStation.Growth: case HubStation.Loadout: list.Open(manageC, tab); break;
+                case HubStation.Management: list.Open(ignisC, tab); break;                       // IGNIS: ロードアウト / 装備購入 first
+                case HubStation.Loadout: list.Open(loadC, tab); break;
+                case HubStation.Growth: list.Open(squadC, tab); break;
             }
         }
 
@@ -334,11 +380,25 @@ namespace Blindside.Hub
             catch (System.Exception ex) { Debug.LogError("[Hub] " + e.id + ": " + ex.Message); return Blindside.Map.MapLibrary.LoadDefault(); }
         }
 
+        /// <summary>ESC: the HQ menu (when nothing else is open).</summary>
+        public void OpenMenu()
+        {
+            if (AnyOpen) return;
+            menu.Open();
+        }
+
+        void SaveNow()
+        {
+            if (SaveSystem.Current != null) SaveSystem.Write(false);   // (the SAVE notice)
+        }
+
+        /// <summary>The menu's タイトルへ: saved, then the title.</summary>
         void ToTitle()
         {
-            if (leaving || AnyOpen) return;
+            if (leaving) return;
             leaving = true;
             if (SaveSystem.Current != null) SaveSystem.Write(true, notify: false);
+            if (!Application.isPlaying) return;
             KitWipe.Play(Blindside.Flow.SceneFlow.GoTitle);
         }
     }

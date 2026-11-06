@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 11:03
+Screen 1440x810 · 0 issues · generated 2026-11-06 11:27
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -38,6 +38,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_training | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_operations | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_manage | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_loadout | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_squad | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_talk | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu_test | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -119,25 +122,27 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 63종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 65종)
 
 - Brighten ×6
 - Chip ×531
 - ClickRelay ×3
 - CornerBrackets ×27
-- CutCornerGraphic ×155
+- CutCornerGraphic ×161
 - EngagePreview ×3
 - ExpGainPopup ×1
 - HazardStripe ×185
-- HubListPanel ×7
-- HubScreen ×9
+- HubListPanel ×9
+- HubMenu ×2
+- HubMinimap ×1
+- HubScreen ×12
 - HubTalkPanel ×1
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×37
-- KitBrighten ×91
+- KitBrighten ×100
 - KitChoice ×5
 - KitCommandMenu ×13
 - KitGradient ×12
@@ -147,24 +152,24 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitPointer ×59
 - KitRoster ×34
 - KitSaveIndicator ×1
-- KitShadow ×128
+- KitShadow ×130
 - KitSlider ×6
 - KitStepper ×1
 - KitSweep ×169
 - KitSwitch ×4
-- KitTextButton ×62
+- KitTextButton ×63
 - KitTint ×299
 - KitTitleLeft ×6
 - LintIgnoreClip ×867
-- LintIgnoreOverlap ×293
+- LintIgnoreOverlap ×295
 - MainMenuScreen ×6
 - OperationResultScreen ×3
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×297
-- SlantedGraphic ×2868
+- SlantedGraphic ×2902
 - SlantedMask ×288
-- TacticalPanel ×1145
+- TacticalPanel ×1147
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialGuide ×3
@@ -211,7 +216,10 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_medical | 1440x810 | 本部 — 医務室 (SERUM) |
 | hub_training | 1440x810 | 本部 — 訓練所 (BASTION) |
 | hub_operations | 1440x810 | 本部 — 作戦室 (CRUSHER) |
-| hub_manage | 1440x810 | 本部 — 隊員・装備管理 (IGNIS) |
+| hub_manage | 1440x810 | 本部 — IGNIS (ロードアウト / 装備購入) |
+| hub_loadout | 1440x810 | 本部 — ロードアウト |
+| hub_menu | 1440x810 | 本部 — メニュー (ESC) |
+| hub_squad | 1440x810 | 本部 — 隊員情報 |
 | hub_talk | 1440x810 | 本部 — 会話 |
 | pause_menu | 1440x810 | ゲームメニュー (ESC) |
 | pause_menu_test | 1440x810 | ゲームメニュー — テストプレイ |

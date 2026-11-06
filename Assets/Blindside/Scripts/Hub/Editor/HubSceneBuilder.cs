@@ -1,13 +1,12 @@
 // Blindside > Scenes > Build Squad Hub — makes (or remakes) Assets/Blindside/Scenes/Hub.unity, the squad's HQ in third person, and
 // adds it to the Build Settings. Everything is built from primitives (blockout — replace with art later) with URP Lit materials
 // under Art/Hub:
-//   the building 32 × 33 m, walls 4 m:  lobby (centre, the player starts here) · 作戦室 (north, the big screen and the table) ·
-//   ショップ / 装備設定 / 隊員強化 (the west wing: counter, lockers, consoles) · 訓練所 (east: mats, targets) · south of the lobby a
-//   corridor (z −14 … −11) to four rooms, 8 × 8 m each, a sign (HubSign) over every door:
-//     医務室 (SERUM, medical items: beds, cabinets, curtain) · 訓練所 (BASTION, training: bench, racks, a heavy bag) · 多目的室 (nobody:
-//     table, chairs, a whiteboard, crates) · 隊員・装備管理 (IGNIS, stat points and equipment: workbenches, gun racks, a terminal)
-//   CRUSHER runs the 作戦室; the supply clerk the shop (装備購入). The operators open their station with F and talk with G. The west
-//   lab / armory and the east range are scenery now
+//   the building 32 × 22 m, walls 4 m:  lobby (centre, the player starts here) · 作戦室 (north: the big screen, the table; CRUSHER) ·
+//   the west wing: 医務室 (south: beds, curtain, cabinet; SERUM) · 装備購入 (middle: counter, shelves; the supply clerk) ·
+//   隊員・装備管理 (north: lockers, workbench, gun rack, terminal; IGNIS) · 訓練所 (east: targets, mat, bench press, dumbbells, a heavy bag;
+//   BASTION) · 多目的室 (a room off the lobby's south wall, x −4 … 4, z −19 … −11: table, chairs, whiteboard; nobody)
+//   a sign (HubSign) over every room's door and an area (HubArea) per room plus the lobby, for the place name and the minimap.
+//   The operators open their station with F and talk with G
 //   figures: sized and grounded on their baked mesh (SkinnedMeshRenderer.bounds is the import-time box, not the mesh), the toe bone's
 //   height over the sole kept for HubFigure's foot grounding
 //   the player:  FLARE's model (no gun: HubFigure hides gun nodes), CharacterController + HubPlayer, HubCamera behind
@@ -90,14 +89,22 @@ namespace Blindside.Hub.EditorTools
             Staff(HubStation.Shop, "補給係", "装備購入", new Vector3(-14.2f, 0f, 1f), 90f, new Color(1f, .78f, .12f));
             Operator("CRUSHER", HubStation.Operations, "作戦室 · 出撃", new Vector3(0f, 0f, 8.6f), 180f, 3.4f);   // behind the table
             foreach (var r in Rooms)
-                if (!string.IsNullOrEmpty(r.key)) Operator(r.key, r.station, r.caption, r.spot, r.yaw, 2.4f);
+                if (!string.IsNullOrEmpty(r.key)) Operator(r.key, r.station, r.caption, r.spot, r.yaw, 2.6f);
             foreach (var r in Rooms)
             {
                 var s = new GameObject("Sign_" + r.name).AddComponent<HubSign>();
                 s.transform.SetParent(world, false);
-                s.transform.position = new Vector3(r.x, 3.1f, CorridorZ1 + .3f);
+                s.transform.position = r.door;
                 s.displayName = r.name; s.caption = r.key ?? "";
+                var a = new GameObject("Area_" + r.name).AddComponent<HubArea>();
+                a.transform.SetParent(world, false);
+                a.transform.position = new Vector3(r.area.center.x, 0f, r.area.center.y);
+                a.size = r.area.size; a.displayName = r.name;
             }
+            // the lobby (the rooms inside it are smaller, so they win)
+            var lobby = new GameObject("Area_ロビー").AddComponent<HubArea>();
+            lobby.transform.SetParent(world, false);
+            lobby.transform.position = Vector3.zero; lobby.size = new Vector2(18f, 22f); lobby.displayName = "ロビー";
 
             // UI
             var canvasGo = new GameObject("HubCanvas", typeof(RectTransform));
@@ -141,27 +148,40 @@ namespace Blindside.Hub.EditorTools
             l.type = LightType.Point; l.color = c; l.range = range; l.intensity = intensity; l.shadows = LightShadows.None;
         }
 
-        // ---- the operators' rooms ------------------------------------------------------------------------------------------------------
-        const float CorridorZ0 = -11f, CorridorZ1 = -14f, RoomsZ1 = -22f, DoorW = 2.2f;
+        // ---- the rooms ------------------------------------------------------------------------------------------------------------------
+        // 多目的室 hangs off the lobby's south wall (x −4 … 4, z −19 … −11, its door the lobby's middle)
+        const float MultiZ0 = -11f, MultiZ1 = -19f, MultiHalfW = 4f;
 
         sealed class Room
         {
             public string key;        // who runs it (null: nobody)
-            public string name;       // the door sign
+            public string name;       // the door sign and the place name
             public string caption;    // the station's caption over the operator
             public HubStation station;
-            public float x;           // the room's centre (8 wide: x − 4 … x + 4)
+            public Rect area;         // the floor plan (x, z), for the place name
+            public Vector3 door;      // where the sign hangs (over the door, inside the lobby)
             public Vector3 spot;      // where the operator stands
             public float yaw;
         }
 
+        static Rect XZ(float x0, float x1, float z0, float z1) => Rect.MinMaxRect(x0, z0, x1, z1);
+
         static readonly Room[] Rooms =
         {
-            // each stands a little off the door line, turned toward the door (+z)
-            new Room { key = "SERUM",   name = "医務室",         caption = "医務室 · 回復薬",   station = HubStation.Medical,    x = -12f, spot = new Vector3(-11.2f, 0f, -16.8f), yaw = -15f },
-            new Room { key = "BASTION", name = "訓練所",         caption = "訓練所",            station = HubStation.Training,   x = -4f,  spot = new Vector3(-3.2f, 0f, -16.6f), yaw = -10f },
-            new Room { key = null,      name = "多目的室",       caption = "",                  station = HubStation.Talk,       x = 4f },
-            new Room { key = "IGNIS",   name = "隊員・装備管理", caption = "隊員・装備管理",    station = HubStation.Management, x = 12f,  spot = new Vector3(11.2f, 0f, -16.8f), yaw = 15f },
+            // the old 隊員強化 lab (west, south) → SERUM's 医務室; the old 装備設定 armory (west, north) → IGNIS; the old range (east) → BASTION's
+            // 訓練所. Each faces its door.
+            new Room { key = "SERUM",   name = "医務室",         caption = "医務室 · 回復薬", station = HubStation.Medical,    area = XZ(-16f, -9f, -11f, -3f),
+                       door = new Vector3(-8.7f, 3.1f, -7f),  spot = new Vector3(-13.4f, 0f, -7f),  yaw = 90f },
+            new Room { key = "IGNIS",   name = "隊員・装備管理", caption = "ロードアウト · 装備購入", station = HubStation.Management, area = XZ(-16f, -9f, 5f, 11f),
+                       door = new Vector3(-8.7f, 3.1f, 8f),   spot = new Vector3(-13f, 0f, 8.4f),   yaw = 100f },
+            new Room { key = "BASTION", name = "訓練所",         caption = "訓練所",          station = HubStation.Training,   area = XZ(9f, 16f, -11f, 11f),
+                       door = new Vector3(8.7f, 3.1f, 0f),    spot = new Vector3(12.4f, 0f, -1.2f), yaw = -90f },
+            new Room { key = null,      name = "多目的室",       caption = "",                station = HubStation.Talk,       area = XZ(-MultiHalfW, MultiHalfW, MultiZ1, MultiZ0),
+                       door = new Vector3(0f, 3.1f, MultiZ0 + .3f) },
+            new Room { key = null,      name = "作戦室",         caption = "",                station = HubStation.Talk,       area = XZ(-6f, 6f, 5f, 11f),
+                       door = new Vector3(0f, 3.1f, 4.7f) },
+            new Room { key = null,      name = "装備購入",       caption = "",                station = HubStation.Talk,       area = XZ(-16f, -9f, -3f, 5f),
+                       door = new Vector3(-8.7f, 3.1f, 1f) },
         };
 
         /// <summary>A squad operator at `pos` running `station` (F) and talkable (G).</summary>
@@ -183,25 +203,20 @@ namespace Blindside.Hub.EditorTools
         // ---- the building ------------------------------------------------------------------------------------------------------------
         static void Building()
         {
-            float zMid = (11f + RoomsZ1) * .5f, zLen = 11f - RoomsZ1 + .6f;
-            Box("Floor", new Vector3(0f, -.1f, zMid), new Vector3(32.6f, .2f, zLen), Mat("Floor", new Color(.24f, .26f, .29f), .25f));
-            Box("Ceiling", new Vector3(0f, WallH + .1f, zMid), new Vector3(32.6f, .2f, zLen), Mat("Ceiling", new Color(.16f, .17f, .19f), .1f), shadows: false);
+            var floor = Mat("Floor", new Color(.24f, .26f, .29f), .25f); var ceil = Mat("Ceiling", new Color(.16f, .17f, .19f), .1f);
+            Box("Floor", new Vector3(0f, -.1f, 0f), new Vector3(32.6f, .2f, 22.6f), floor);
+            Box("Ceiling", new Vector3(0f, WallH + .1f, 0f), new Vector3(32.6f, .2f, 22.6f), ceil, shadows: false);
+            float mz = (MultiZ0 + MultiZ1) * .5f, ml = MultiZ0 - MultiZ1;
+            Box("Floor", new Vector3(0f, -.1f, mz), new Vector3(MultiHalfW * 2f + .6f, .2f, ml + .6f), floor);
+            Box("Ceiling", new Vector3(0f, WallH + .1f, mz), new Vector3(MultiHalfW * 2f + .6f, .2f, ml + .6f), ceil, shadows: false);
 
-            // outer walls
-            WallX(-16f, 16f, 11f); WallX(-16f, 16f, RoomsZ1);
-            WallZ(-16f, RoomsZ1, 11f); WallZ(16f, RoomsZ1, 11f);
-            // the lobby's south wall, its door to the corridor in the middle
-            WallX(-16f, -1.6f, CorridorZ0); WallX(1.6f, 16f, CorridorZ0);
-            // the rooms' front wall, a door into each, and the walls between them
-            float left = -16f;
-            foreach (var r in Rooms)
-            {
-                WallX(left, r.x - DoorW * .5f, CorridorZ1);
-                left = r.x + DoorW * .5f;
-            }
-            WallX(left, 16f, CorridorZ1);
-            WallZ(-8f, RoomsZ1, CorridorZ1); WallZ(0f, RoomsZ1, CorridorZ1); WallZ(8f, RoomsZ1, CorridorZ1);
-            // the west wing (x = −9), doors to 隊員強化 / ショップ / 装備設定
+            // outer walls; the lobby's south wall has the 多目的室 door in the middle
+            WallX(-16f, 16f, 11f);
+            WallX(-16f, -1.6f, MultiZ0); WallX(1.6f, 16f, MultiZ0);
+            WallZ(-16f, -11f, 11f); WallZ(16f, -11f, 11f);
+            // 多目的室
+            WallZ(-MultiHalfW, MultiZ1, MultiZ0); WallZ(MultiHalfW, MultiZ1, MultiZ0); WallX(-MultiHalfW, MultiHalfW, MultiZ1);
+            // the west wing (x = −9), doors to 医務室 / ショップ / 隊員・装備管理
             WallZ(-9f, -11f, -8.2f); WallZ(-9f, -5.8f, -.2f); WallZ(-9f, 2.2f, 6.8f); WallZ(-9f, 9.2f, 11f);
             WallX(-16f, -9f, -3f); WallX(-16f, -9f, 5f);
             // 作戦室 (x −6 … 6, z 5 … 11), its door in the middle
@@ -225,13 +240,7 @@ namespace Blindside.Hub.EditorTools
             Lamp(new Vector3(-12.5f, 3.4f, -7f), new Color(.7f, 1f, .8f), 7f, 1.2f);
             Lamp(new Vector3(12.5f, 3.4f, 0f), new Color(1f, .95f, .9f), 12f, 1.6f);
             Lamp(new Vector3(0f, 3.4f, -8.5f), new Color(1f, .85f, .7f), 8f, 1.3f);
-            // the corridor and the rooms
-            Box("DecoLine_Corridor", new Vector3(0f, .005f, (CorridorZ0 + CorridorZ1) * .5f), new Vector3(31f, .01f, .12f), line, shadows: false);
-            for (int i = -12; i <= 12; i += 8) Lamp(new Vector3(i, 3.4f, -12.5f), new Color(1f, .95f, .88f), 6f, 1.1f);
-            Lamp(new Vector3(-12f, 3.4f, -18f), new Color(.85f, 1f, .95f), 8f, 1.5f);   // 医務室: clinical white-green
-            Lamp(new Vector3(-4f, 3.4f, -18f), new Color(1f, .92f, .8f), 8f, 1.5f);     // トレーニングルーム
-            Lamp(new Vector3(4f, 3.4f, -18f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 多目的室
-            Lamp(new Vector3(12f, 3.4f, -18f), new Color(1f, .85f, .65f), 8f, 1.4f);    // 武器整備室: workshop amber
+            Lamp(new Vector3(0f, 3.4f, -15f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 多目的室
         }
 
         static void WallX(float x0, float x1, float z) =>
@@ -259,16 +268,7 @@ namespace Blindside.Hub.EditorTools
             Box("ShopCounter", new Vector3(-12.6f, .5f, 1f), new Vector3(.8f, 1f, 4f), wood);
             for (int i = 0; i < 3; i++) Box("ShopShelf", new Vector3(-15.6f, .7f + i * .9f, 1f), new Vector3(.5f, .06f, 5f), metal);
             for (int i = 0; i < 8; i++) Box("DecoCrate", new Vector3(-15.55f, .95f + (i % 3) * .9f, -1.2f + i * .6f), new Vector3(.35f, .3f, .4f), i % 2 == 0 ? fabric : metal);
-            // 装備設定: lockers and the weapon rack
-            for (int i = 0; i < 6; i++) Box("Locker", new Vector3(-15.6f, 1f, 5.9f + i * .85f), new Vector3(.6f, 2f, .8f), i % 2 == 0 ? metal : ink);
-            Box("Bench", new Vector3(-12.2f, .25f, 8f), new Vector3(.5f, .5f, 3f), wood);
-            // 隊員強化: consoles
-            for (int i = 0; i < 3; i++)
-            {
-                Box("Console", new Vector3(-15.4f, .5f, -9.5f + i * 2.2f), new Vector3(.9f, 1f, 1.4f), ink);
-                Box("DecoConsoleScreen", new Vector3(-15.75f, 1.6f, -9.5f + i * 2.2f), new Vector3(.06f, .8f, 1.2f), screen, shadows: false);
-            }
-            // 訓練所: mats and targets
+            // 訓練所 (east): the range's targets, a mat and a barrier — the gym is added by TrainingRoom
             Box("DecoMat", new Vector3(12.5f, .02f, -6f), new Vector3(5f, .04f, 6f), fabric, shadows: false);
             for (int i = 0; i < 4; i++)
             {
@@ -276,101 +276,101 @@ namespace Blindside.Hub.EditorTools
                 Box("Target", new Vector3(15.2f, 1.45f, 3.5f + i * 1.8f), new Vector3(.06f, .9f, .6f), target);
             }
             Box("Barrier", new Vector3(11.5f, .5f, 6f), new Vector3(.4f, 1f, 4f), metal);
-            // the lobby's south side: a bench by the corridor door
+            // the lobby's south side: benches by the 多目的室 door
             Box("Sofa", new Vector3(-4.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
             Box("Sofa", new Vector3(4.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
 
-            MedicalRoom(-12f); GymRoom(-4f); MultiRoom(4f); ArmoryRoom(12f);
+            MedicalRoom(); LoadoutRoom(); TrainingRoom(); MultiRoom();
         }
 
-        // room interiors: x is the room's centre, the room spans x − 4 … x + 4, z −22 … −14 (its door at x, z −14)
-        static void MedicalRoom(float x)
+        // ---- room interiors -------------------------------------------------------------------------------------------------------------
+        /// <summary>医務室 — the old lab (x −16 … −9, z −11 … −3, its door on x −9 at z −7).</summary>
+        static void MedicalRoom()
         {
             var white = Mat("MedWhite", new Color(.86f, .89f, .9f), .3f);
             var green = Mat("MedGreen", new Color(.45f, .72f, .62f), .2f);
             var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
             var cross = Mat("MedCross", new Color(.9f, .2f, .25f), .3f, new Color(.6f, .08f, .1f));
-            Box("DecoFloor_Med", new Vector3(x, .006f, -18f), new Vector3(7.6f, .01f, 7.6f), Mat("MedFloor", new Color(.7f, .76f, .76f), .4f), shadows: false);
+            Box("DecoFloor_Med", new Vector3(-12.5f, .006f, -7f), new Vector3(6.6f, .01f, 7.6f), Mat("MedFloor", new Color(.7f, .76f, .76f), .4f), shadows: false);
+            // two beds along the west wall (heads to the wall), a curtain between them
             for (int i = 0; i < 2; i++)
             {
-                float bz = -20.6f + i * 0f, bx = x - 2.6f + i * 2.4f;
-                Box("Bed", new Vector3(bx, .35f, bz), new Vector3(1f, .7f, 2.2f), metal);
-                Box("DecoMattress", new Vector3(bx, .74f, bz), new Vector3(.92f, .1f, 2.1f), white);
-                Box("DecoPillow", new Vector3(bx, .83f, bz - .8f), new Vector3(.6f, .1f, .35f), white);
-                Box("DecoBlanket", new Vector3(bx, .8f, bz + .35f), new Vector3(.95f, .06f, 1.2f), green);
+                float bz = -9.6f + i * 5.2f;
+                Box("Bed", new Vector3(-14.7f, .35f, bz), new Vector3(2.2f, .7f, 1f), metal);
+                Box("DecoMattress", new Vector3(-14.7f, .74f, bz), new Vector3(2.1f, .1f, .92f), white);
+                Box("DecoPillow", new Vector3(-15.5f, .83f, bz), new Vector3(.35f, .1f, .6f), white);
+                Box("DecoBlanket", new Vector3(-14.35f, .8f, bz), new Vector3(1.2f, .06f, .95f), green);
             }
-            Box("DecoCurtain", new Vector3(x - 1.4f, 1.2f, -20.4f), new Vector3(.04f, 2.2f, 2.6f), green, shadows: false);
-            Box("MedCabinet", new Vector3(x + 3.55f, 1f, -19.5f), new Vector3(.6f, 2f, 2f), white);
-            Box("DecoCabinetGlass", new Vector3(x + 3.24f, 1.3f, -19.5f), new Vector3(.02f, 1.1f, 1.8f), Mat("Glass", new Color(.6f, .8f, .9f), .9f, new Color(.05f, .12f, .15f)), shadows: false);
-            Box("DeskMed", new Vector3(x + 2.6f, .4f, -16.2f), new Vector3(1.4f, .8f, .7f), white);
-            Box("DecoCross", new Vector3(x, 2.6f, -21.82f), new Vector3(.9f, .25f, .02f), cross, shadows: false);
-            Box("DecoCross", new Vector3(x, 2.6f, -21.82f), new Vector3(.25f, .9f, .02f), cross, shadows: false);
+            Box("DecoCurtain", new Vector3(-14.6f, 1.2f, -8.4f), new Vector3(2.6f, 2.2f, .04f), green, shadows: false);
+            Box("MedCabinet", new Vector3(-11f, 1f, -10.55f), new Vector3(2f, 2f, .6f), white);
+            Box("DecoCabinetGlass", new Vector3(-11f, 1.3f, -10.24f), new Vector3(1.8f, 1.1f, .02f), Mat("Glass", new Color(.6f, .8f, .9f), .9f, new Color(.05f, .12f, .15f)), shadows: false);
+            Box("DeskMed", new Vector3(-11.6f, .4f, -3.7f), new Vector3(1.4f, .8f, .7f), white);
+            Box("DecoCross", new Vector3(-15.83f, 2.6f, -7f), new Vector3(.02f, .25f, .9f), cross, shadows: false);
+            Box("DecoCross", new Vector3(-15.83f, 2.6f, -7f), new Vector3(.02f, .9f, .25f), cross, shadows: false);
         }
 
-        static void GymRoom(float x)
+        /// <summary>訓練所 — the old range (x 9 … 16): a gym corner in its south part beside the range.</summary>
+        static void TrainingRoom()
         {
             var rubber = Mat("Rubber", new Color(.12f, .13f, .14f), .1f);
             var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
             var red = Mat("Target", new Color(.9f, .21f, .3f), .3f);
             var bag = Mat("Leather", new Color(.35f, .12f, .1f), .35f);
-            Box("DecoFloor_Gym", new Vector3(x, .01f, -18f), new Vector3(7.6f, .02f, 7.6f), rubber, shadows: false);
-            // bench press
-            Box("Bench", new Vector3(x - 1.6f, .25f, -19.6f), new Vector3(.4f, .5f, 1.6f), Mat("Fabric", new Color(.2f, .23f, .28f), .05f));
-            Box("BenchUpright", new Vector3(x - 1.6f, .7f, -20.3f), new Vector3(1.4f, 1.4f, .08f), metal);
-            Box("Barbell", new Vector3(x - 1.6f, 1.25f, -20.25f), new Vector3(1.9f, .04f, .04f), metal);
-            for (int s = -1; s <= 1; s += 2) Box("DecoPlate", new Vector3(x - 1.6f + s * .8f, 1.25f, -20.25f), new Vector3(.06f, .4f, .4f), rubber);
-            // dumbbell rack
-            Box("DumbbellRack", new Vector3(x + 3.4f, .45f, -18.5f), new Vector3(.6f, .9f, 3f), metal);
-            for (int i = 0; i < 5; i++) Box("DecoDumbbell", new Vector3(x + 3.4f, .95f, -19.7f + i * .6f), new Vector3(.4f, .14f, .14f), rubber);
+            // bench press by the south wall
+            Box("Bench", new Vector3(13.4f, .25f, -9.2f), new Vector3(.4f, .5f, 1.6f), Mat("Fabric", new Color(.2f, .23f, .28f), .05f));
+            Box("BenchUpright", new Vector3(13.4f, .7f, -9.9f), new Vector3(1.4f, 1.4f, .08f), metal);
+            Box("Barbell", new Vector3(13.4f, 1.25f, -9.85f), new Vector3(1.9f, .04f, .04f), metal);
+            for (int s = -1; s <= 1; s += 2) Box("DecoPlate", new Vector3(13.4f + s * .8f, 1.25f, -9.85f), new Vector3(.06f, .4f, .4f), rubber);
+            // dumbbell rack on the east wall
+            Box("DumbbellRack", new Vector3(15.4f, .45f, -5.5f), new Vector3(.6f, .9f, 3f), metal);
+            for (int i = 0; i < 5; i++) Box("DecoDumbbell", new Vector3(15.4f, .95f, -6.7f + i * .6f), new Vector3(.4f, .14f, .14f), rubber);
             // heavy bag
-            Box("BagChain", new Vector3(x + 1.6f, 3.3f, -20.6f), new Vector3(.03f, 1.2f, .03f), metal, shadows: false);
+            Box("BagChain", new Vector3(10.8f, 3.3f, -9.8f), new Vector3(.03f, 1.2f, .03f), metal, shadows: false);
             var heavy = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             heavy.name = "HeavyBag"; heavy.transform.SetParent(world, false);
-            heavy.transform.position = new Vector3(x + 1.6f, 1.95f, -20.6f); heavy.transform.localScale = new Vector3(.45f, .65f, .45f);
+            heavy.transform.position = new Vector3(10.8f, 1.95f, -9.8f); heavy.transform.localScale = new Vector3(.45f, .65f, .45f);
             heavy.GetComponent<Renderer>().sharedMaterial = bag; heavy.isStatic = true;
-            Box("DecoStripe", new Vector3(x, 2.4f, -21.82f), new Vector3(6f, .12f, .02f), red, shadows: false);
+            Box("DecoStripe", new Vector3(15.83f, 2.4f, 0f), new Vector3(.02f, .12f, 14f), red, shadows: false);
         }
 
-        static void MultiRoom(float x)
+        /// <summary>多目的室 — the room off the lobby's south wall (x −4 … 4, z −19 … −11).</summary>
+        static void MultiRoom()
         {
+            const float x = 0f, dz = 3f;   // the interior as laid out for a room centred at z −18, moved to z −15
             var wood = Mat("Wood", new Color(.36f, .27f, .2f), .2f);
             var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
             var fabric = Mat("Fabric", new Color(.2f, .23f, .28f), .05f);
             var board = Mat("Board", new Color(.93f, .94f, .95f), .6f);
             var orange = Mat("Ember", new Color(.95f, .45f, .15f), .3f, new Color(.4f, .12f, .02f));
-            Box("Table", new Vector3(x, .38f, -18.6f), new Vector3(2.8f, .76f, 1.4f), wood);
+            Box("Table", new Vector3(x, .38f, -18.6f + dz), new Vector3(2.8f, .76f, 1.4f), wood);
             for (int i = 0; i < 3; i++)
             {
-                Box("Chair", new Vector3(x - 1f + i, .23f, -19.7f), new Vector3(.45f, .46f, .45f), fabric);
-                Box("Chair", new Vector3(x - 1f + i, .23f, -17.5f), new Vector3(.45f, .46f, .45f), fabric);
+                Box("Chair", new Vector3(x - 1f + i, .23f, -19.7f + dz), new Vector3(.45f, .46f, .45f), fabric);
+                Box("Chair", new Vector3(x - 1f + i, .23f, -17.5f + dz), new Vector3(.45f, .46f, .45f), fabric);
             }
-            Box("Whiteboard", new Vector3(x, 1.6f, -21.8f), new Vector3(3.2f, 1.4f, .06f), board, shadows: false);
-            Box("DecoBoardFrame", new Vector3(x, .88f, -21.76f), new Vector3(3.3f, .06f, .1f), metal, shadows: false);
-            for (int i = 0; i < 4; i++) Box("Crate", new Vector3(x - 3.3f, .3f + (i / 2) * .6f, -20.8f + (i % 2) * .7f), new Vector3(.7f, .6f, .65f), i % 2 == 0 ? wood : metal);
-            Box("DecoEmber", new Vector3(x + 3.82f, 1.6f, -18f), new Vector3(.02f, .5f, 3f), orange, shadows: false);
+            Box("Whiteboard", new Vector3(x, 1.6f, MultiZ1 + .2f), new Vector3(3.2f, 1.4f, .06f), board, shadows: false);
+            Box("DecoBoardFrame", new Vector3(x, .88f, MultiZ1 + .24f), new Vector3(3.3f, .06f, .1f), metal, shadows: false);
+            for (int i = 0; i < 4; i++) Box("Crate", new Vector3(x - 3.3f, .3f + (i / 2) * .6f, -17.8f + (i % 2) * .7f), new Vector3(.7f, .6f, .65f), i % 2 == 0 ? wood : metal);
+            Box("DecoEmber", new Vector3(x + 3.82f, 1.6f, -15f), new Vector3(.02f, .5f, 3f), orange, shadows: false);
         }
 
-        static void ArmoryRoom(float x)
+        /// <summary>隊員・装備管理 (IGNIS) — the old armory (x −16 … −9, z 5 … 11, its door on x −9 at z 8): lockers, a workbench under
+        /// the gun rack, a terminal.</summary>
+        static void LoadoutRoom()
         {
             var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
             var ink = Mat("Ink", new Color(.08f, .09f, .1f), .4f);
             var steel = Mat("Steel", new Color(.55f, .58f, .62f), .7f);
             var mat = Mat("WorkMat", new Color(.18f, .35f, .3f), .1f);
-            Box("Workbench", new Vector3(x - 1.4f, .45f, -20.9f), new Vector3(2.4f, .9f, .9f), metal);
-            Box("DecoWorkMat", new Vector3(x - 1.4f, .91f, -20.9f), new Vector3(2.2f, .02f, .8f), mat, shadows: false);
-            Box("Workbench", new Vector3(x + 3.3f, .45f, -18.6f), new Vector3(.9f, .9f, 2.4f), metal);
-            // gun racks on the back wall (silhouettes)
-            Box("GunRack", new Vector3(x + 1.8f, 1.5f, -21.78f), new Vector3(2.6f, 1.8f, .1f), ink, shadows: false);
-            for (int i = 0; i < 5; i++) Box("DecoRifle", new Vector3(x + .9f + i * .45f, 1.5f, -21.7f), new Vector3(.08f, 1.3f, .06f), steel, shadows: false);
-            // BASTION's shield on its stand
-            Box("ShieldStand", new Vector3(x - 3.2f, .5f, -17f), new Vector3(.5f, 1f, .5f), ink);
-            Box("Shield", new Vector3(x - 3.2f, 1.45f, -17f), new Vector3(.9f, 1.3f, .1f), steel);
-            Box("DecoShieldVisor", new Vector3(x - 3.2f, 1.75f, -16.94f), new Vector3(.4f, .1f, .02f), Mat("Screen", new Color(.05f, .2f, .35f), .8f, new Color(.1f, .5f, .9f) * 1.6f), shadows: false);
-            for (int i = 0; i < 3; i++) Box("AmmoCase", new Vector3(x - 3.3f, .2f + i * .4f, -20.6f), new Vector3(.8f, .38f, .5f), i % 2 == 0 ? ink : metal);
-            // the squad terminal (stats) beside the bench
+            for (int i = 0; i < 6; i++) Box("Locker", new Vector3(-15.6f, 1f, 5.9f + i * .85f), new Vector3(.6f, 2f, .8f), i % 2 == 0 ? metal : ink);
+            Box("Workbench", new Vector3(-12f, .45f, 10.4f), new Vector3(2.6f, .9f, .8f), metal);
+            Box("DecoWorkMat", new Vector3(-12f, .91f, 10.4f), new Vector3(2.4f, .02f, .7f), mat, shadows: false);
+            Box("GunRack", new Vector3(-12f, 2.2f, 10.8f), new Vector3(2.8f, 1.3f, .1f), ink, shadows: false);
+            for (int i = 0; i < 5; i++) Box("DecoRifle", new Vector3(-12.9f + i * .45f, 2.2f, 10.72f), new Vector3(.08f, 1.1f, .06f), steel, shadows: false);
+            for (int i = 0; i < 3; i++) Box("AmmoCase", new Vector3(-10f, .2f + i * .4f, 10.4f), new Vector3(.8f, .38f, .5f), i % 2 == 0 ? ink : metal);
             var screen = Mat("Screen", new Color(.05f, .2f, .35f), .8f, new Color(.1f, .5f, .9f) * 1.6f);
-            Box("Terminal", new Vector3(x + 3.4f, .55f, -16.2f), new Vector3(.7f, 1.1f, .9f), ink);
-            Box("DecoTerminalScreen", new Vector3(x + 3.02f, 1.35f, -16.2f), new Vector3(.04f, .6f, .8f), screen, shadows: false);
+            Box("Terminal", new Vector3(-12.2f, .55f, 5.6f), new Vector3(.9f, 1.1f, .6f), ink);
+            Box("DecoTerminalScreen", new Vector3(-12.2f, 1.35f, 5.92f), new Vector3(.8f, .6f, .04f), screen, shadows: false);
         }
 
         // ---- figures -----------------------------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
-// The HQ's third-person camera: behind and above the player, orbiting with the mouse while the right button is held (or the right
-// stick), zooming with the wheel; pulled in front of a wall that would hide the player. Holds still while a panel is open.
+// The HQ's third-person camera: behind and above the player, orbiting with the mouse's movement (the cursor is locked while walking)
+// or the right stick, zooming with the wheel; pulled in front of a wall that would hide the player. Holds still while a panel is open.
 // No allocation per frame.
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -27,7 +27,8 @@ namespace Blindside.Hub
                 var mouse = Mouse.current;
                 if (mouse != null)
                 {
-                    if (mouse.rightButton.isPressed)
+                    // the cursor is locked while walking (HubDirector): every mouse move turns the view
+                    if (Cursor.lockState == CursorLockMode.Locked)
                     {
                         var d = mouse.delta.ReadValue();
                         yaw += d.x * mouseSpeed; pitch -= d.y * mouseSpeed;

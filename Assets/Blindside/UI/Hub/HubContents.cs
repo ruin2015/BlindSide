@@ -6,7 +6,10 @@
 //   MedicalContent     医務室          (SERUM) medical items, stock up to MaxGadgetStock
 //   TrainingContent    訓練所          (BASTION) per operator: the five stats, money for one point each (TrainCost, MaxTrain per stat)
 //   OperationsContent  作戦室          (CRUSHER) the operations on offer (HubCatalog.Operations) → 出撃
-//   ManagementContent  隊員・装備管理  (IGNIS) per operator: 能力強化 (the growth panel), its guns, one attachment per slot, one item
+//   IgnisContent       (IGNIS) the choice first: ロードアウト or 装備購入, then that panel
+//   LoadoutContent     ロードアウト    per operator: its guns, one attachment per slot, one item
+//   SquadInfoContent   隊員情報        (the ESC menu) per operator: level and points (能力分配 → the growth panel), stats, ability, gun,
+//                                      attachments, item
 using System.Collections.Generic;
 using UnityEngine;
 using Blindside.Data;
@@ -263,17 +266,42 @@ namespace Blindside.Hub
         public override string Status() => "任務を受注して出撃します";
     }
 
-    // ---- 隊員・装備管理 ---------------------------------------------------------------------------------------------------------
-    public sealed class ManagementContent : HubContentBase
+    // ---- IGNIS: the choice first --------------------------------------------------------------------------------------------------
+    /// <summary>IGNIS's station: what to do — ロードアウト (LoadoutContent) or 装備購入 (the shop) — then that panel.</summary>
+    public sealed class IgnisContent : HubContentBase
     {
-        public ManagementContent(HubScreen s) : base(s) { }
-        public override string Title => "隊員・装備管理";
-        public override string En => "SQUAD MANAGEMENT";
+        readonly IHubContent loadout, shop;
+        public IgnisContent(HubScreen s, IHubContent loadout, IHubContent shop) : base(s) { this.loadout = loadout; this.shop = shop; }
+        public override string Title => "IGNIS";
+        public override string En => "LOADOUT / SHOP";
+
+        public override void Fill(int tab, List<HubRow> into)
+        {
+            into.Clear();
+            into.Add(new HubRow { name = "ロードアウト", note = "隊員ごとに武器・アタッチメント・アイテムを装備する", button = "開く", enabled = true, band = UITheme.Current.blue });
+            into.Add(new HubRow { name = "装備購入", note = "武器・アタッチメント・ガジェットを購入する", button = "開く", enabled = true, band = UITheme.Current.acc });
+        }
+
+        public override string Act(int tab, int row)
+        {
+            screen.List.Open(row == 0 ? loadout : shop);
+            return null;
+        }
+
+        public override string Status() => "何をする？";
+    }
+
+    // ---- ロードアウト ------------------------------------------------------------------------------------------------------------
+    public sealed class LoadoutContent : HubContentBase
+    {
+        public LoadoutContent(HubScreen s) : base(s) { }
+        public override string Title => "ロードアウト";
+        public override string En => "LOADOUT";
         public override int TabCount => Squad.Count;
         public override string Tab(int i) => SquadTab(i);
 
-        // the rows, in order: 能力強化 · the guns (null ones skipped) · every attachment · item なし · every gadget
-        enum Kind { Growth, Gun, Attachment, NoItem, Item }
+        // the rows, in order: the guns (null ones skipped) · every attachment · item なし · every gadget
+        enum Kind { Gun, Attachment, NoItem, Item }
         readonly List<Kind> kinds = new List<Kind>(24);
         readonly List<int> refs = new List<int>(24);
 
@@ -285,14 +313,6 @@ namespace Blindside.Hub
             if (tab >= Squad.Count) return;
             var op = Squad[tab];
             var p = D.OperatorOf(op.key);
-
-            Add(into, new HubRow
-            {
-                name = "能力強化", face = OperatorArt.Face(op.key), band = op.color,
-                note = "体力 " + p.hp + " · 防御 " + p.def + " · 攻撃 " + p.atk + " · 機動 " + p.mob + " · 精密 " + p.prec,
-                value = "Lv " + p.level + "   残り " + p.points + " pt", current = p.points > 0,
-                button = "強化", enabled = true,
-            }, Kind.Growth, 0);
 
             var guns = HubCatalog.GunsOf(op);
             int choice = Loadout.Choice(op);
@@ -350,9 +370,6 @@ namespace Blindside.Hub
             int i = refs[row];
             switch (kinds[row])
             {
-                case Kind.Growth:
-                    screen.OpenGrowth(op);
-                    return null;
                 case Kind.Gun:
                 {
                     var guns = HubCatalog.GunsOf(op);
@@ -387,6 +404,76 @@ namespace Blindside.Hub
             return null;
         }
 
-        public override string Status() => Editable ? "能力の割り振り、武器・アタッチメント・アイテムの装備" : base.Status();
+        public override string Status() => Editable ? "出撃時の武器・アタッチメント・アイテムを選びます" : base.Status();
+    }
+
+    // ---- 隊員情報 (the ESC menu) -------------------------------------------------------------------------------------------------
+    /// <summary>Every operator at a glance: the stat points (強化 opens the growth panel — the only place they are given), the stats, the
+    /// ability, the gun and its mastery, the attachments and the carried item. Read-only but for 強化.</summary>
+    public sealed class SquadInfoContent : HubContentBase
+    {
+        public SquadInfoContent(HubScreen s) : base(s) { }
+        public override string Title => "隊員情報";
+        public override string En => "SQUAD STATUS";
+        public override int TabCount => Squad.Count;
+        public override string Tab(int i) => SquadTab(i);
+
+        static readonly string[] StatShort = { "体力", "防御力", "攻撃力", "機動力", "精密力" };
+
+        public override void Fill(int tab, List<HubRow> into)
+        {
+            into.Clear();
+            if (tab >= Squad.Count) return;
+            var op = Squad[tab];
+            var p = D.OperatorOf(op.key);
+            int need = Progress.ProgressRules.LevelNeed(p.level);
+            into.Add(new HubRow
+            {
+                name = op.DisplayName + "  " + op.kr, face = OperatorArt.Face(op.key), band = op.color,
+                note = op.role + " · 経験値 " + (need > 0 ? p.exp + " / " + need : "MAX"),
+                value = "Lv " + p.level + "   残り " + p.points + " pt", current = p.points > 0,
+                button = "能力分配", enabled = true,
+            });
+            for (int i = 0; i < 5; i++)
+            {
+                int v = p.StatPoints(i);
+                string eff;
+                switch (i)
+                {
+                    case 0: eff = "最大HP +" + (v * Progress.ProgressBonus.HpPerPoint); break;
+                    case 1: eff = "被ダメージ −" + (Mathf.Min(Progress.ProgressBonus.DefMax, v * Progress.ProgressBonus.DefPerPoint) * 100f).ToString("0.#") + "%"; break;
+                    case 2: eff = "与ダメージ +" + (v * Progress.ProgressBonus.AtkPerPoint * 100f).ToString("0") + "%"; break;
+                    case 3: eff = "移動力 +" + (v * Progress.ProgressBonus.MovePerPoint).ToString("0.#") + "m"; break;
+                    default: eff = "命中 +" + (v * Progress.ProgressBonus.AccPerPoint).ToString("0.#"); break;
+                }
+                into.Add(new HubRow { name = "ステータス  " + StatShort[i], note = eff + " (訓練 " + p.trained[i] + " 回)", value = v + " pt", band = op.color });
+            }
+            into.Add(new HubRow
+            {
+                name = "アビリティ  " + op.abilityName, note = string.IsNullOrEmpty(op.description) ? "" : op.description.Replace('\n', ' '),
+                value = op.charges >= 99 ? "回数 無制限" : "回数 " + op.charges,
+            });
+            var gun = Loadout.Of(op, true);
+            if (gun != null)
+            {
+                var m = D.WeaponOf(gun.key);
+                into.Add(new HubRow { name = "武器  " + gun.weaponName, note = ShopContent.GunNote(gun), value = "熟練度 Lv " + m.level });
+            }
+            for (int s = 0; s < HubCatalog.AttachmentSlots.Length; s++)
+            {
+                var a = HubCatalog.AttachmentOf(p.attachments[s]);
+                into.Add(new HubRow { name = HubCatalog.AttachmentSlots[s] + "  " + (a != null ? a.name : "なし"), note = a != null ? a.note : "", value = a != null ? "装備中" : "" });
+            }
+            var g = HubCatalog.GadgetOf(p.gadget);
+            into.Add(new HubRow { name = "アイテム  " + (g != null ? g.name : "なし"), note = g != null ? g.note : "", value = g != null ? "所持 " + D.GadgetOf(g.key).count : "" });
+        }
+
+        public override string Act(int tab, int row)
+        {
+            if (row == 0 && tab < Squad.Count) screen.OpenGrowth(Squad[tab]);
+            return null;
+        }
+
+        public override string Status() => "隊員を選んで確認します · 能力分配でポイントを割り振ります";
     }
 }
