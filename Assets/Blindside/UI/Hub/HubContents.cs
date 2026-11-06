@@ -1,11 +1,12 @@
 // What each HQ station lists in the HubListPanel (rules and goods: HubCatalog). Every change goes into the session's save and is
 // written at once (SaveSystem.Write: the SAVE notice). Without a save session (a scene played on its own) the lists show but every
 // button is off. Rows are rebuilt on a click only.
-//   GrowthContent      隊員強化   the squad: Lv, points left → 強化 opens the growth panel (KitGrowthPanel) on that operator
-//   ShopContent        ショップ   武器 (guns not owned yet, by price) / ガジェット (stock up to MaxGadgetStock)
-//   TrainingContent    訓練所     per operator: the five stats, money for one point each (TrainCost, MaxTrain per stat)
-//   OperationsContent  作戦室     the operations on offer (HubCatalog.Operations) → 出撃
-//   LoadoutContent     装備設定   per operator: its guns (owned ones can be equipped) and one gadget
+//   ShopContent        装備購入        (supply clerk) 武器 (guns not owned yet) / アタッチメント (once for the squad) / ガジェット (tactical,
+//                                      stock up to MaxGadgetStock)
+//   MedicalContent     医務室          (SERUM) medical items, stock up to MaxGadgetStock
+//   TrainingContent    訓練所          (BASTION) per operator: the five stats, money for one point each (TrainCost, MaxTrain per stat)
+//   OperationsContent  作戦室          (CRUSHER) the operations on offer (HubCatalog.Operations) → 出撃
+//   ManagementContent  隊員・装備管理  (IGNIS) per operator: 能力強化 (the growth panel), its guns, one attachment per slot, one item
 using System.Collections.Generic;
 using UnityEngine;
 using Blindside.Data;
@@ -35,7 +36,7 @@ namespace Blindside.Hub
 
         protected static string SquadTab(int i) => i < Squad.Count ? Squad[i].DisplayName : "";
 
-        /// <summary>Takes `price` from the money and writes the save; false (nothing changed) when it isn't there.</summary>
+        /// <summary>Takes `price` from the money; false (nothing changed) when it isn't there.</summary>
         protected bool Pay(int price)
         {
             if (!Editable || D.money < price) return false;
@@ -44,49 +45,52 @@ namespace Blindside.Hub
         }
 
         protected static void Save() => SaveSystem.Write(false);
-    }
 
-    // ---- 隊員強化 -------------------------------------------------------------------------------------------------------------
-    public sealed class GrowthContent : HubContentBase
-    {
-        public GrowthContent(HubScreen s) : base(s) { }
-        public override string Title => "隊員強化";
-        public override string En => "OPERATOR GROWTH";
-
-        public override void Fill(int tab, List<HubRow> into)
+        /// <summary>A stock row for gadget `g` (shop / 医務室).</summary>
+        protected HubRow GadgetRow(HubCatalog.Gadget g)
         {
-            into.Clear();
-            foreach (var op in Squad)
+            int have = D.GadgetOf(g.key).count;
+            bool full = have >= HubCatalog.MaxGadgetStock;
+            return new HubRow
             {
-                var p = D.OperatorOf(op.key);
-                into.Add(new HubRow
-                {
-                    name = op.DisplayName, face = OperatorArt.Face(op.key), band = op.color,
-                    note = op.kr + " · " + op.role + "   体力 " + p.hp + " · 防御 " + p.def + " · 攻撃 " + p.atk + " · 機動 " + p.mob + " · 精密 " + p.prec,
-                    value = "Lv " + p.level + "   残り " + p.points + " pt",
-                    current = p.points > 0,
-                    button = "強化", enabled = true,
-                });
-            }
+                name = g.name, note = g.note + "   所持 " + have + " / " + HubCatalog.MaxGadgetStock,
+                value = Yen("", g.price), button = full ? "上限" : "購入", enabled = Editable && !full && D.money >= g.price,
+            };
         }
 
-        public override string Act(int tab, int row)
+        protected string BuyGadget(HubCatalog.Gadget g)
         {
-            if (row < Squad.Count) screen.OpenGrowth(Squad[row]);
+            if (!Editable || g == null) return null;
+            var line = D.GadgetOf(g.key);
+            if (line.count >= HubCatalog.MaxGadgetStock) return null;
+            if (!Pay(g.price)) return "所持金が足りません";
+            line.count++;
+            Save();
+            return g.name + " を購入しました (所持 " + line.count + ")";
+        }
+
+        protected static int CountOf(bool medical)
+        {
+            int n = 0;
+            foreach (var g in HubCatalog.Gadgets) if (g.medical == medical) n++;
+            return n;
+        }
+
+        protected static HubCatalog.Gadget NthOf(bool medical, int i)
+        {
+            foreach (var g in HubCatalog.Gadgets) if (g.medical == medical) { if (i == 0) return g; i--; }
             return null;
         }
-
-        public override string Status() => Editable ? "レベルアップで得たポイントを能力に割り振ります" : base.Status();
     }
 
-    // ---- ショップ ---------------------------------------------------------------------------------------------------------------
+    // ---- 装備購入 ---------------------------------------------------------------------------------------------------------------
     public sealed class ShopContent : HubContentBase
     {
         public ShopContent(HubScreen s) : base(s) { }
-        public override string Title => "ショップ";
-        public override string En => "SUPPLY SHOP";
-        public override int TabCount => 2;
-        public override string Tab(int i) => i == 0 ? "武器" : "ガジェット";
+        public override string Title => "装備購入";
+        public override string En => "EQUIPMENT SHOP";
+        public override int TabCount => 3;
+        public override string Tab(int i) => i == 0 ? "武器" : i == 1 ? "アタッチメント" : "ガジェット";
 
         static string Users(WeaponData w)
         {
@@ -118,16 +122,21 @@ namespace Blindside.Hub
                 }
                 return;
             }
-            foreach (var g in HubCatalog.Gadgets)
+            if (tab == 1)
             {
-                int have = D.GadgetOf(g.key).count;
-                bool full = have >= HubCatalog.MaxGadgetStock;
-                into.Add(new HubRow
+                foreach (var a in HubCatalog.Attachments)
                 {
-                    name = g.name, note = g.note + "   所持 " + have + " / " + HubCatalog.MaxGadgetStock,
-                    value = Yen("", g.price), button = full ? "上限" : "購入", enabled = Editable && !full && D.money >= g.price,
-                });
+                    bool owned = D.OwnsAttachment(a.key);
+                    into.Add(new HubRow
+                    {
+                        name = a.name + "  (" + HubCatalog.AttachmentSlots[a.slot] + ")", note = a.note + "   分隊全員で使える",
+                        value = owned ? "所持済み" : Yen("", a.price), current = owned,
+                        button = owned ? "購入済み" : "購入", enabled = Editable && !owned && D.money >= a.price,
+                    });
+                }
+                return;
             }
+            foreach (var g in HubCatalog.Gadgets) if (!g.medical) into.Add(GadgetRow(g));
         }
 
         public override string Act(int tab, int row)
@@ -142,17 +151,36 @@ namespace Blindside.Hub
                 if (!Pay(HubCatalog.WeaponPrice(w))) return "所持金が足りません";
                 D.ownedWeapons.Add(w.key);
                 Save();
-                return w.weaponName + " を購入しました (装備設定で装備できます)";
+                return w.weaponName + " を購入しました (隊員・装備管理で装備できます)";
             }
-            if (row >= HubCatalog.Gadgets.Length) return null;
-            var g = HubCatalog.Gadgets[row];
-            var line = D.GadgetOf(g.key);
-            if (line.count >= HubCatalog.MaxGadgetStock) return null;
-            if (!Pay(g.price)) return "所持金が足りません";
-            line.count++;
-            Save();
-            return g.name + " を購入しました (所持 " + line.count + ")";
+            if (tab == 1)
+            {
+                if (row >= HubCatalog.Attachments.Length) return null;
+                var a = HubCatalog.Attachments[row];
+                if (D.OwnsAttachment(a.key)) return null;
+                if (!Pay(a.price)) return "所持金が足りません";
+                D.ownedAttachments.Add(a.key);
+                Save();
+                return a.name + " を購入しました (隊員・装備管理で装備できます)";
+            }
+            return BuyGadget(NthOf(false, row));
         }
+    }
+
+    // ---- 医務室 ---------------------------------------------------------------------------------------------------------------
+    public sealed class MedicalContent : HubContentBase
+    {
+        public MedicalContent(HubScreen s) : base(s) { }
+        public override string Title => "医務室";
+        public override string En => "MEDICAL SUPPLY";
+
+        public override void Fill(int tab, List<HubRow> into)
+        {
+            into.Clear();
+            foreach (var g in HubCatalog.Gadgets) if (g.medical) into.Add(GadgetRow(g));
+        }
+
+        public override string Act(int tab, int row) => BuyGadget(NthOf(true, row));
     }
 
     // ---- 訓練所 ----------------------------------------------------------------------------------------------------------------
@@ -235,20 +263,37 @@ namespace Blindside.Hub
         public override string Status() => "任務を受注して出撃します";
     }
 
-    // ---- 装備設定 ---------------------------------------------------------------------------------------------------------------
-    public sealed class LoadoutContent : HubContentBase
+    // ---- 隊員・装備管理 ---------------------------------------------------------------------------------------------------------
+    public sealed class ManagementContent : HubContentBase
     {
-        public LoadoutContent(HubScreen s) : base(s) { }
-        public override string Title => "装備設定";
-        public override string En => "LOADOUT";
+        public ManagementContent(HubScreen s) : base(s) { }
+        public override string Title => "隊員・装備管理";
+        public override string En => "SQUAD MANAGEMENT";
         public override int TabCount => Squad.Count;
         public override string Tab(int i) => SquadTab(i);
 
+        // the rows, in order: 能力強化 · the guns (null ones skipped) · every attachment · item なし · every gadget
+        enum Kind { Growth, Gun, Attachment, NoItem, Item }
+        readonly List<Kind> kinds = new List<Kind>(24);
+        readonly List<int> refs = new List<int>(24);
+
+        void Add(List<HubRow> into, HubRow r, Kind k, int idx) { into.Add(r); kinds.Add(k); refs.Add(idx); }
+
         public override void Fill(int tab, List<HubRow> into)
         {
-            into.Clear();
+            into.Clear(); kinds.Clear(); refs.Clear();
             if (tab >= Squad.Count) return;
             var op = Squad[tab];
+            var p = D.OperatorOf(op.key);
+
+            Add(into, new HubRow
+            {
+                name = "能力強化", face = OperatorArt.Face(op.key), band = op.color,
+                note = "体力 " + p.hp + " · 防御 " + p.def + " · 攻撃 " + p.atk + " · 機動 " + p.mob + " · 精密 " + p.prec,
+                value = "Lv " + p.level + "   残り " + p.points + " pt", current = p.points > 0,
+                button = "強化", enabled = true,
+            }, Kind.Growth, 0);
+
             var guns = HubCatalog.GunsOf(op);
             int choice = Loadout.Choice(op);
             for (int i = 0; i < guns.Length; i++)
@@ -257,58 +302,91 @@ namespace Blindside.Hub
                 if (w == null) continue;
                 bool owned = HubCatalog.Owns(D, w), on = i == choice;
                 var m = D.WeaponOf(w.key);
-                into.Add(new HubRow
+                Add(into, new HubRow
                 {
                     name = "武器  " + w.weaponName, note = ShopContent.GunNote(w) + " · 熟練度 Lv " + m.level,
-                    value = on ? "装備中" : (owned ? "所持" : "未所持 (ショップ)"), current = on, band = op.color,
+                    value = on ? "装備中" : (owned ? "所持" : "未所持 (装備購入)"), current = on, band = op.color,
                     button = on ? "装備中" : "装備", enabled = owned && !on && (Editable || !Application.isPlaying),
-                });
+                }, Kind.Gun, i);
             }
-            var p = D.OperatorOf(op.key);
-            into.Add(new HubRow
+
+            for (int i = 0; i < HubCatalog.Attachments.Length; i++)
             {
-                name = "ガジェット  なし", note = "ガジェットを持たずに出撃する", value = string.IsNullOrEmpty(p.gadget) ? "装備中" : "",
-                current = string.IsNullOrEmpty(p.gadget), button = string.IsNullOrEmpty(p.gadget) ? "装備中" : "外す", enabled = Editable && !string.IsNullOrEmpty(p.gadget),
-            });
-            foreach (var g in HubCatalog.Gadgets)
+                var a = HubCatalog.Attachments[i];
+                bool owned = D.OwnsAttachment(a.key), on = p.attachments[a.slot] == a.key;
+                Add(into, new HubRow
+                {
+                    name = HubCatalog.AttachmentSlots[a.slot] + "  " + a.name, note = a.note,
+                    value = on ? "装備中" : (owned ? "所持" : "未所持 (装備購入)"), current = on,
+                    button = on ? "外す" : "装備", enabled = Editable && (on || owned),
+                }, Kind.Attachment, i);
+            }
+
+            bool none = string.IsNullOrEmpty(p.gadget);
+            Add(into, new HubRow
             {
+                name = "アイテム  なし", note = "アイテムを持たずに出撃する", value = none ? "装備中" : "", current = none,
+                button = none ? "装備中" : "外す", enabled = Editable && !none,
+            }, Kind.NoItem, 0);
+            for (int i = 0; i < HubCatalog.Gadgets.Length; i++)
+            {
+                var g = HubCatalog.Gadgets[i];
                 int have = D.GadgetOf(g.key).count;
                 bool on = p.gadget == g.key;
-                into.Add(new HubRow
+                Add(into, new HubRow
                 {
-                    name = "ガジェット  " + g.name, note = g.note, value = (on ? "装備中 · " : "") + "所持 " + have, current = on,
+                    name = "アイテム  " + g.name, note = g.note + (g.medical ? " (医務室)" : " (装備購入)"),
+                    value = (on ? "装備中 · " : "") + "所持 " + have, current = on,
                     button = on ? "装備中" : "装備", enabled = Editable && !on && have > 0,
-                });
+                }, Kind.Item, i);
             }
         }
 
         public override string Act(int tab, int row)
         {
-            if (tab >= Squad.Count) return null;
+            if (tab >= Squad.Count || row >= kinds.Count) return null;
             var op = Squad[tab];
-            var guns = HubCatalog.GunsOf(op);
-            // the rows: guns (null ones skipped), then なし, then every gadget
-            int gi = -1, seen = 0;
-            for (int i = 0; i < guns.Length; i++) { if (guns[i] == null) continue; if (seen == row) { gi = i; break; } seen++; }
-            if (gi >= 0)
-            {
-                if (!HubCatalog.Owns(D, guns[gi])) return "まだ所持していません (ショップで購入できます)";
-                Loadout.SetChoice(op, gi);
-                return op.DisplayName + " の武器を " + guns[gi].weaponName + " にしました";
-            }
-            if (!Editable) return null;
-            int k = row - seen;
             var p = D.OperatorOf(op.key);
-            if (k == 0) { p.gadget = ""; Save(); return op.DisplayName + " のガジェットを外しました"; }
-            k--;
-            if (k < 0 || k >= HubCatalog.Gadgets.Length) return null;
-            var g = HubCatalog.Gadgets[k];
-            if (D.GadgetOf(g.key).count <= 0) return "所持していません";
-            p.gadget = g.key;
-            Save();
-            return op.DisplayName + " に " + g.name + " を装備しました";
+            int i = refs[row];
+            switch (kinds[row])
+            {
+                case Kind.Growth:
+                    screen.OpenGrowth(op);
+                    return null;
+                case Kind.Gun:
+                {
+                    var guns = HubCatalog.GunsOf(op);
+                    if (!HubCatalog.Owns(D, guns[i])) return "まだ所持していません (装備購入で買えます)";
+                    Loadout.SetChoice(op, i);
+                    return op.DisplayName + " の武器を " + guns[i].weaponName + " にしました";
+                }
+                case Kind.Attachment:
+                {
+                    if (!Editable) return null;
+                    var a = HubCatalog.Attachments[i];
+                    if (p.attachments[a.slot] == a.key) { p.attachments[a.slot] = ""; Save(); return op.DisplayName + " の" + a.name + "を外しました"; }
+                    if (!D.OwnsAttachment(a.key)) return "まだ所持していません (装備購入で買えます)";
+                    p.attachments[a.slot] = a.key;
+                    Save();
+                    return op.DisplayName + " に " + a.name + " を付けました";
+                }
+                case Kind.NoItem:
+                    if (!Editable) return null;
+                    p.gadget = ""; Save();
+                    return op.DisplayName + " のアイテムを外しました";
+                case Kind.Item:
+                {
+                    if (!Editable) return null;
+                    var g = HubCatalog.Gadgets[i];
+                    if (D.GadgetOf(g.key).count <= 0) return "所持していません";
+                    p.gadget = g.key;
+                    Save();
+                    return op.DisplayName + " に " + g.name + " を装備しました";
+                }
+            }
+            return null;
         }
 
-        public override string Status() => Editable ? "出撃時の武器とガジェットを選びます" : base.Status();
+        public override string Status() => Editable ? "能力の割り振り、武器・アタッチメント・アイテムの装備" : base.Status();
     }
 }

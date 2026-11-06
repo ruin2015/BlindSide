@@ -3,13 +3,15 @@
 // under Art/Hub:
 //   the building 32 × 33 m, walls 4 m:  lobby (centre, the player starts here) · 作戦室 (north, the big screen and the table) ·
 //   ショップ / 装備設定 / 隊員強化 (the west wing: counter, lockers, consoles) · 訓練所 (east: mats, targets) · south of the lobby a
-//   corridor (z −14 … −11) to the operators' own rooms, 8 × 8 m each, a sign (HubSign) over every door:
-//     医務室 (SERUM: beds, cabinets, curtain) · トレーニングルーム (CRUSHER: bench, racks, a heavy bag) · 多目的室 (IGNIS: table,
-//     chairs, a whiteboard, crates) · 武器整備室 (BASTION: workbenches, gun racks, a shield stand)
+//   corridor (z −14 … −11) to four rooms, 8 × 8 m each, a sign (HubSign) over every door:
+//     医務室 (SERUM, medical items: beds, cabinets, curtain) · 訓練所 (BASTION, training: bench, racks, a heavy bag) · 多目的室 (nobody:
+//     table, chairs, a whiteboard, crates) · 隊員・装備管理 (IGNIS, stat points and equipment: workbenches, gun racks, a terminal)
+//   CRUSHER runs the 作戦室; the supply clerk the shop (装備購入). The operators open their station with F and talk with G. The west
+//   lab / armory and the east range are scenery now
 //   figures: sized and grounded on their baked mesh (SkinnedMeshRenderer.bounds is the import-time box, not the mesh), the toe bone's
 //   height over the sole kept for HubFigure's foot grounding
 //   the player:  FLARE's model (no gun: HubFigure hides gun nodes), CharacterController + HubPlayer, HubCamera behind
-//   the stations: HubNpc on each; staff NPCs are plain figures, the four operators their own models
+//   the stations: HubNpc on each; the shop clerk is a plain figure, the four operators their own models
 //   [SceneEntry] Hub, HubDirector, a menu canvas (UIThemeCanvas) and an EventSystem (Input System module)
 // Remaking replaces the scene file (the scene is generated: dress it after the layout settles, or keep the builder in sync).
 using System.Collections.Generic;
@@ -84,32 +86,17 @@ namespace Blindside.Hub.EditorTools
             hp.view = camGo.transform;
 
             // stations
-            Staff(HubStation.Operations, "作戦オペレーター", "作戦室 · 出撃", new Vector3(0f, 0f, 8.6f), 180f, new Color(.12f, .59f, .91f));
-            Staff(HubStation.Shop, "補給係", "ショップ", new Vector3(-14.2f, 0f, 1f), 90f, new Color(1f, .78f, .12f));
-            Staff(HubStation.Loadout, "武器係", "装備設定", new Vector3(-14.2f, 0f, 8f), 90f, new Color(.55f, .6f, .66f));
-            Staff(HubStation.Growth, "分析官", "隊員強化", new Vector3(-14.2f, 0f, -7f), 90f, new Color(.4f, .85f, .55f));
-            Staff(HubStation.Training, "訓練教官", "訓練所", new Vector3(10.8f, 0f, 0f), -90f, new Color(.9f, .21f, .3f));
-            for (int i = 0; i < HubCatalog.TalkKeys.Length; i++)
-            {
-                var room = RoomOf(HubCatalog.TalkKeys[i]);
-                var op = BuildAssetRegistry.Operator(HubCatalog.TalkKeys[i]);
-                var go = new GameObject("Talk_" + HubCatalog.TalkKeys[i]);
-                go.transform.SetParent(world, false);
-                go.transform.SetPositionAndRotation(room.spot, Quaternion.Euler(0f, room.yaw, 0f));
-                Figure(go.transform, op, op != null ? op.color : Color.gray);
-                Blocker(go.transform);
-                var n = go.AddComponent<HubNpc>();
-                n.station = HubStation.Talk; n.operatorKey = HubCatalog.TalkKeys[i];
-                n.displayName = op != null ? op.DisplayName : HubCatalog.TalkKeys[i];
-                n.caption = "会話";
-                n.radius = 2.2f;
-            }
+            // the supply clerk keeps the shop (equipment); the operators run the rest (F: the station, G: talk)
+            Staff(HubStation.Shop, "補給係", "装備購入", new Vector3(-14.2f, 0f, 1f), 90f, new Color(1f, .78f, .12f));
+            Operator("CRUSHER", HubStation.Operations, "作戦室 · 出撃", new Vector3(0f, 0f, 8.6f), 180f, 3.4f);   // behind the table
+            foreach (var r in Rooms)
+                if (!string.IsNullOrEmpty(r.key)) Operator(r.key, r.station, r.caption, r.spot, r.yaw, 2.4f);
             foreach (var r in Rooms)
             {
-                var s = new GameObject("Sign_" + r.key).AddComponent<HubSign>();
+                var s = new GameObject("Sign_" + r.name).AddComponent<HubSign>();
                 s.transform.SetParent(world, false);
                 s.transform.position = new Vector3(r.x, 3.1f, CorridorZ1 + .3f);
-                s.displayName = r.name; s.caption = r.caption;
+                s.displayName = r.name; s.caption = r.key ?? "";
             }
 
             // UI
@@ -159,7 +146,10 @@ namespace Blindside.Hub.EditorTools
 
         sealed class Room
         {
-            public string key, name, caption;
+            public string key;        // who runs it (null: nobody)
+            public string name;       // the door sign
+            public string caption;    // the station's caption over the operator
+            public HubStation station;
             public float x;           // the room's centre (8 wide: x − 4 … x + 4)
             public Vector3 spot;      // where the operator stands
             public float yaw;
@@ -168,16 +158,26 @@ namespace Blindside.Hub.EditorTools
         static readonly Room[] Rooms =
         {
             // each stands a little off the door line, turned toward the door (+z)
-            new Room { key = "SERUM",   name = "医務室",             caption = "SERUM",   x = -12f, spot = new Vector3(-11.2f, 0f, -16.8f), yaw = -15f },
-            new Room { key = "CRUSHER", name = "トレーニングルーム", caption = "CRUSHER", x = -4f,  spot = new Vector3(-3.2f, 0f, -16.6f), yaw = -10f },
-            new Room { key = "IGNIS",   name = "多目的室",           caption = "IGNIS",   x = 4f,   spot = new Vector3(4.8f, 0f, -16.8f), yaw = -20f },
-            new Room { key = "BASTION", name = "武器整備室",         caption = "BASTION", x = 12f,  spot = new Vector3(11.2f, 0f, -16.8f), yaw = 15f },
+            new Room { key = "SERUM",   name = "医務室",         caption = "医務室 · 回復薬",   station = HubStation.Medical,    x = -12f, spot = new Vector3(-11.2f, 0f, -16.8f), yaw = -15f },
+            new Room { key = "BASTION", name = "訓練所",         caption = "訓練所",            station = HubStation.Training,   x = -4f,  spot = new Vector3(-3.2f, 0f, -16.6f), yaw = -10f },
+            new Room { key = null,      name = "多目的室",       caption = "",                  station = HubStation.Talk,       x = 4f },
+            new Room { key = "IGNIS",   name = "隊員・装備管理", caption = "隊員・装備管理",    station = HubStation.Management, x = 12f,  spot = new Vector3(11.2f, 0f, -16.8f), yaw = 15f },
         };
 
-        static Room RoomOf(string key)
+        /// <summary>A squad operator at `pos` running `station` (F) and talkable (G).</summary>
+        static void Operator(string key, HubStation station, string caption, Vector3 pos, float yaw, float radius)
         {
-            foreach (var r in Rooms) if (r.key == key) return r;
-            return Rooms[0];
+            var op = BuildAssetRegistry.Operator(key);
+            var go = new GameObject("Op_" + key);
+            go.transform.SetParent(world, false);
+            go.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, yaw, 0f));
+            Figure(go.transform, op, op != null ? op.color : Color.gray);
+            Blocker(go.transform);
+            var n = go.AddComponent<HubNpc>();
+            n.station = station; n.operatorKey = key;
+            n.displayName = op != null ? op.DisplayName : key;
+            n.caption = caption;
+            n.radius = radius;
         }
 
         // ---- the building ------------------------------------------------------------------------------------------------------------
@@ -367,6 +367,10 @@ namespace Blindside.Hub.EditorTools
             Box("Shield", new Vector3(x - 3.2f, 1.45f, -17f), new Vector3(.9f, 1.3f, .1f), steel);
             Box("DecoShieldVisor", new Vector3(x - 3.2f, 1.75f, -16.94f), new Vector3(.4f, .1f, .02f), Mat("Screen", new Color(.05f, .2f, .35f), .8f, new Color(.1f, .5f, .9f) * 1.6f), shadows: false);
             for (int i = 0; i < 3; i++) Box("AmmoCase", new Vector3(x - 3.3f, .2f + i * .4f, -20.6f), new Vector3(.8f, .38f, .5f), i % 2 == 0 ? ink : metal);
+            // the squad terminal (stats) beside the bench
+            var screen = Mat("Screen", new Color(.05f, .2f, .35f), .8f, new Color(.1f, .5f, .9f) * 1.6f);
+            Box("Terminal", new Vector3(x + 3.4f, .55f, -16.2f), new Vector3(.7f, 1.1f, .9f), ink);
+            Box("DecoTerminalScreen", new Vector3(x + 3.02f, 1.35f, -16.2f), new Vector3(.04f, .6f, .8f), screen, shadows: false);
         }
 
         // ---- figures -----------------------------------------------------------------------------------------------------------------
@@ -485,7 +489,7 @@ namespace Blindside.Hub.EditorTools
             var n = go.AddComponent<HubNpc>();
             n.station = st; n.displayName = name; n.caption = caption;
             // behind a counter / table / bench: reachable from its far side
-            n.radius = st == HubStation.Operations ? 3.4f : st == HubStation.Shop || st == HubStation.Loadout || st == HubStation.Growth ? 3f : 2.4f;
+            n.radius = st == HubStation.Shop ? 3f : 2.4f;   // the shop clerk stands behind the counter
         }
 
         /// <summary>A capsule the player can't walk through.</summary>

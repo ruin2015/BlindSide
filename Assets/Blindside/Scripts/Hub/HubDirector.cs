@@ -50,9 +50,10 @@ namespace Blindside.Hub
             var kb = Keyboard.current; var pad = Gamepad.current;
             bool use = (kb != null && (kb.fKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame))
                        || (pad != null && pad.buttonSouth.wasPressedThisFrame);
-            if (!use) return;
+            bool talk = near.CanTalk && ((kb != null && kb.gKey.wasPressedThisFrame) || (pad != null && pad.buttonNorth.wasPressedThisFrame));
+            if (!use && !talk) return;
             near.Face(player.position);
-            screen.Open(near);
+            if (use) screen.Open(near); else screen.OpenTalk(near);
         }
 
         HubNpc Nearest()

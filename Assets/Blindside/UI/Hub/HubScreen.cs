@@ -4,9 +4,9 @@
 //   Labels   a floating name over every station (HubNpc): name 15 title (white, dark outline) + caption 11 (blue); hidden past 16 m
 //            or behind the camera. A pool made once; moved every frame (no allocation). Room signs (HubSign) the same, the caption in
 //            gold, shown within 11 m
-//   Prompt   bottom centre, 150 up: ink plate 380 × 44, a key cap "F" (blue 30 × 30) + 「話す — 作戦室」 15 body; shown while a station is
-//            in reach
-//   Hint     bottom left: 「WASD 移動 · Shift 走る · 右ドラッグ 視点 · F 調べる」 11 (dim)
+//   Prompt   bottom centre, 150 up: ink plate 380 × 44, a key cap "F" (blue 30 × 30) + 「作戦室 — CRUSHER」 15 body; an operator also
+//            gets a second plate under it (380 × 34): key cap "G" (paper2) + 「話す」. Shown while a station is in reach
+//   Hint     bottom left: 「WASD 移動 · Shift 走る · 右ドラッグ 視点 · F 調べる · G 話す」 11 (dim)
 //   Panels   HubListPanel (the stations), KitGrowthPanel (over the list), HubTalkPanel (会話)
 using System.Collections.Generic;
 using TMPro;
@@ -22,7 +22,7 @@ namespace Blindside.Hub
     {
         public const float LabelRange = 16f;
 
-        RectTransform root, labelsRoot, prompt;
+        RectTransform root, labelsRoot, prompt, talkPrompt;
         TMP_Text promptText, moneyText, rankText;
         HubListPanel list;
         HubTalkPanel talk;
@@ -33,7 +33,7 @@ namespace Blindside.Hub
         sealed class Label { public RectTransform rt; public TMP_Text name, caption; public HubNpc npc; public Transform sign; }
         readonly List<Label> labels = new List<Label>(12);
 
-        GrowthContent growthC; ShopContent shopC; TrainingContent trainC; OperationsContent opsC; LoadoutContent loadC;
+        ShopContent shopC; MedicalContent medC; TrainingContent trainC; OperationsContent opsC; ManagementContent manageC;
 
         /// <summary>Previews: a sample save shown instead of the session's.</summary>
         public SaveData previewData;
@@ -63,8 +63,8 @@ namespace Blindside.Hub
             s.growth = KitGrowthPanel.Build(s.root);
             s.talk = HubTalkPanel.Build(s.root);
             s.list.EscBlocked = () => s.growth.IsOpen;
-            s.growthC = new GrowthContent(s); s.shopC = new ShopContent(s); s.trainC = new TrainingContent(s);
-            s.opsC = new OperationsContent(s); s.loadC = new LoadoutContent(s);
+            s.shopC = new ShopContent(s); s.medC = new MedicalContent(s); s.trainC = new TrainingContent(s);
+            s.opsC = new OperationsContent(s); s.manageC = new ManagementContent(s);
             s.RefreshTopbar();
             SaveSystem.Saved += s.OnSaved;
             return s;
@@ -125,12 +125,29 @@ namespace Blindside.Hub
             promptText.textWrappingMode = TextWrappingModes.NoWrap; promptText.overflowMode = TextOverflowModes.Ellipsis;
             UILayout.Place(promptText.rectTransform, 56f, 0f, 310f, 44f);
             prompt.gameObject.SetActive(false);
+
+            // an operator: 「G 話す」 under it
+            talkPrompt = HudKit.NewRect("TalkPrompt", root);
+            talkPrompt.anchorMin = talkPrompt.anchorMax = talkPrompt.pivot = new Vector2(.5f, 0f);
+            talkPrompt.anchoredPosition = new Vector2(0f, 110f);
+            talkPrompt.sizeDelta = new Vector2(380f, 34f);
+            HudKit.AddImage(talkPrompt, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .8f));
+            talkPrompt.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 10f);
+            var gk = HudKit.NewRect("Key", talkPrompt);
+            UILayout.Place(gk, 14f, 5f, 24f, 24f);
+            HudKit.AddImage(gk, theme.paper2);
+            var gt = HudKit.AddText(gk, "G", 13f, theme.ink, true, TextAlignmentOptions.Center, "Text", UITheme.TextRole.Display);
+            HudKit.Stretch(gt.rectTransform);
+            var tt = HudKit.AddText(talkPrompt, "話す", 13f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Text", UITheme.TextRole.Body);
+            tt.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(tt.rectTransform, 50f, 0f, 300f, 34f);
+            talkPrompt.gameObject.SetActive(false);
         }
 
         void BuildHint()
         {
             var theme = UITheme.Current;
-            var h = HudKit.AddText(root, "WASD 移動 · Shift 走る · 右ドラッグ 視点 · F 調べる", 11f, Color.Lerp(theme.dim, Color.white, .45f), true, TextAlignmentOptions.BottomLeft, "Hint", UITheme.TextRole.Body);
+            var h = HudKit.AddText(root, "WASD 移動 · Shift 走る · 右ドラッグ 視点 · F 調べる · G 話す", 11f, Color.Lerp(theme.dim, Color.white, .45f), true, TextAlignmentOptions.BottomLeft, "Hint", UITheme.TextRole.Body);
             h.textWrappingMode = TextWrappingModes.NoWrap;
             var rt = h.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = Vector2.zero;
@@ -188,7 +205,11 @@ namespace Blindside.Hub
         }
 
         /// <summary>Previews: the prompt as if a station were in reach.</summary>
-        public void PosePrompt(string text) { prompt.gameObject.SetActive(true); promptText.SetText(text); }
+        public void PosePrompt(string text, bool talkToo = false)
+        {
+            prompt.gameObject.SetActive(true); promptText.SetText(text);
+            talkPrompt.gameObject.SetActive(talkToo);
+        }
 
         /// <summary>Previews: a floating label at `pos` (canvas units from the bottom left).</summary>
         public void PoseLabel(string name, string caption, Vector2 pos)
@@ -203,6 +224,8 @@ namespace Blindside.Hub
         {
             bool show = near != null && !AnyOpen;
             if (prompt.gameObject.activeSelf != show) prompt.gameObject.SetActive(show);
+            bool talkShow = show && near.CanTalk && near.station != HubStation.Talk;
+            if (talkPrompt.gameObject.activeSelf != talkShow) talkPrompt.gameObject.SetActive(talkShow);
             if (show && lastPromptNpc != near) promptText.SetText(PromptFor(near));
             if (cam == null) cam = Camera.main;
             if (cam == null) return;
@@ -231,39 +254,36 @@ namespace Blindside.Hub
         {
             if (n == lastPromptNpc) return lastPrompt;
             lastPromptNpc = n;
-            string verb = n.station == HubStation.Talk ? "話す" : "調べる";
-            lastPrompt = verb + " — " + n.displayName;
+            lastPrompt = n.station == HubStation.Talk ? "話す — " + n.displayName : n.caption + " — " + n.displayName;
             return lastPrompt;
         }
 
         // ---- stations ----------------------------------------------------------------------------------------------------------
+        /// <summary>F: the NPC's station (a talk-only NPC talks).</summary>
         public void Open(HubNpc n)
         {
             if (n == null || AnyOpen) return;
-            switch (n.station)
-            {
-                case HubStation.Growth: list.Open(growthC); break;
-                case HubStation.Shop: list.Open(shopC); break;
-                case HubStation.Training: list.Open(trainC); break;
-                case HubStation.Operations: list.Open(opsC); break;
-                case HubStation.Loadout: list.Open(loadC); break;
-                case HubStation.Talk:
-                    var op = BuildAssetRegistry.Operator(n.operatorKey);
-                    talk.Open(op, HubCatalog.Lines(n.operatorKey));
-                    break;
-            }
+            if (n.station == HubStation.Talk) { OpenTalk(n); return; }
+            OpenStation(n.station);
         }
 
-        /// <summary>Previews: a station's panel by kind (tab `tab`).</summary>
+        /// <summary>G: an operator's talk.</summary>
+        public void OpenTalk(HubNpc n)
+        {
+            if (n == null || AnyOpen || !n.CanTalk) return;
+            talk.Open(BuildAssetRegistry.Operator(n.operatorKey), HubCatalog.Lines(n.operatorKey));
+        }
+
+        /// <summary>A station's panel by kind (tab `tab`; previews too). The old Growth / Loadout stations open the management panel.</summary>
         public void OpenStation(HubStation st, int tab = 0)
         {
             switch (st)
             {
-                case HubStation.Growth: list.Open(growthC, tab); break;
                 case HubStation.Shop: list.Open(shopC, tab); break;
+                case HubStation.Medical: list.Open(medC, tab); break;
                 case HubStation.Training: list.Open(trainC, tab); break;
                 case HubStation.Operations: list.Open(opsC, tab); break;
-                case HubStation.Loadout: list.Open(loadC, tab); break;
+                case HubStation.Management: case HubStation.Growth: case HubStation.Loadout: list.Open(manageC, tab); break;
             }
         }
 

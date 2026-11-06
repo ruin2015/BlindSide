@@ -1,9 +1,12 @@
 // The squad HQ's rules and goods (phase 1 — tuned later):
 //   Squad       the attack squad (MatchBootstrap.AttackerKeys) from the asset registry; the HQ manages these five
+//   Stations    who runs what: 作戦室 CRUSHER · 訓練所 BASTION (the old gym) · 隊員・装備管理 IGNIS (the old weapon-care room: stat points,
+//               guns, attachments, the carried item) · 医務室 SERUM (medical items) · 装備購入 the supply clerk (guns, attachments, gadgets)
 //   Weapons     every squad operator's guns (OperatorData.weapons). The first is the operator's own (owned from the start); the others
-//               are sold at the shop (WeaponPrice) and, once bought, can be equipped (装備設定) by whoever lists them
-//   Gadgets     consumables sold at the shop, one carried per operator (装備設定). Stocked and equipped in the save; the match does not
-//               read them yet (phase 2)
+//               are sold at the shop (WeaponPrice) and, once bought, can be equipped by whoever lists them
+//   Attachments bought once for the squad (Attachments, a slot each: マズル / 光学機器 / グリップ / マガジン), one per slot per operator
+//   Items       consumables (Gadgets): tactical ones at the shop, medical ones at the 医務室; one carried per operator. Attachments and
+//               items are kept and equipped in the save; the match does not read them yet (phase 2)
 //   Training    money for one stat point: TrainCost(n) for the operator's n-th session in that stat (0-based), MaxTrain per stat
 //   Operations  the operations the war room offers: the built-in house, then every listed catalog map (MapCatalog), attack side,
 //               paid as StageRewards says
@@ -16,7 +19,8 @@ using Blindside.Save;
 
 namespace Blindside.Hub
 {
-    public enum HubStation { Growth, Shop, Talk, Training, Operations, Loadout }
+    /// <summary>What an NPC opens. Growth / Loadout are the old separate panels (kept so older scenes load; Management replaces both).</summary>
+    public enum HubStation { Growth, Shop, Talk, Training, Operations, Loadout, Management, Medical }
 
     public static class HubCatalog
     {
@@ -85,6 +89,8 @@ namespace Blindside.Hub
         {
             public string key, name, note;
             public int price;
+            /// <summary>Sold at the 医務室 (SERUM) rather than the shop.</summary>
+            public bool medical;
         }
 
         public const int MaxGadgetStock = 9;
@@ -94,9 +100,38 @@ namespace Blindside.Hub
             new Gadget { key = "frag",  name = "破片手榴弾",   note = "爆発で範囲内の敵にダメージを与える",   price = 4000 },
             new Gadget { key = "smoke", name = "スモーク弾",   note = "煙幕で一定範囲の視界を遮る",         price = 2500 },
             new Gadget { key = "flash", name = "閃光弾",       note = "範囲内の敵の命中率を一時的に下げる",   price = 3000 },
-            new Gadget { key = "medkit", name = "救急キット",  note = "体力を回復する",                     price = 3500 },
             new Gadget { key = "drone", name = "予備ドローン", note = "偵察ドローンを1機追加する",           price = 6000 },
+            new Gadget { key = "potion",    name = "回復薬",         note = "体力を少し回復する",             price = 1500, medical = true },
+            new Gadget { key = "medkit",    name = "救急キット",     note = "体力を大きく回復する",           price = 3500, medical = true },
+            new Gadget { key = "painkiller", name = "鎮痛剤",        note = "一時的に被ダメージを軽減する",   price = 2500, medical = true },
+            new Gadget { key = "adrenaline", name = "アドレナリン注射", note = "一時的に移動力を上げる",      price = 3000, medical = true },
         };
+
+        // ---- attachments ---------------------------------------------------------------------------------------------------------
+        public static readonly string[] AttachmentSlots = { "マズル", "光学機器", "グリップ", "マガジン" };
+
+        public sealed class Attachment
+        {
+            public string key, name, note;
+            public int slot, price;
+        }
+
+        public static readonly Attachment[] Attachments =
+        {
+            new Attachment { key = "suppressor", slot = 0, name = "サプレッサー",     note = "発砲音を抑え、位置を知られにくくする", price = 8000 },
+            new Attachment { key = "compensator", slot = 0, name = "コンペンセイター", note = "反動を抑えて命中率を上げる",           price = 6000 },
+            new Attachment { key = "dotsight",  slot = 1, name = "ドットサイト",     note = "近距離での照準が速くなる",             price = 5000 },
+            new Attachment { key = "scope",     slot = 1, name = "スコープ",         note = "遠距離の命中率が上がる",               price = 9000 },
+            new Attachment { key = "foregrip",  slot = 2, name = "フォアグリップ",   note = "射撃の安定性が上がる",                 price = 5000 },
+            new Attachment { key = "extmag",    slot = 3, name = "拡張マガジン",     note = "1回の射撃で撃てる弾数が増える",        price = 7000 },
+        };
+
+        public static Attachment AttachmentOf(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            foreach (var a in Attachments) if (a.key == key) return a;
+            return null;
+        }
 
         public static Gadget GadgetOf(string key)
         {
@@ -155,24 +190,24 @@ namespace Blindside.Hub
                 {
                     "よう、戻ったか。次の作戦まで少し休んでおけ。",
                     "壁の向こうに何がいるかは、開けてみるまで分からん。だから俺が開ける。",
-                    "装備の手入れは怠るなよ。作戦室で次の任務を確認しておけ。",
+                    "次の任務はここで受けろ。準備ができたら出撃だ。",
                 };
                 case "SERUM": return new[]
                 {
                     "怪我はない？ 無理だけはしないでね。",
+                    "回復薬や救急キットは、ここで用意してあるわ。",
                     "訓練所で鍛えた分は、必ず現場で生きるわ。",
-                    "救急キットはショップで補充できるわよ。",
                 };
                 case "IGNIS": return new[]
                 {
                     "強化壁だろうと関係ない。焼き切るだけだ。",
-                    "新しい銃が入ったらしい。ショップを覗いてみろ。",
-                    "準備ができたら作戦室へ行け。俺はいつでも出られる。",
+                    "能力の割り振りと装備の調整は俺が見てやる。",
+                    "新しいアタッチメントはショップで手に入る。",
                 };
                 case "BASTION": return new[]
                 {
                     "盾の後ろにいろ。それが一番安全だ。",
-                    "能力強化はこまめにな。ポイントを残しても意味はない。",
+                    "鍛えたい能力を選べ。付き合ってやる。",
                     "次の現場も、全員で帰るぞ。",
                 };
             }

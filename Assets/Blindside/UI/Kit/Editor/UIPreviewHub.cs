@@ -1,13 +1,14 @@
 // Render Previews / Lint states of the squad HQ's screen (no 3D: a plain backdrop behind the menu canvas), on a sample save
-// (¥58,000, CRUSHER Lv 3 with 4 points, SCAR bought, two frag grenades, IGNIS trained a little):
-//   hub_overlay      the topbar, a few floating labels and the prompt (作戦室 in reach)
-//   hub_shop         ショップ — 武器
-//   hub_shop_gadget  ショップ — ガジェット
-//   hub_training     訓練所 (IGNIS)
-//   hub_operations   作戦室
-//   hub_loadout      装備設定 (FLARE: SCAR owned)
-//   hub_growth       隊員強化 — the squad list
-//   hub_talk         会話 (CRUSHER)
+// (¥58,000, CRUSHER Lv 3 with 4 points, SCAR and a suppressor bought, two frag grenades and a potion, IGNIS trained a little):
+//   hub_overlay       the topbar, a few floating labels and the prompt (CRUSHER's 作戦室 in reach: F + G 話す)
+//   hub_shop          装備購入 — 武器
+//   hub_shop_attach   装備購入 — アタッチメント
+//   hub_shop_gadget   装備購入 — ガジェット
+//   hub_medical       医務室 (SERUM)
+//   hub_training      訓練所 (BASTION; IGNIS's tab)
+//   hub_operations    作戦室 (CRUSHER)
+//   hub_manage        隊員・装備管理 (IGNIS; FLARE's tab: SCAR owned, suppressor on, a frag carried)
+//   hub_talk          会話 (CRUSHER)
 using UnityEngine;
 using Blindside.Data;
 using Blindside.Hub;
@@ -18,8 +19,8 @@ namespace Blindside.UI.EditorTools
 {
     public static class UIPreviewHub
     {
-        public const string Overlay = "hub_overlay", Shop = "hub_shop", ShopGadget = "hub_shop_gadget", Training = "hub_training",
-            Operations = "hub_operations", LoadoutState = "hub_loadout", Growth = "hub_growth", Talk = "hub_talk";
+        public const string Overlay = "hub_overlay", Shop = "hub_shop", ShopAttach = "hub_shop_attach", ShopGadget = "hub_shop_gadget",
+            Medical = "hub_medical", Training = "hub_training", Operations = "hub_operations", Manage = "hub_manage", Talk = "hub_talk";
 
         static SaveData Sample()
         {
@@ -28,8 +29,10 @@ namespace Blindside.UI.EditorTools
             var c = d.OperatorOf("CRUSHER"); c.level = 3; c.points = 4; c.hp = 1; c.atk = 1;
             var i = d.OperatorOf("IGNIS"); i.level = 2; i.points = 2; i.trained[2] = 2; i.atk = 2; i.trained[0] = 1; i.hp = 1;
             d.ownedWeapons.Add("SCAR");
+            d.ownedAttachments.Add("suppressor");
             d.GadgetOf("frag").count = 2;
-            d.OperatorOf("FLARE").gadget = "frag";
+            d.GadgetOf("potion").count = 1;
+            var f = d.OperatorOf("FLARE"); f.gadget = "frag"; f.attachments[0] = "suppressor";
             d.RecordOf("").plays = 3; d.RecordOf("").wins = 2;
             return d;
         }
@@ -53,18 +56,19 @@ namespace Blindside.UI.EditorTools
         public static void BuildOverlay(UIPreview.Stage s)
         {
             var hs = Screen(s);
-            hs.PosePrompt("話す — 作戦オペレーター");
-            hs.PoseLabel("作戦オペレーター", "作戦室 · 出撃", new Vector2(720f, 470f));
-            hs.PoseLabel("CRUSHER", "会話", new Vector2(420f, 400f));
-            hs.PoseLabel("訓練教官", "訓練所", new Vector2(1120f, 430f));
+            hs.PosePrompt("作戦室 · 出撃 — CRUSHER", true);
+            hs.PoseLabel("CRUSHER", "作戦室 · 出撃", new Vector2(720f, 470f));
+            hs.PoseLabel("補給係", "装備購入", new Vector2(380f, 420f));
+            hs.PoseLabel("訓練所", "BASTION", new Vector2(1100f, 520f));
         }
 
         public static void BuildShop(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 0);
-        public static void BuildShopGadget(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 1);
+        public static void BuildShopAttach(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 1);
+        public static void BuildShopGadget(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 2);
+        public static void BuildMedical(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Medical, 0);
         public static void BuildTraining(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Training, 2);
         public static void BuildOperations(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Operations, 0);
-        public static void BuildLoadout(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Loadout, 1);
-        public static void BuildGrowth(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Growth, 0);
+        public static void BuildManage(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Management, 1);
 
         public static void BuildTalk(UIPreview.Stage s)
         {

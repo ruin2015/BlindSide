@@ -116,6 +116,9 @@ namespace Blindside.UI
             p.content = HudKit.NewRect("Rows", p.viewport);
             p.content.anchorMin = new Vector2(0f, 1f); p.content.anchorMax = new Vector2(1f, 1f); p.content.pivot = new Vector2(.5f, 1f);
             p.content.anchoredPosition = Vector2.zero; p.content.sizeDelta = Vector2.zero;
+            // rows past the viewport are scrolled into view (masked by List): not off-screen by mistake
+            var ig = p.content.gameObject.AddComponent<LintIgnoreOverlap>();
+            ig.bounds = true; ig.reason = "scroll content: rows below the viewport are masked until scrolled to";
             p.scroll = p.viewport.gameObject.AddComponent<ScrollRect>();
             p.scroll.content = p.content; p.scroll.viewport = p.viewport;
             p.scroll.horizontal = false; p.scroll.vertical = true;

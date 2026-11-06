@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 10:14
+Screen 1440x810 · 0 issues · generated 2026-11-06 11:03
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -32,11 +32,12 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | growth_panel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_overlay | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_shop | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_shop_attach | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_shop_gadget | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_medical | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_training | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_operations | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| hub_loadout | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| hub_growth | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_manage | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_talk | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu_test | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -124,19 +125,19 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - Chip ×531
 - ClickRelay ×3
 - CornerBrackets ×27
-- CutCornerGraphic ×152
+- CutCornerGraphic ×155
 - EngagePreview ×3
 - ExpGainPopup ×1
 - HazardStripe ×185
-- HubListPanel ×6
-- HubScreen ×8
+- HubListPanel ×7
+- HubScreen ×9
 - HubTalkPanel ×1
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×37
-- KitBrighten ×79
+- KitBrighten ×91
 - KitChoice ×5
 - KitCommandMenu ×13
 - KitGradient ×12
@@ -146,24 +147,24 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitPointer ×59
 - KitRoster ×34
 - KitSaveIndicator ×1
-- KitShadow ×127
+- KitShadow ×128
 - KitSlider ×6
 - KitStepper ×1
 - KitSweep ×169
 - KitSwitch ×4
-- KitTextButton ×61
+- KitTextButton ×62
 - KitTint ×299
 - KitTitleLeft ×6
 - LintIgnoreClip ×867
-- LintIgnoreOverlap ×286
+- LintIgnoreOverlap ×293
 - MainMenuScreen ×6
 - OperationResultScreen ×3
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×297
-- SlantedGraphic ×2844
+- SlantedGraphic ×2868
 - SlantedMask ×288
-- TacticalPanel ×1144
+- TacticalPanel ×1145
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialGuide ×3
@@ -204,12 +205,13 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_final | 1440x810 | 作戦結果 — 完了 (昇進・LEVEL UP) |
 | growth_panel | 1440x810 | 隊員強化 (本部) |
 | hub_overlay | 1440x810 | 本部 — 画面 (案内・名札) |
-| hub_shop | 1440x810 | 本部 — ショップ (武器) |
-| hub_shop_gadget | 1440x810 | 本部 — ショップ (ガジェット) |
-| hub_training | 1440x810 | 本部 — 訓練所 |
-| hub_operations | 1440x810 | 本部 — 作戦室 |
-| hub_loadout | 1440x810 | 本部 — 装備設定 |
-| hub_growth | 1440x810 | 本部 — 隊員強化 (一覧) |
+| hub_shop | 1440x810 | 本部 — 装備購入 (武器) |
+| hub_shop_attach | 1440x810 | 本部 — 装備購入 (アタッチメント) |
+| hub_shop_gadget | 1440x810 | 本部 — 装備購入 (ガジェット) |
+| hub_medical | 1440x810 | 本部 — 医務室 (SERUM) |
+| hub_training | 1440x810 | 本部 — 訓練所 (BASTION) |
+| hub_operations | 1440x810 | 本部 — 作戦室 (CRUSHER) |
+| hub_manage | 1440x810 | 本部 — 隊員・装備管理 (IGNIS) |
 | hub_talk | 1440x810 | 本部 — 会話 |
 | pause_menu | 1440x810 | ゲームメニュー (ESC) |
 | pause_menu_test | 1440x810 | ゲームメニュー — テストプレイ |
