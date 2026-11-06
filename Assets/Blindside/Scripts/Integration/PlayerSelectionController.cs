@@ -143,6 +143,7 @@ namespace Blindside.Integration
             GameplayUIBridge.VolleyShown += OnVolleyCallout;
             BindMovement(bridge);
             EnsureBuilt();
+            EnsureDebugButton();   // 自動クリア (editor / development builds) — .DebugClear.cs
             Deselect();
         }
 

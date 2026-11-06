@@ -115,7 +115,9 @@ namespace Blindside.UI.EditorTools
         /// <summary>hub_bench: the workbench on FLARE's MX50 (suppressor + 4x scope fitted); hub_bench_pick: its 光学機器 picker open.</summary>
         public static void BuildBench(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, -1);
         public static void BuildBenchPick(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, 1);
-        public const string Bench = "hub_bench", BenchPick = "hub_bench_pick";
+        public const string Bench = "hub_bench", BenchPick = "hub_bench_pick", BenchEnter = "hub_bench_enter";
+        /// <summary>hub_bench_enter: the loadout's entrance .95 s in — the gun just landed, the first slots coming out of it.</summary>
+        public static void BuildBenchEnter(UIPreview.Stage s) => Screen(s).LoadoutScreen.PoseEntrance(1, .95f);
 
         // the station screens (settled: everything in, the line typed)
         public const string StationSerum = "hub_station_serum", StationIgnis = "hub_station_ignis", StationBastion = "hub_station_bastion",

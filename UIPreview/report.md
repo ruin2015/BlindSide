@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 15:40
+Screen 1440x810 · 0 issues · generated 2026-11-06 16:08
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -47,6 +47,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_station_crusher | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench_pick | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_bench_enter | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_squad | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_talk | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -141,11 +142,11 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - HazardStripe ×185
 - HubHover ×56
 - HubListPanel ×5
-- HubLoadoutScreen ×2
+- HubLoadoutScreen ×3
 - HubMenu ×2
 - HubMinimap ×1
 - HubPointer ×53
-- HubScreen ×19
+- HubScreen ×20
 - HubShopScreen ×5
 - HubStationScreen ×4
 - HubTalkPanel ×1
@@ -154,7 +155,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×37
-- KitBrighten ×109
+- KitBrighten ×121
 - KitChoice ×5
 - KitCommandMenu ×13
 - KitGradient ×12
@@ -179,7 +180,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×297
-- SlantedGraphic ×3006
+- SlantedGraphic ×3017
 - SlantedMask ×288
 - TacticalPanel ×1143
 - TitleSelectScreen ×6
@@ -238,6 +239,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_station_crusher | 1440x810 | 本部 — 作戦室 (CRUSHER) |
 | hub_bench | 1440x810 | 本部 — ロードアウト (作業台) |
 | hub_bench_pick | 1440x810 | 本部 — ロードアウト (パーツ選択) |
+| hub_bench_enter | 1440x810 | 本部 — ロードアウト (登場演出の途中) |
 | hub_squad | 1440x810 | 本部 — 隊員情報 |
 | hub_talk | 1440x810 | 本部 — 会話 |
 | pause_menu | 1440x810 | ゲームメニュー (ESC) |

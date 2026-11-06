@@ -72,6 +72,7 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.StationCrusher, label = "本部 — 作戦室 (CRUSHER)", build = UIPreviewHub.BuildStationCrusher },
             new State { name = UIPreviewHub.Bench, label = "本部 — ロードアウト (作業台)", build = UIPreviewHub.BuildBench },
             new State { name = UIPreviewHub.BenchPick, label = "本部 — ロードアウト (パーツ選択)", build = UIPreviewHub.BuildBenchPick },
+            new State { name = UIPreviewHub.BenchEnter, label = "本部 — ロードアウト (登場演出の途中)", build = UIPreviewHub.BuildBenchEnter },
             new State { name = UIPreviewHub.Squad, label = "本部 — 隊員情報", build = UIPreviewHub.BuildSquad },
             new State { name = UIPreviewHub.Talk, label = "本部 — 会話", build = UIPreviewHub.BuildTalk },
             new State { name = UIPreviewPause.Menu, label = "ゲームメニュー (ESC)", build = UIPreviewPause.BuildMenu },

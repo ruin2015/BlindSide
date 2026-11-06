@@ -2,7 +2,8 @@
 // profile (muzzle left, top up), lit from above and seen by a camera of its own into a RenderTexture (the loadout screen shows it).
 // Built at runtime far below the HQ (y −200) so neither camera sees the other's world; its camera renders only while the screen is
 // open. The slot points (where each part goes on the gun) come from the model's bounds and the gun's grip / foregrip / sight / butt
-// placements (WeaponData) — Anchor(slot) in world space, ViewportOf(slot) for the screen's leader lines.
+// placements (WeaponData) — Anchor(slot) in world space, ViewportOf(slot) for the screen's leader lines. Pose(sheet, gun) is the
+// entrance the loadout screen plays: the blueprint unrolls onto the table, then the gun drops onto it.
 using UnityEngine;
 using Blindside.Data;
 
@@ -16,7 +17,7 @@ namespace Blindside.Hub
 
         Camera cam;
         RenderTexture rt;
-        Transform gunRoot;
+        Transform gunRoot, sheetT;
         GameObject gun;
         readonly Vector3[] anchors = new Vector3[Attachments.SlotCount];
         static Texture2D blueprint;
@@ -54,6 +55,7 @@ namespace Blindside.Hub
             var sm = new Material(lit);
             sm.SetTexture("_BaseMap", Blueprint()); sm.SetColor("_BaseColor", Color.white); sm.SetFloat("_Smoothness", .15f);
             sheet.GetComponent<Renderer>().sharedMaterial = sm;
+            sheetT = sheet.transform;
 
             // lights: a key from above-front, a cool rim from behind
             var key = new GameObject("Key").AddComponent<Light>();
@@ -91,6 +93,8 @@ namespace Blindside.Hub
         /// <summary>Lays `w`'s model on the table (a placeholder bar when it has none) and works out the slot points.</summary>
         public void Show(WeaponData w)
         {
+            // the slot points are worked out with the gun at rest (an entrance in progress is posed again by the caller)
+            if (gunRoot != null) { gunRoot.localPosition = Vector3.zero; gunRoot.localRotation = Quaternion.identity; gunRoot.gameObject.SetActive(true); }
             Kill(gun);
             gun = null;
             float sign = w != null && w.modelForwardSign < 0f ? -1f : 1f;
@@ -138,6 +142,33 @@ namespace Blindside.Hub
             anchors[4] = P(Mathf.Clamp01(fg + (1f - fg) * .55f), .72f);   // バレル: between the handguard and the muzzle
             anchors[5] = P(.03f, bh);                                     // ストック: the butt
             for (int i = 0; i < anchors.Length; i++) anchors[i] = t.TransformPoint(anchors[i]);
+        }
+
+        // ---- the entrance (the loadout screen drives it) ------------------------------------------------------------------------
+        const float SheetW = 3.6f, SheetH = 2.03f;
+
+        /// <summary>Poses the entrance: `sheet` 0 → 1 unrolls the blueprint from its left edge (rolled up: hidden); `gun` 0 → 1 drops the
+        /// gun onto it — from .5 m up, its muzzle end tipped 10° — and settles it with a small overshoot (0: hidden). 1, 1 = at rest.</summary>
+        public void Pose(float sheet, float gun)
+        {
+            if (sheetT != null)
+            {
+                float w = Mathf.Max(.0001f, SheetW * sheet);
+                sheetT.localScale = new Vector3(w, SheetH * Mathf.Lerp(.96f, 1f, sheet), 1f);
+                sheetT.localPosition = new Vector3(-SheetW * .5f + w * .5f, .002f + .03f * (1f - sheet), 0f);
+                sheetT.gameObject.SetActive(sheet > 0f);
+            }
+            if (gunRoot != null)
+            {
+                gunRoot.gameObject.SetActive(gun > 0f);
+                float p = Mathf.Clamp01(gun);
+                // ease-out-back: a little past the table, then back to rest
+                const float c1 = 1.4f, c3 = c1 + 1f;
+                float e = 1f + c3 * Mathf.Pow(p - 1f, 3f) + c1 * Mathf.Pow(p - 1f, 2f);
+                float lift = .5f * (1f - e);
+                gunRoot.localPosition = new Vector3(0f, Mathf.Max(-.01f, lift), 0f);
+                gunRoot.localRotation = Quaternion.Euler(0f, 0f, -10f * (1f - Mathf.Clamp01(e)));
+            }
         }
 
         static void Kill(Object o) { if (o == null) return; if (Application.isPlaying) Destroy(o); else DestroyImmediate(o); }

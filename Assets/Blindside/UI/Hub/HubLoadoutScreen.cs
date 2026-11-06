@@ -15,6 +15,12 @@
 //   Footer       hint 12 (dim) bottom left of the view, 「閉じる」 (220 × 48, ink, slanted) bottom right
 // The parts' copies: a part fitted here leaves the stock for every other gun; taking it off gives it back. Without a save session it
 // shows but changes nothing. ESC closes the picker, then the screen. Built once; rows / boxes are rebuilt on a click only.
+// Motion (unscaled; Evaluate(t) = the opening, EvaluateGun(g) = the gun's part, replayed when another gun / operator is shown):
+//   0 – .45   the blueprint unrolls onto the table from its left edge (HubWorkbench.Pose), a blue scan line running with its edge
+//   .3 – .75  the gun drops onto the sheet (from .5 m up, tipped, a small settle)
+//   then      out of the gun: per slot (.07 apart) the point's dot pops, the leader line grows from it, the box flies out of the point
+//             to its place and grows to full size, its names fade in; the left column / stats / title / footer slide in from .45
+// A part fitted from the picker redraws the boxes at rest (no replay).
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -41,6 +47,24 @@ namespace Blindside.UI
         readonly List<GameObject> leftRows = new List<GameObject>(16), statRows = new List<GameObject>(16), slotObjs = new List<GameObject>(24);
         int opIndex, gunIndex = -1, pickSlot = -1;
 
+        // the entrance
+        sealed class SlotAnim
+        {
+            public RectTransform line, dot, box, name, part;
+            public CanvasGroup boxG, nameG, partG;
+            public Vector2 boxPos, namePos, partPos, fly;   // rest positions; fly = from the box's centre to the gun's point
+            public float len;
+        }
+        readonly List<SlotAnim> slotAnims = new List<SlotAnim>(6);
+        CanvasGroup leftG, statsG;
+        readonly List<CanvasGroup> chrome = new List<CanvasGroup>(4);
+        Vector2 leftPos, statsPos;
+        RectTransform scan;
+        CanvasGroup scanG;
+        float openClock = 99f, gunClock = 99f;
+        public const float OpenTime = 1f, GunDelay = .3f, DropTime = .45f, SlotStart = .42f, SlotStep = .07f, SlotTime = .38f;
+        float GunEnd => SlotStart + SlotStep * 5 + SlotTime;
+
         public bool IsOpen => gameObject.activeSelf;
         SaveData D => screen.Data;
         bool Editable => screen.Editable;
@@ -63,11 +87,17 @@ namespace Blindside.UI
             en.characterSpacing = 12f;
             Top(en.rectTransform, 44f, 14f);
 
+            s.chrome.Add(title.gameObject.AddComponent<CanvasGroup>());
+            s.chrome.Add(en.gameObject.AddComponent<CanvasGroup>());
             s.left = HudKit.NewRect("Left", r);
             UILayout.Place(s.left, LeftX, ViewY, LeftW, 420f);
+            s.leftG = s.left.gameObject.AddComponent<CanvasGroup>();
+            s.leftPos = s.left.anchoredPosition;
             s.statsRoot = HudKit.NewRect("Stats", r);
             UILayout.Place(s.statsRoot, LeftX, 496f, LeftW, 290f);
             HudKit.AddImage(s.statsRoot, new Color(theme.ink2.r, theme.ink2.g, theme.ink2.b, .9f));
+            s.statsG = s.statsRoot.gameObject.AddComponent<CanvasGroup>();
+            s.statsPos = s.statsRoot.anchoredPosition;
 
             s.view = HudKit.NewRect("View", r);
             UILayout.Place(s.view, ViewX, ViewY, ViewW, ViewH);
@@ -78,10 +108,18 @@ namespace Blindside.UI
             UILayout.Place(s.gunLine.rectTransform, 16f, 10f, 600f, 22f);
             s.slotsRoot = HudKit.NewRect("Slots", s.view);
             HudKit.Stretch(s.slotsRoot);
+            // the scan line running with the blueprint's edge as it unrolls
+            s.scan = HudKit.NewRect("DecoScan", s.view);
+            s.scan.anchorMin = new Vector2(0f, 0f); s.scan.anchorMax = new Vector2(0f, 1f); s.scan.pivot = new Vector2(.5f, .5f);
+            s.scan.sizeDelta = new Vector2(4f, 0f);
+            HudKit.AddImage(s.scan, new Color(theme.blue.r, theme.blue.g, theme.blue.b, .85f));
+            s.scanG = s.scan.gameObject.AddComponent<CanvasGroup>();
+            s.scanG.alpha = 0f;
 
             s.statusLine = HudKit.AddText(r, "", 12f, theme.dim, false, TextAlignmentOptions.MidlineLeft, "Hint", UITheme.TextRole.Body);
             s.statusLine.textWrappingMode = TextWrappingModes.NoWrap; s.statusLine.overflowMode = TextOverflowModes.Ellipsis;
             UILayout.Place(s.statusLine.rectTransform, ViewX, ViewY + ViewH + 14f, ViewW - 240f, 48f);
+            s.chrome.Add(s.statusLine.gameObject.AddComponent<CanvasGroup>());
 
             var close = HudKit.NewRect("Close", r);
             UILayout.Place(close, ViewX + ViewW - 220f, ViewY + ViewH + 14f, 220f, 48f);
@@ -93,6 +131,7 @@ namespace Blindside.UI
             close.gameObject.AddComponent<KitBrighten>().image = ci;
             var ct = HudKit.AddText(close, "閉じる", 16f, Color.white, true, TextAlignmentOptions.Center, "Text", UITheme.TextRole.Title);
             HudKit.Stretch(ct.rectTransform);
+            s.chrome.Add(close.gameObject.AddComponent<CanvasGroup>());
 
             r.gameObject.SetActive(false);
             return s;
@@ -115,6 +154,10 @@ namespace Blindside.UI
             opIndex = Mathf.Clamp(operatorIndex, 0, Mathf.Max(0, Squad.Count - 1));
             gunIndex = -1;
             SelectOperator(opIndex);
+            bool play = Application.isPlaying && !UIMotionSettings.reduceMotion;
+            openClock = play ? 0f : 99f;
+            gunClock = play ? -GunDelay : 99f;
+            Evaluate(openClock); EvaluateGun(gunClock);
         }
 
         public void Close()
@@ -128,6 +171,9 @@ namespace Blindside.UI
 
         void Update()
         {
+            float dt = Time.unscaledDeltaTime;
+            if (openClock < OpenTime) { openClock += dt; Evaluate(openClock); }
+            if (gunClock < GunEnd) { gunClock += dt; EvaluateGun(gunClock); }
             var kb = Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame && !EscapeGate.Consumed) { EscapeGate.Consume(); Close(); }
         }
@@ -136,8 +182,19 @@ namespace Blindside.UI
         public void Pose(int operatorIndex, int slot)
         {
             Open(operatorIndex);
+            openClock = gunClock = 99f;
+            Evaluate(99f); EvaluateGun(99f);
             bench.RenderNow();
             if (slot >= 0) OpenPicker(slot);
+        }
+
+        /// <summary>Previews: the entrance `t` seconds in (the gun dropping, the slots coming out of it).</summary>
+        public void PoseEntrance(int operatorIndex, float t)
+        {
+            Open(operatorIndex);
+            openClock = t; gunClock = t - GunDelay;
+            Evaluate(openClock); EvaluateGun(gunClock);
+            bench.RenderNow();
         }
 
         // ---- selection ---------------------------------------------------------------------------------------------------------
@@ -149,6 +206,7 @@ namespace Blindside.UI
             var op = Op;
             gunIndex = op != null ? Loadout.Choice(op) : -1;
             RefreshAll();
+            ReplayGun();
         }
 
         void SelectGun(int i)
@@ -160,6 +218,15 @@ namespace Blindside.UI
             gunIndex = i;
             if (HubCatalog.Owns(D, guns[i]) && (Editable || !Application.isPlaying)) Loadout.SetChoice(op, i);   // the shown gun is carried
             RefreshAll();
+            ReplayGun();
+        }
+
+        /// <summary>Another gun on the table: it drops in again and its slots come out of it (the sheet stays).</summary>
+        void ReplayGun()
+        {
+            if (!Application.isPlaying || UIMotionSettings.reduceMotion) { gunClock = 99f; EvaluateGun(99f); return; }
+            gunClock = 0f;
+            EvaluateGun(0f);
         }
 
         WeaponData Gun
@@ -315,6 +382,7 @@ namespace Blindside.UI
         {
             foreach (var g in slotObjs) HudKit.DestroySafe(g);
             slotObjs.Clear();
+            slotAnims.Clear();
             var w = Gun;
             if (w == null) return;
             var fit = Op != null ? D.OperatorOf(Op.key).FindFit(w.key) : null;
@@ -348,14 +416,15 @@ namespace Blindside.UI
         {
             var theme = UITheme.Current;
             var part = fit != null ? Attachments.Of(fit.parts[slot]) : null;
-            // the leader line: from the box's edge to the slot's point, and a dot there
+            // the leader line: from the slot's point on the gun out to the box's edge (it grows that way in the entrance), a dot there
             var from = new Vector2(at.x + BoxS * .5f, top ? at.y + BoxS + 16f : at.y - 18f);
             var line = HudKit.NewRect("DecoLine" + slot, slotsRoot);
             line.anchorMin = line.anchorMax = new Vector2(0f, 1f); line.pivot = new Vector2(0f, .5f);
-            var d = point - from;
-            line.anchoredPosition = new Vector2(from.x, -from.y);
+            var d = from - point;
+            line.anchoredPosition = new Vector2(point.x, -point.y);
             line.sizeDelta = new Vector2(d.magnitude, 1.5f);
             line.localRotation = Quaternion.Euler(0f, 0f, -Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+            var anim = new SlotAnim { line = line, len = d.magnitude };
             HudKit.AddImage(line, new Color(theme.blue.r, theme.blue.g, theme.blue.b, .7f));
             slotObjs.Add(line.gameObject);
             var dot = HudKit.NewRect("DecoDot" + slot, slotsRoot);
@@ -363,14 +432,20 @@ namespace Blindside.UI
             dot.anchoredPosition = new Vector2(point.x, -point.y); dot.sizeDelta = new Vector2(8f, 8f);
             HudKit.AddImage(dot, part != null ? theme.acc : Color.white);
             slotObjs.Add(dot.gameObject);
+            anim.dot = dot;
 
             // the box
             var name = HudKit.AddText(slotsRoot, Attachments.Slots[slot], 12f, theme.paper, true, TextAlignmentOptions.BottomLeft, "SlotName" + slot, UITheme.TextRole.Body);
             name.textWrappingMode = TextWrappingModes.NoWrap;
             Place(name.rectTransform, at.x, at.y - 18f, BoxS + 40f, 16f);
             slotObjs.Add(name.gameObject);
+            anim.name = name.rectTransform; anim.nameG = name.gameObject.AddComponent<CanvasGroup>(); anim.namePos = anim.name.anchoredPosition;
             var box = HudKit.NewRect("Slot" + slot, slotsRoot);
             Place(box, at.x, at.y, BoxS, BoxS);
+            box.pivot = new Vector2(.5f, .5f);
+            box.anchoredPosition = new Vector2(at.x + BoxS * .5f, -(at.y + BoxS * .5f));   // (centred: it grows out of its middle)
+            anim.box = box; anim.boxG = box.gameObject.AddComponent<CanvasGroup>(); anim.boxPos = box.anchoredPosition;
+            anim.fly = new Vector2(point.x, -point.y) - anim.boxPos;
             var img = HudKit.AddImage(box, part != null ? new Color(.82f, .85f, .88f, .95f) : new Color(.1f, .12f, .15f, .9f), raycast: true);
             var btn = box.gameObject.AddComponent<Button>();
             btn.transition = Selectable.Transition.None; btn.targetGraphic = img;
@@ -398,6 +473,61 @@ namespace Blindside.UI
             pn.textWrappingMode = TextWrappingModes.NoWrap;
             Place(pn.rectTransform, at.x, at.y + BoxS + 2f, BoxS + 60f, 14f);
             slotObjs.Add(pn.gameObject);
+            anim.part = pn.rectTransform; anim.partG = pn.gameObject.AddComponent<CanvasGroup>(); anim.partPos = anim.part.anchoredPosition;
+            slotAnims.Add(anim);
+            if (gunClock >= GunEnd) PoseSlot(anim, 1f, 1f, 1f);
+        }
+
+        // ---- the entrance ------------------------------------------------------------------------------------------------------
+        static float Ease(float t, float from, float len) => UIEase.Tactical(Mathf.Clamp01((t - from) / len));
+
+        /// <summary>The opening `t` seconds in: the sheet (and its scan line), the columns and the chrome.</summary>
+        public void Evaluate(float t)
+        {
+            float sheet = Mathf.Clamp01(t / DropTime);
+            float se = 1f - (1f - sheet) * (1f - sheet);   // ease-out
+            if (bench != null) bench.Pose(se, Mathf.Clamp01(gunClock / DropTime));
+            bool still = UIMotionSettings.reduceMotion;
+            if (scan != null)
+            {
+                scan.anchoredPosition = new Vector2(se * ViewW, 0f);
+                scanG.alpha = sheet < 1f ? 1f : Mathf.Clamp01(1f - (t - DropTime) / .15f);
+            }
+            float p = Ease(t, .45f, .4f);
+            leftG.alpha = p; statsG.alpha = Ease(t, .55f, .4f);
+            left.anchoredPosition = leftPos + new Vector2(still ? 0f : -60f * (1f - p), 0f);
+            statsRoot.anchoredPosition = statsPos + new Vector2(still ? 0f : -60f * (1f - statsG.alpha), 0f);
+            float c = Ease(t, .6f, .35f);
+            foreach (var g in chrome) if (g != null) g.alpha = c;
+        }
+
+        /// <summary>The gun's part `g` seconds after it started (negative: still waiting): the drop, then the slots out of it.</summary>
+        void EvaluateGun(float g)
+        {
+            float sp = Mathf.Clamp01(openClock / DropTime);
+            if (bench != null) bench.Pose(1f - (1f - sp) * (1f - sp), Mathf.Clamp01(g / DropTime));
+            for (int i = 0; i < slotAnims.Count; i++)
+            {
+                float t0 = SlotStart + SlotStep * i;
+                PoseSlot(slotAnims[i], Ease(g, t0, .12f), Ease(g, t0 + .04f, SlotTime * .7f), Ease(g, t0 + .1f, SlotTime - .1f));
+            }
+        }
+
+        /// <summary>A slot's pieces: `dot` the point's pop, `line` its leader growing out of the gun, `box` the box flying out to its place.</summary>
+        void PoseSlot(SlotAnim a, float dot, float line, float box)
+        {
+            bool still = UIMotionSettings.reduceMotion;
+            if (still) dot = line = box = Mathf.Max(dot, Mathf.Max(line, box)) > 0f ? 1f : 0f;
+            float pop = dot < 1f ? dot * 1.4f : 1f;
+            a.dot.localScale = new Vector3(pop, pop, 1f);
+            a.line.sizeDelta = new Vector2(a.len * line, 1.5f);
+            float k = Mathf.Lerp(.25f, 1f, box);
+            a.box.localScale = new Vector3(k, k, 1f);
+            a.box.anchoredPosition = a.boxPos + a.fly * (1f - box);
+            a.boxG.alpha = Mathf.Clamp01(box * 2f);
+            a.nameG.alpha = box; a.partG.alpha = box;
+            a.name.anchoredPosition = a.namePos + new Vector2(0f, -8f * (1f - box));
+            a.part.anchoredPosition = a.partPos + new Vector2(0f, 8f * (1f - box));
         }
 
         static void Place(RectTransform rt, float x, float y, float w, float h)
@@ -423,7 +553,7 @@ namespace Blindside.UI
             picker = HudKit.NewRect("Picker", slotsRoot);
             float h = 40f + PickRowH * (list.Count + 1) + (list.Count == 0 ? 24f : 0f);
             var boxRt = slotsRoot.Find("Slot" + slot) as RectTransform;
-            float bx = boxRt != null ? -boxRt.anchoredPosition.y : 64f, px = boxRt != null ? boxRt.anchoredPosition.x : 20f;
+            float bx = boxRt != null ? -boxRt.anchoredPosition.y - BoxS * .5f : 64f, px = boxRt != null ? boxRt.anchoredPosition.x - BoxS * .5f : 20f;
             bool topRow = System.Array.IndexOf(TopSlots, slot) >= 0;
             float py = topRow ? bx + BoxS + 22f : bx - 6f - h;
             px = Mathf.Clamp(px + BoxS + 12f, 8f, ViewW - PickerW - 8f);
