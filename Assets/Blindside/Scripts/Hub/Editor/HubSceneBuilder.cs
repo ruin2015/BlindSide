@@ -1,7 +1,7 @@
 // Blindside > Scenes > Build Squad Hub — makes (or remakes) Assets/Blindside/Scenes/Hub.unity, the squad's HQ in third person, and
 // adds it to the Build Settings. Everything is built from primitives (blockout — replace with art later) with URP Lit materials
 // under Art/Hub:
-//   the building 32 × 22 m, walls 4 m:  lobby (centre, the player starts here) · 作戦室 (north: the big screen, the table; CRUSHER) ·
+//   the building 32 × 22 m, walls 8.5 m (camera clearance):  lobby (centre, the player starts here) · 作戦室 (north: the big screen, the table; CRUSHER) ·
 //   the west wing: 医務室 (south: beds, curtain, cabinet; SERUM) · 装備購入 (middle: counter, shelves; the supply clerk) ·
 //   隊員・装備管理 (north: lockers, workbench, gun rack, terminal; IGNIS) · 訓練所 (east: targets, mat, bench press, dumbbells, a heavy bag;
 //   BASTION) · 多目的室 (a room off the lobby's south wall, x −4 … 4, z −19 … −11: table, chairs, whiteboard; nobody)
@@ -31,7 +31,10 @@ namespace Blindside.Hub.EditorTools
     {
         const string ScenePath = "Assets/Blindside/Scenes/Hub.unity";
         const string MatDir = "Assets/Blindside/Art/Hub";
-        const float WallH = 4f, WallT = .3f, PersonH = 1.75f;
+        // walls / ceiling 8.5 m: the third-person camera at its steepest (60°) and farthest (7 m) sits 7.56 m up (1.5 + 7·sin 60°) — it
+        // stays under the ceiling (which has no collider to push it back)
+        const float WallH = 8.5f, WallT = .3f, PersonH = 1.75f;
+        const float LampY = 5.2f;   // the ceiling lamps, under the higher ceiling
 
         static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
         static Transform world;
@@ -46,13 +49,21 @@ namespace Blindside.Hub.EditorTools
             Make();
         }
 
-        /// <summary>Builds and saves the scene with no questions (tools).</summary>
+        /// <summary>Builds and saves the scene with no questions (tools). It is built as an extra scene beside the open ones and closed
+        /// after saving, so nothing open (or unsaved) is touched; Hub.unity itself, when it is open, is closed first.</summary>
         public static void Make()
         {
-            string back = EditorSceneManager.GetActiveScene().path;
+            var previous = EditorSceneManager.GetActiveScene();
+            for (int i = EditorSceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                var open = EditorSceneManager.GetSceneAt(i);
+                if (open.path == ScenePath && EditorSceneManager.sceneCount > 1) EditorSceneManager.CloseScene(open, true);
+            }
             EnsureFolder(MatDir);
             mats.Clear();
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            bool alone = EditorSceneManager.sceneCount == 1 && EditorSceneManager.GetActiveScene().path == ScenePath;
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, alone ? NewSceneMode.Single : NewSceneMode.Additive);
+            UnityEngine.SceneManagement.SceneManager.SetActiveScene(scene);   // (RenderSettings / new objects go to this scene)
 
             var entry = new GameObject("[SceneEntry] Hub").AddComponent<SceneEntry>();
             entry.role = SceneRole.Hub;
@@ -124,7 +135,11 @@ namespace Blindside.Hub.EditorTools
             AssetDatabase.SaveAssets();
             SceneSetBuilder.ApplyBuildSettings();
             Debug.Log("[Hub] built " + ScenePath);
-            if (!string.IsNullOrEmpty(back) && back != ScenePath) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+            if (!alone)
+            {
+                if (previous.IsValid() && previous.isLoaded) UnityEngine.SceneManagement.SceneManager.SetActiveScene(previous);
+                EditorSceneManager.CloseScene(scene, true);
+            }
         }
 
         // ---- lighting --------------------------------------------------------------------------------------------------------------
@@ -145,7 +160,8 @@ namespace Blindside.Hub.EditorTools
             var l = new GameObject("DecoLamp").AddComponent<Light>();
             l.transform.SetParent(world, false);
             l.transform.position = p;
-            l.type = LightType.Point; l.color = c; l.range = range; l.intensity = intensity; l.shadows = LightShadows.None;
+            // (hung 1.8 m higher than the first 4 m ceiling's lamps: a little more reach and light for the same floor)
+            l.type = LightType.Point; l.color = c; l.range = range + 2f; l.intensity = intensity * 1.35f; l.shadows = LightShadows.None;
         }
 
         // ---- the rooms ------------------------------------------------------------------------------------------------------------------
@@ -233,14 +249,14 @@ namespace Blindside.Hub.EditorTools
             var hazard = Mat("Hazard", new Color(1f, .78f, .12f), .3f);
             Box("DecoHazard_Training", new Vector3(9.4f, .006f, 0f), new Vector3(.5f, .01f, 5f), hazard, shadows: false);
 
-            Lamp(new Vector3(0f, 3.4f, -2f), new Color(1f, .95f, .88f), 12f, 1.6f);
-            Lamp(new Vector3(0f, 3.4f, 8f), new Color(.6f, .8f, 1f), 9f, 1.4f);
-            Lamp(new Vector3(-12.5f, 3.4f, 1f), new Color(1f, .9f, .7f), 7f, 1.4f);
-            Lamp(new Vector3(-12.5f, 3.4f, 8f), new Color(1f, .95f, .9f), 7f, 1.2f);
-            Lamp(new Vector3(-12.5f, 3.4f, -7f), new Color(.7f, 1f, .8f), 7f, 1.2f);
-            Lamp(new Vector3(12.5f, 3.4f, 0f), new Color(1f, .95f, .9f), 12f, 1.6f);
-            Lamp(new Vector3(0f, 3.4f, -8.5f), new Color(1f, .85f, .7f), 8f, 1.3f);
-            Lamp(new Vector3(0f, 3.4f, -15f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 多目的室
+            Lamp(new Vector3(0f, LampY,-2f), new Color(1f, .95f, .88f), 12f, 1.6f);
+            Lamp(new Vector3(0f, LampY,8f), new Color(.6f, .8f, 1f), 9f, 1.4f);
+            Lamp(new Vector3(-12.5f, LampY,1f), new Color(1f, .9f, .7f), 7f, 1.4f);
+            Lamp(new Vector3(-12.5f, LampY,8f), new Color(1f, .95f, .9f), 7f, 1.2f);
+            Lamp(new Vector3(-12.5f, LampY,-7f), new Color(.7f, 1f, .8f), 7f, 1.2f);
+            Lamp(new Vector3(12.5f, LampY,0f), new Color(1f, .95f, .9f), 12f, 1.6f);
+            Lamp(new Vector3(0f, LampY,-8.5f), new Color(1f, .85f, .7f), 8f, 1.3f);
+            Lamp(new Vector3(0f, LampY,-15f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 多目的室
         }
 
         static void WallX(float x0, float x1, float z) =>

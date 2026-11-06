@@ -5,9 +5,9 @@
 //   walkSpeed … runSpeed  walk → run (HubPlayer: Shift)
 // Feet on the floor: at Start each clip is sampled over its cycle (16 poses) for its lowest toe; the model is shifted so that toe sits
 // at toeHeight (the toe bone's height over the sole, measured by the builder in the bind pose) — per clip, blended by the weights.
-// Foot turn: the same sampling measures each planted foot's heel→toe yaw; a clip that lands a foot turned out past the idle stance by
-// more than 10° (the HQ's Running: the left foot ~35° too far) has that foot turned back around its shin in LateUpdate, weighted like
-// the clip.
+// Foot turn: the same sampling compares the left foot's heel→toe yaw with the right foot's half a stride later, mirrored, at every
+// sample; a clip where they differ by more than 10° (the HQ's Running: the left lands ~35° too far out and swings back ~37° the other
+// way) has the left foot turned by that difference at the current phase in LateUpdate, weighted like the clip.
 // One stride: walk and run share a phase (both start on the same footfall), advanced at the blended step rate and written into both
 // clips, so a walk ↔ run blend never mixes two different leg positions. Guns are never shown at the HQ (renderers under a gun-like
 // node are off). Speed comes from the owner (HubPlayer) or stays 0 (an NPC idles). Nothing is allocated per frame.
@@ -88,13 +88,16 @@ namespace Blindside.Hub
         bool calibrated;
         int startFrame;
 
-        // foot turn: a clip may land a foot turned out further than the idle stance (the HQ's Running lands the left foot ~60° out,
-        // the right ~24°). Per clip and foot, the planted heel→toe yaw is compared with the idle's; past FootTurnTolerance the foot is
-        // turned back around its shin in LateUpdate, weighted like the clip
-        public const float FootTurnTolerance = 10f;
-        Transform footL, footR, shinL, shinR;
-        readonly float[] turnL = new float[3], turnR = new float[3];
-        float turnNowL, turnNowR;
+        // foot turn: a clip may turn one foot differently from the other (the HQ's Running: the left lands ~60° out where the right lands
+        // ~22°, and swings back turned ~40° the other way). The turn changes over the stride, so it is measured per stride sample: the left
+        // foot's heel→toe yaw against the right foot's half a cycle later, mirrored (a symmetric gait's left step is the right step
+        // mirrored). Where they differ by more than FootTurnTolerance somewhere in the cycle, LateUpdate turns the left foot about the
+        // figure's up by the difference at the current phase (interpolated), weighted like the clip
+        public const float FootTurnTolerance = 10f, FootTurnMax = 75f;
+        public const int StrideSamples = 24;
+        Transform footL, footR;
+        readonly float[][] turnTable = { null, new float[StrideSamples], new float[StrideSamples] };   // per clip (walk, run), per sample
+        float turnNowL;
 
         /// <summary>Each clip alone, sampled over its cycle: how far its lowest toe sits above toeHeight (lift[i], m in the figure's
         /// space), and each planted foot's yaw against the idle's (turnL / turnR, degrees to turn back).</summary>
@@ -105,15 +108,14 @@ namespace Blindside.Hub
             {
                 toeL = anim.GetBoneTransform(HumanBodyBones.LeftToes); toeR = anim.GetBoneTransform(HumanBodyBones.RightToes);
                 footL = anim.GetBoneTransform(HumanBodyBones.LeftFoot); footR = anim.GetBoneTransform(HumanBodyBones.RightFoot);
-                shinL = anim.GetBoneTransform(HumanBodyBones.LeftLowerLeg); shinR = anim.GetBoneTransform(HumanBodyBones.RightLowerLeg);
             }
             if (toeL == null || toeR == null) return;
             var keep = model.localPosition;
             model.localPosition = modelBase;
             var clips = new[] { idleP, walkP, runP };
-            const int N = 24;
+            const int N = StrideSamples;
             var hL = new float[N]; var hR = new float[N]; var yL = new float[N]; var yR = new float[N];
-            float idleL = 0f, idleR = 0f;
+            var okL = new bool[N]; var okR = new bool[N];
             for (int c = 0; c < 3; c++)
             {
                 for (int k = 0; k < 3; k++) mixer.SetInputWeight(k, k == c ? 1f : 0f);
@@ -124,52 +126,65 @@ namespace Blindside.Hub
                     clips[c].SetTime(len * s / N);
                     graph.Evaluate(0f);
                     hL[s] = Height(toeL); hR[s] = Height(toeR);
-                    if (footL != null) { yL[s] = Yaw(footL, toeL); yR[s] = Yaw(footR, toeR); }
+                    if (footL != null) { okL[s] = Yaw(footL, toeL, out yL[s]); okR[s] = Yaw(footR, toeR, out yR[s]); }
                     lowL = Mathf.Min(lowL, hL[s]); lowR = Mathf.Min(lowR, hR[s]);
                 }
                 low = Mathf.Min(lowL, lowR);
                 lift[c] = low - toeHeight;
                 clips[c].SetTime(0d);
-                if (footL == null) continue;
-                // the planted frames: a toe within 2 cm of its lowest
-                float sl = 0f, sr = 0f; int nl = 0, nr = 0;
+                if (footL == null || c == 0) continue;
+                // the left foot against the right foot half a stride later, mirrored (−yaw); unreadable samples (a toe pointing straight
+                // down) take their neighbours' values; smoothed, clamped, and dropped when nowhere past the tolerance
+                var t = turnTable[c];
+                var have = new bool[N];
                 for (int s = 0; s < N; s++)
                 {
-                    if (hL[s] < lowL + .02f) { sl += yL[s]; nl++; }
-                    if (hR[s] < lowR + .02f) { sr += yR[s]; nr++; }
+                    int m = (s + N / 2) % N;
+                    have[s] = okL[s] && okR[m];
+                    t[s] = have[s] ? Mathf.DeltaAngle(yL[s], -yR[m]) : 0f;
                 }
-                float pl = nl > 0 ? sl / nl : 0f, pr = nr > 0 ? sr / nr : 0f;
-                if (c == 0) { idleL = pl; idleR = pr; continue; }
-                turnL[c] = Mathf.Abs(idleL - pl) > FootTurnTolerance ? idleL - pl : 0f;
-                turnR[c] = Mathf.Abs(idleR - pr) > FootTurnTolerance ? idleR - pr : 0f;
+                for (int pass = 0; pass < N; pass++)
+                    for (int s = 0; s < N; s++)
+                        if (!have[s])
+                        {
+                            int a = (s + N - 1) % N, b = (s + 1) % N;
+                            if (have[a] || have[b]) { t[s] = have[a] && have[b] ? (t[a] + t[b]) * .5f : have[a] ? t[a] : t[b]; have[s] = true; }
+                        }
+                var sm = new float[N];
+                for (int s = 0; s < N; s++) sm[s] = Mathf.Clamp((t[(s + N - 1) % N] + 2f * t[s] + t[(s + 1) % N]) * .25f, -FootTurnMax, FootTurnMax);
+                float worst = 0f;
+                for (int s = 0; s < N; s++) { t[s] = sm[s]; worst = Mathf.Max(worst, Mathf.Abs(sm[s])); }
+                if (worst < FootTurnTolerance) for (int s = 0; s < N; s++) t[s] = 0f;
             }
             model.localPosition = keep;
         }
 
         float Height(Transform t) => transform.InverseTransformPoint(t.position).y;
 
-        /// <summary>The heel→toe direction's yaw in the figure's space (degrees, + toward +x).</summary>
-        float Yaw(Transform foot, Transform toe)
+        /// <summary>The heel→toe direction's yaw in the figure's space (degrees, + toward +x); false when the foot points nearly straight
+        /// up or down (its yaw means nothing then).</summary>
+        bool Yaw(Transform foot, Transform toe, out float yaw)
         {
             var d = transform.InverseTransformDirection(toe.position - foot.position);
-            return Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+            yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+            float flat = new Vector2(d.x, d.z).magnitude;
+            return flat > .4f * d.magnitude;
+        }
+
+        /// <summary>A clip's left-foot turn at stride `phase` (0–1), interpolated between the samples.</summary>
+        float TurnAt(float[] t, float phase)
+        {
+            float f = Mathf.Repeat(phase, 1f) * StrideSamples;
+            int a = (int)f % StrideSamples, b = (a + 1) % StrideSamples;
+            return Mathf.Lerp(t[a], t[b], f - (int)f);
         }
 
         void LateUpdate()
         {
-            // after the graph has posed the bones: turn a foot back around its shin (knee → ankle), as much as its clip needs
+            // after the graph has posed the bones: turn the left foot about the figure's up by its clip's turn at this phase
             if (!calibrated || footL == null) return;
-            turnNowL = weight[1] * turnL[1] + weight[2] * turnL[2];
-            turnNowR = weight[1] * turnR[1] + weight[2] * turnR[2];
-            if (Mathf.Abs(turnNowL) > .1f) TurnFoot(footL, shinL, turnNowL);
-            if (Mathf.Abs(turnNowR) > .1f) TurnFoot(footR, shinR, turnNowR);
-        }
-
-        void TurnFoot(Transform foot, Transform shin, float deg)
-        {
-            var axis = shin != null ? shin.position - foot.position : transform.up;   // up the shin: + turns toward +x like Yaw
-            if (axis.sqrMagnitude < 1e-6f) axis = transform.up;
-            foot.rotation = Quaternion.AngleAxis(deg, axis.normalized) * foot.rotation;
+            turnNowL = weight[1] * TurnAt(turnTable[1], phase) + weight[2] * TurnAt(turnTable[2], phase);
+            if (Mathf.Abs(turnNowL) > .1f) footL.rotation = Quaternion.AngleAxis(turnNowL, transform.up) * footL.rotation;
         }
 
         void Weights(float s)
