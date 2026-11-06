@@ -154,6 +154,20 @@ namespace Blindside.Save
 
         public bool OwnsWeapon(string key) => !string.IsNullOrEmpty(key) && ownedWeapons != null && ownedWeapons.Contains(key);
 
+        /// <summary>The medical items of older saves under today's keys (回復薬 / 鎮痛剤 → 下級医療キット, 救急キット → 中級,
+        /// アドレナリン注射 → アドロピン注射器; 予備ドローン is gone: "").</summary>
+        public static string RenamedGadget(string key)
+        {
+            switch (key)
+            {
+                case "potion": case "painkiller": return "kit_low";
+                case "medkit": return "kit_mid";
+                case "adrenaline": return "adrophin";
+                case "drone": return "";
+                default: return key ?? "";
+            }
+        }
+
         /// <summary>The stock line of gadget `key` (made at 0 when it has none).</summary>
         public ItemCount GadgetOf(string key)
         {
@@ -280,6 +294,18 @@ namespace Blindside.Save
             if (gadgets == null) gadgets = new List<ItemCount>();
             gadgets.RemoveAll(g => g == null || string.IsNullOrEmpty(g.key));
             foreach (var g in gadgets) if (g.count < 0) g.count = 0;
+            // the medical items renamed (the 医務室's six): old stock merged into today's keys, carried ones follow
+            for (int i = gadgets.Count - 1; i >= 0; i--)
+            {
+                var g = gadgets[i];
+                string k = RenamedGadget(g.key);
+                if (k == g.key) continue;
+                gadgets.RemoveAt(i);
+                if (k == "") { money += 6000 * g.count; continue; }   // 予備ドローン: no longer sold, refunded
+                var line = GadgetOf(k);
+                line.count = Math.Min(9, line.count + g.count);
+            }
+            foreach (var o in operators) o.gadget = RenamedGadget(o.gadget);
             if (weapons == null) weapons = new List<WeaponProgress>();
             weapons.RemoveAll(w => w == null);
             foreach (var w in weapons) { if (w.key == null) w.key = ""; if (w.level < 1) w.level = 1; if (w.exp < 0) w.exp = 0; }

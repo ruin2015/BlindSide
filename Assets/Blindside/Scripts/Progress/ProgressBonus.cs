@@ -42,6 +42,9 @@ namespace Blindside.Progress
             // the attachments fitted at the HQ to the gun it carries (null when none: the unit plays as before)
             var fit = u.Weapon != null ? p.FindFit(u.Weapon.key) : null;
             u.Gear = fit != null ? Blindside.Data.Attachments.Sum(fit.parts) : null;
+            // the item it carries out of the HQ (only while the squad still holds one)
+            u.Item = !string.IsNullOrEmpty(p.gadget) && d.GadgetOf(p.gadget).count > 0 ? p.gadget : "";
+            u.ItemSpent = false;
         }
     }
 }

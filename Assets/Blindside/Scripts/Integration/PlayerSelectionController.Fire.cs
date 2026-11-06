@@ -289,6 +289,7 @@ namespace Blindside.Integration
             if (!BattlefieldCamera.GroundAt(pos, out var h)) return;   // const h=G.hover; if(!h) return;
             var u = uiUnit;
             if (u == null) return;
+            if (mode == Mode.Throw) { UpdateThrow(h.fx, h.fy); return; }   // (.Grenade.cs)
             if (mode == Mode.Facing)
             {
                 float a = Mathf.Atan2(h.fy - u.Y, h.fx - u.X);

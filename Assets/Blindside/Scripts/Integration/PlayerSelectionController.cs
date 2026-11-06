@@ -62,7 +62,7 @@ namespace Blindside.Integration
             public bool ok;
         }
 
-        enum Mode { Idle, Menu, Move, Facing, Fire, Ability, Busy, Cams, Deploy, Reinforce }
+        enum Mode { Idle, Menu, Move, Facing, Fire, Ability, Busy, Cams, Deploy, Reinforce, Throw }
 
         // ---- bound match state ----
         TurnManager turns;
@@ -253,6 +253,7 @@ namespace Blindside.Integration
             SyncMoveHelpers();
             SyncAimHelpers();
             SyncAbilityHelpers();
+            SyncThrowHelpers();
             SyncLockLabels();
             SyncEndedLabels();
             SyncAlertLabels();
@@ -356,6 +357,7 @@ namespace Blindside.Integration
         {
             if (!PlayerCanAct() || !GroundAt(screenPos)) return;
             if (turns.Phase == MatchPhase.Deploy) { OnClickDeploy(screenPos); return; }   // G.phase==='deploy' (.Deploy.cs)
+            if (OnClickThrowMode()) return;   // a grenade being aimed (.Grenade.cs)
             if (OnClickAimModes()) return;   // ui.mode==='facing' | 'fire'
             if (OnClickAbilityMode(screenPos)) return;   // ui.mode==='ability' (.Ability.cs)
             if (OnClickReinforceMode(screenPos)) return;   // ui.mode==='reinforce' (.Reinforce.cs)
@@ -510,6 +512,7 @@ namespace Blindside.Integration
             if (u.Team == OperatorTeam.Attack && hostage != null && hostage.Alive && hostage.Escort == null &&
                 Vector2.Distance(new Vector2(u.X, u.Y), new Vector2(hostage.X, hostage.Y)) <= 1.6f)
                 L.Add(new Command { id = "escort", kr = "人質確保", en = "SECURE", ic = "♥", ok = SegFree(u.X, u.Y, hostage.X, hostage.Y) });
+            AddItemCommand(u, L, prep);   // the HQ item (破片手榴弾) — .Grenade.cs
             L.Add(new Command { id = "wait", kr = "待機", en = "END", ic = "■", ok = true });
             // the tutorial offers only the command it is teaching
             if (TutorialGate.Active)
@@ -562,7 +565,8 @@ namespace Blindside.Integration
             if (c == "fire" && combat != null) { HideMenu(); StartFire(u); return; }
             if (c == "wait") { EnterFacing(u, true); return; }
             if (c == "escort") { DoEscort(u); return; }                          // 人質確保 (.Escort.cs)
-            if (c == "reinforce") { StartReinforce(u); return; }                  // 壁強化 (.Reinforce.cs)
+            if (c == "reinforce") { StartReinforce(u); return; }
+            if (c == "item") { HideMenu(); StartThrow(u); return; }               // 破片手榴弾 (.Grenade.cs)                  // 壁強化 (.Reinforce.cs)
             if (c == "skill" && StartAbility(u)) return;                         // all ten abilities (.Ability.cs / .SupportAbility.cs)
             if (c == "gadget" && u.Team == OperatorTeam.Defense) { HideMenu(); OpenCamPanel(u); return; }   // openCamPanel(u) (.Cameras.cs)
             if (c == "gadget" && droneOps != null) { StartDrone(u); return; }                                // deploy / steer the drone (.Drone.cs)

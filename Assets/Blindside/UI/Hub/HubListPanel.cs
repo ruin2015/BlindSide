@@ -160,6 +160,7 @@ namespace Blindside.UI
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
             BuildTabs();
+            rowsEnter = true;
             Rebuild();
             scroll.verticalNormalizedPosition = 1f;
             clock = 0f;
@@ -182,6 +183,7 @@ namespace Blindside.UI
             tab = Mathf.Clamp(i, 0, Mathf.Max(0, source.TabCount - 1));
             flash = null;
             BuildTabs();
+            rowsEnter = true;
             Rebuild();
         }
 
@@ -215,10 +217,29 @@ namespace Blindside.UI
             UILayout.Place(viewport, PadX, top, Width - PadX * 2f, Height - FootH - 10f - top);
         }
 
+        readonly List<CanvasGroup> rowGroups = new List<CanvasGroup>(32);
+        readonly List<HubHover> rowHovers = new List<HubHover>(32);
+        readonly List<Vector2> rowPositions = new List<Vector2>(32);
+        float rowClock = 99f;
+        bool rowsEnter;
+
+        /// <summary>The rows slide in (after Open / a tab change; a click's refresh keeps them still).</summary>
+        void EvaluateRows(float t)
+        {
+            bool still = UIMotionSettings.reduceMotion;
+            for (int i = 0; i < rowGroups.Count; i++)
+            {
+                float p = UIEase.Tactical(Mathf.Clamp01((t - .04f * Mathf.Min(i, 10)) / .28f));
+                if (rowGroups[i] != null) rowGroups[i].alpha = p;
+                if (rowHovers[i] != null) rowHovers[i].SetBase(rowPositions[i] + new Vector2(still ? 0f : 40f * (1f - p), 0f));
+            }
+        }
+
         void Rebuild()
         {
             foreach (var g in built) if (g != null) HudKit.DestroySafe(g);
             built.Clear();
+            rowGroups.Clear(); rowHovers.Clear(); rowPositions.Clear();
             source.Fill(tab, rows);
             var theme = UITheme.Current;
             float w = Width - PadX * 2f;
@@ -228,9 +249,18 @@ namespace Blindside.UI
                 int idx = i;
                 var row = HudKit.NewRect("Row" + i, content);
                 row.anchorMin = row.anchorMax = new Vector2(0f, 1f); row.pivot = new Vector2(0f, 1f);
-                row.anchoredPosition = new Vector2(0f, -i * RowH); row.sizeDelta = new Vector2(w, RowH - 6f);
+                var rowPos = new Vector2(0f, -i * RowH);
+                row.anchoredPosition = rowPos; row.sizeDelta = new Vector2(w, RowH - 6f);
                 built.Add(row.gameObject);
-                HudKit.AddImage(row, r.current ? Color.Lerp(theme.paper, theme.blue, .12f) : Color.Lerp(theme.paper, theme.paper2, .45f));
+                var rowColor = r.current ? Color.Lerp(theme.paper, theme.blue, .12f) : Color.Lerp(theme.paper, theme.paper2, .45f);
+                var rowImg = HudKit.AddImage(row, rowColor, raycast: true);
+                // entrance (slides in from the right, one after another) + hover (a nudge right, a touch brighter)
+                rowGroups.Add(row.gameObject.AddComponent<CanvasGroup>());
+                var hv = row.gameObject.AddComponent<HubHover>();
+                hv.target = row; hv.graphic = rowImg; hv.baseColor = rowColor; hv.hoverColor = Color.Lerp(rowColor, Color.white, .55f);
+                hv.shift = new Vector2(6f, 0f); hv.scale = 1f;
+                hv.SetBase(rowPos);
+                rowHovers.Add(hv); rowPositions.Add(rowPos);
                 var edge = HudKit.NewRect("DecoEdge", row);
                 UILayout.Place(edge, 0f, 0f, 4f, RowH - 6f);
                 HudKit.AddImage(edge, r.current ? theme.blue : (r.band.a > 0f ? r.band : Color.Lerp(theme.paper2, theme.ink, .2f)));
@@ -277,6 +307,8 @@ namespace Blindside.UI
             }
             content.sizeDelta = new Vector2(0f, rows.Count * RowH);
             status.SetText(string.IsNullOrEmpty(flash) ? source.Status() : flash);
+            if (rowsEnter && Application.isPlaying) { rowClock = 0f; EvaluateRows(0f); } else EvaluateRows(99f);
+            rowsEnter = false;
         }
 
         void Press(int row)
@@ -304,6 +336,7 @@ namespace Blindside.UI
             var kb = Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame && !EscapeGate.Consumed && (EscBlocked == null || !EscBlocked()))
             { EscapeGate.Consume(); Close(); return; }
+            if (rowClock < 1.2f) { rowClock += Time.unscaledDeltaTime; EvaluateRows(rowClock); }
             if (!running) return;
             clock += Time.unscaledDeltaTime;
             Evaluate(clock);

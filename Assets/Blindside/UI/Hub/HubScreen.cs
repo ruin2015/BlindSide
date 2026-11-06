@@ -53,7 +53,8 @@ namespace Blindside.Hub
         public bool Editable => SaveSystem.Current != null || (!Application.isPlaying && previewData != null);
 
         public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
-                               || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen) || leaving;
+                               || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen)
+                               || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
         public KitGrowthPanel Growth => growth;
@@ -78,17 +79,21 @@ namespace Blindside.Hub
             s.shopC = new ShopContent(s); s.medC = new MedicalContent(s); s.trainC = new TrainingContent(s);
             s.opsC = new OperationsContent(s); s.loadC = new LoadoutContent(s); s.itemsC = new LoadoutContent(s, true);
             s.ignisC = new IgnisContent(s, s.itemsC, s.shopC);
+            s.station = HubStationScreen.Build(s.root, s);
+            s.shop = HubShopScreen.Build(s.root, s);
             s.loadout = HubLoadoutScreen.Build(s.root, s);
             s.squadC = new SquadInfoContent(s);
             s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle);
             s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen;
+            s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.shop.IsOpen;
+            s.shop.Closed = s.station.Reenter;
             s.RefreshTopbar();
             SaveSystem.Saved += s.OnSaved;
             return s;
         }
 
         void OnDestroy() => SaveSystem.Saved -= OnSaved;
-        void OnSaved(bool auto) => RefreshTopbar();
+        void OnSaved(bool auto) { RefreshTopbar(); if (station != null && station.IsOpen) station.RefreshMoney(); if (shop != null && shop.IsOpen) shop.RefreshMoney(); }
 
         // ---- build -------------------------------------------------------------------------------------------------------------
         void BuildTopbar()
@@ -315,8 +320,20 @@ namespace Blindside.Hub
         {
             if (n == null || AnyOpen) return;
             if (n.station == HubStation.Talk) { OpenTalk(n); return; }
+            // the operators' stations and the shop open their station screen (art, greeting, big options) first
+            string key = n.CanTalk ? n.operatorKey : n.station == HubStation.Shop ? HubCatalog.ClerkKey : null;
+            if (key != null) { station.Open(key); return; }
             OpenStation(n.station);
         }
+
+        HubStationScreen station;
+        public HubStationScreen Station => station;
+        HubShopScreen shop;
+        /// <summary>The goods screen (装備購入 / 医務室's medicines): the product list, its picture card and the purchase dialog.</summary>
+        public HubShopScreen Shop => shop;
+
+        /// <summary>IGNIS's アイテム: the items list.</summary>
+        public void OpenItems() => list.Open(itemsC);
 
         /// <summary>G: an operator's talk.</summary>
         public void OpenTalk(HubNpc n)
@@ -330,8 +347,8 @@ namespace Blindside.Hub
         {
             switch (st)
             {
-                case HubStation.Shop: list.Open(shopC, tab); break;
-                case HubStation.Medical: list.Open(medC, tab); break;
+                case HubStation.Shop: shop.OpenShop(tab); break;
+                case HubStation.Medical: shop.OpenMedical(); break;
                 case HubStation.Training: list.Open(trainC, tab); break;
                 case HubStation.Operations: list.Open(opsC, tab); break;
                 case HubStation.Management: list.Open(ignisC, tab); break;                       // IGNIS: ロードアウト / 装備購入 first

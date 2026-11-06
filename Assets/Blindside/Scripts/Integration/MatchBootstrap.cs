@@ -77,6 +77,10 @@ namespace Blindside.Integration
         // Remaining per-unit flags commands() reads (mkUnit defaults). Nothing sets them yet — the
         // gadget/facing systems aren't wired into this harness — but the menu's enable rules use them.
         public bool GadgetUsed { get; set; }
+        /// <summary>The item carried from the HQ (HubCatalog.Gadgets key; "" = none) — the player's operators in a real match only
+        /// (Progress.ProgressBonus); ItemSpent once it has been used (one per match).</summary>
+        public string Item { get; set; } = "";
+        public bool ItemSpent { get; set; }
         public bool DroneSpent { get; set; }
         public Blindside.Drones.Drone Drone { get; set; }
         public bool LockFacing { get; set; }

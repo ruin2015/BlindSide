@@ -1,10 +1,11 @@
 // Render Previews / Lint states of the squad HQ's screen (no 3D: a plain backdrop behind the menu canvas), on a sample save
 // (¥58,000, CRUSHER Lv 3 with 4 points, SCAR bought; parts by count: a suppressor, two 4x scopes, a vertical grip; two frag grenades
-// and a potion; IGNIS trained a little; FLARE's MX50 carries the suppressor and one scope — one scope and the grip are left):
+// and a 下級医療キット; IGNIS trained a little; FLARE's MX50 carries the suppressor and one scope — one scope and the grip are left):
 //   hub_overlay       the topbar, a few floating labels and the prompt (CRUSHER's 作戦室 in reach: F + G 話す)
 //   hub_shop          装備購入 — 武器
 //   hub_shop_attach   装備購入 — アタッチメント
 //   hub_shop_gadget   装備購入 — ガジェット
+//   hub_shop_buy      装備購入 — the purchase dialog (4x scope ×3)
 //   hub_medical       医務室 (SERUM)
 //   hub_training      訓練所 (BASTION; IGNIS's tab)
 //   hub_operations    作戦室 (CRUSHER)
@@ -37,7 +38,7 @@ namespace Blindside.UI.EditorTools
             d.ownedWeapons.Add("SCAR");
             d.AttachmentStockOf("suppressor").count = 1; d.AttachmentStockOf("scope4x").count = 2; d.AttachmentStockOf("vgrip").count = 1;
             d.GadgetOf("frag").count = 2;
-            d.GadgetOf("potion").count = 1;
+            d.GadgetOf("kit_low").count = 1;
             var f = d.OperatorOf("FLARE"); f.gadget = "frag";
             var fit = f.FitOf("MX50"); fit.parts[0] = "suppressor"; fit.parts[1] = "scope4x";   // (FLARE's first gun)
             d.RecordOf("").plays = 3; d.RecordOf("").wins = 2;
@@ -101,6 +102,9 @@ namespace Blindside.UI.EditorTools
         public static void BuildShop(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 0);
         public static void BuildShopAttach(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 1);
         public static void BuildShopGadget(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 2);
+        /// <summary>hub_shop_buy: アタッチメント, the 4x scope picked, 「何個購入しますか？」 at 3.</summary>
+        public static void BuildShopBuy(UIPreview.Stage s) => Screen(s).Shop.Pose(false, 1, 2, 3);
+        public const string ShopBuy = "hub_shop_buy";
         public static void BuildMedical(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Medical, 0);
         public static void BuildTraining(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Training, 2);
         public static void BuildOperations(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Operations, 0);
@@ -112,6 +116,15 @@ namespace Blindside.UI.EditorTools
         public static void BuildBench(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, -1);
         public static void BuildBenchPick(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, 1);
         public const string Bench = "hub_bench", BenchPick = "hub_bench_pick";
+
+        // the station screens (settled: everything in, the line typed)
+        public const string StationSerum = "hub_station_serum", StationIgnis = "hub_station_ignis", StationBastion = "hub_station_bastion",
+            StationCrusher = "hub_station_crusher";
+        public static void BuildStationSerum(UIPreview.Stage s) => Screen(s).Station.Pose("SERUM");
+        public static void BuildStationIgnis(UIPreview.Stage s) => Screen(s).Station.Pose("IGNIS");
+        /// <summary>BASTION after 防御力 was picked: who trains with him.</summary>
+        public static void BuildStationBastion(UIPreview.Stage s) => Screen(s).Station.Pose("BASTION", 1);
+        public static void BuildStationCrusher(UIPreview.Stage s) => Screen(s).Station.Pose("CRUSHER");
 
         public static void BuildTalk(UIPreview.Stage s)
         {

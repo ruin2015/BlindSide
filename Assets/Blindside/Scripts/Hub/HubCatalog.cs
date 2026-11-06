@@ -92,21 +92,45 @@ namespace Blindside.Hub
             public int price;
             /// <summary>Sold at the 医務室 (SERUM) rather than the shop.</summary>
             public bool medical;
+            /// <summary>The illustration in Resources/Equipment ("" = none: the shop shows a glyph).</summary>
+            public string art = "";
+            // what a medical item does (the match reads these once items are used there)
+            /// <summary>HP restored at once.</summary>
+            public int heal;
+            /// <summary>How many turns the buffs below last (0 = none).</summary>
+            public int turns;
+            /// <summary>Buffs for `turns`: extra HP (a shield over the bar), mobility %, accuracy %, headshot chance %.</summary>
+            public int bonusHp, mobilityPct, accPct, headshotPct;
+            /// <summary>Used by itself when the carrier goes KIA: back up with this % of max HP (0 = not a revive).</summary>
+            public int revivePct;
         }
 
         public const int MaxGadgetStock = 9;
 
         public static readonly Gadget[] Gadgets =
         {
-            new Gadget { key = "frag",  name = "破片手榴弾",   note = "爆発で範囲内の敵にダメージを与える",   price = 4000 },
-            new Gadget { key = "smoke", name = "スモーク弾",   note = "煙幕で一定範囲の視界を遮る",         price = 2500 },
-            new Gadget { key = "flash", name = "閃光弾",       note = "範囲内の敵の命中率を一時的に下げる",   price = 3000 },
-            new Gadget { key = "drone", name = "予備ドローン", note = "偵察ドローンを1機追加する",           price = 6000 },
-            new Gadget { key = "potion",    name = "回復薬",         note = "体力を少し回復する",             price = 1500, medical = true },
-            new Gadget { key = "medkit",    name = "救急キット",     note = "体力を大きく回復する",           price = 3500, medical = true },
-            new Gadget { key = "painkiller", name = "鎮痛剤",        note = "一時的に被ダメージを軽減する",   price = 2500, medical = true },
-            new Gadget { key = "adrenaline", name = "アドレナリン注射", note = "一時的に移動力を上げる",      price = 3000, medical = true },
+            new Gadget { key = "frag",     name = "破片手榴弾",   note = "放物線で投げ、3秒後に爆発する。中心ほど大きなダメージを与え、壁を半壊させる", price = 5000, art = "26_frag_grenade" },
+            new Gadget { key = "smoke",    name = "スモーク弾",   note = "煙幕で視界を遮る (次の自分のターンまで)。煙越しの射撃は命中率が下がる", price = 3000, art = "27_smoke_grenade" },
+            new Gadget { key = "flash",    name = "閃光弾",       note = "範囲内の全員の命中率を大きく下げ、被弾は必ずヘッドショットになる (敵味方問わず)", price = 3000, art = "28_flashbang" },
+            new Gadget { key = "breach",   name = "粘着爆薬",     note = "壁に貼り付けて爆破し、壁を取り除く", price = 2000, art = "29_breach_charge" },
+            new Gadget { key = "claymore", name = "クレイモア",   note = "設置した場所に敵が近づくと爆発する。敵の射撃で破壊される", price = 2000, art = "30_claymore" },
+            new Gadget { key = "kit_low",   name = "下級医療キット", note = "体力を30回復する",   price = 1000, medical = true, art = "20_medkit_basic", heal = 30 },
+            new Gadget { key = "kit_mid",   name = "中級医療キット", note = "体力を50回復する",   price = 2500, medical = true, art = "21_medkit_mid", heal = 50 },
+            new Gadget { key = "kit_high",  name = "上級医療キット", note = "体力を80回復する",   price = 4000, medical = true, art = "22_medkit_high", heal = 80 },
+            new Gadget { key = "adrophin",  name = "アドロピン注射器", note = "3ターンの間、機動力+20%・追加体力+30", price = 5000, medical = true, art = "23_adrophin_injector", turns = 3, mobilityPct = 20, bonusHp = 30 },
+            new Gadget { key = "stimulant", name = "覚醒薬",         note = "3ターンの間、命中率+20%・ヘッドショット率+10%", price = 5000, medical = true, art = "24_stimulant", turns = 3, accPct = 20, headshotPct = 10 },
+            new Gadget { key = "defib",     name = "除細動器",       note = "KIA時に自動で使用し、体力50%で復帰する", price = 10000, medical = true, art = "25_defibrillator", revivePct = 50 },
         };
+
+        static readonly Dictionary<string, Sprite> gadgetArt = new Dictionary<string, Sprite>(8);
+
+        /// <summary>The item's illustration (loaded once; null when it has none).</summary>
+        public static Sprite ArtOf(Gadget g)
+        {
+            if (g == null || string.IsNullOrEmpty(g.art)) return null;
+            if (!gadgetArt.TryGetValue(g.art, out var s)) { s = Resources.Load<Sprite>("Equipment/" + g.art); gadgetArt[g.art] = s; }
+            return s;
+        }
 
         // ---- attachments ---------------------------------------------------------------------------------------------------------
         // the parts and their effects live in Data.Attachments (the match reads them too); these forward to it
@@ -161,6 +185,26 @@ namespace Blindside.Hub
                 });
             }
         }
+
+        // ---- station greetings (the station screen's speech bubble: one at random each time it opens) ------------------------------
+        public const string ClerkKey = "CLERK";
+
+        public static string[] StationLines(string key)
+        {
+            switch (key)
+            {
+                case "SERUM": return new[] { "医薬品は足りているか？", "どこが痛くて来たんだ？" };
+                case "IGNIS": return new[] { "おう！新入り、何を買いに来た？", "新しい装備ってのは、いつだってワクワクするもんだよな？" };
+                case "BASTION": return new[] { "強靭な肉体にこそ、強靭な精神が宿るものだ。", "鍛錬を怠るなよ。" };
+                // (later: a line per operation, shown while the pointer is on it)
+                case "CRUSHER": return new[] { "これが現在の作戦だ。よく選ぶように。" };
+                case ClerkKey: return new[] { "いらっしゃい。今日は何にする？" };
+            }
+            return new[] { "……" };
+        }
+
+        /// <summary>BASTION, once a stat is chosen: who trains with him.</summary>
+        public const string TrainPartnerLine = "共に鍛える隊員を選べ。";
 
         // ---- talk ----------------------------------------------------------------------------------------------------------------
         public static readonly string[] TalkKeys = { "CRUSHER", "SERUM", "IGNIS", "BASTION" };

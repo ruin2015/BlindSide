@@ -248,6 +248,8 @@ namespace Blindside.Combat
         public event System.Action<ICombatUnit, int, bool> OnDamage;                  // target, amount, crit
         public event System.Action<ICombatUnit, ICombatUnit, ShotResult> OnResolved;   // attacker, target, summary
         public event System.Action<ICombatUnit, ICombatUnit> OnKill;                  // target, killer
+        /// <summary>A kill from outside the gun path (a thrown grenade): every OnKill listener reacts as to a shot kill.</summary>
+        public void ReportKill(ICombatUnit target, ICombatUnit killer) => OnKill?.Invoke(target, killer);
         public event System.Action<ShotEvent> OnShot;                                 // every shot: who→whom, hit, headshot, damage
 
         /// <summary>

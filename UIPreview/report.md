@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 13:07
+Screen 1440x810 · 0 issues · generated 2026-11-06 15:40
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -34,12 +34,17 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_shop | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_shop_attach | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_shop_gadget | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_shop_buy | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_medical | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_training | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_operations | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_manage | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_loadout | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_station_serum | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_station_ignis | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_station_bastion | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_station_crusher | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench_pick | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_squad | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -124,28 +129,32 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 66종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 70종)
 
 - Brighten ×6
 - Chip ×531
 - ClickRelay ×3
 - CornerBrackets ×27
-- CutCornerGraphic ×162
+- CutCornerGraphic ×243
 - EngagePreview ×3
 - ExpGainPopup ×1
 - HazardStripe ×185
-- HubListPanel ×9
+- HubHover ×56
+- HubListPanel ×5
 - HubLoadoutScreen ×2
 - HubMenu ×2
 - HubMinimap ×1
-- HubScreen ×14
+- HubPointer ×53
+- HubScreen ×19
+- HubShopScreen ×5
+- HubStationScreen ×4
 - HubTalkPanel ×1
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×37
-- KitBrighten ×143
+- KitBrighten ×109
 - KitChoice ×5
 - KitCommandMenu ×13
 - KitGradient ×12
@@ -155,7 +164,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitPointer ×59
 - KitRoster ×34
 - KitSaveIndicator ×1
-- KitShadow ×130
+- KitShadow ×132
 - KitSlider ×6
 - KitStepper ×1
 - KitSweep ×169
@@ -163,16 +172,16 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitTextButton ×63
 - KitTint ×299
 - KitTitleLeft ×6
-- LintIgnoreClip ×869
-- LintIgnoreOverlap ×295
+- LintIgnoreClip ×873
+- LintIgnoreOverlap ×319
 - MainMenuScreen ×6
 - OperationResultScreen ×3
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×297
-- SlantedGraphic ×2935
+- SlantedGraphic ×3006
 - SlantedMask ×288
-- TacticalPanel ×1147
+- TacticalPanel ×1143
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialGuide ×3
@@ -183,9 +192,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
 - UIContactAlert ×34
-- UIGlitchImage ×305
+- UIGlitchImage ×310
 - UIGlitchName ×54
-- UIGlitchText ×126
+- UIGlitchText ×131
 - UIHeadshotBadge ×34
 - UIPerspective ×3
 - UIPerspectiveVertex ×150
@@ -216,12 +225,17 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_shop | 1440x810 | 本部 — 装備購入 (武器) |
 | hub_shop_attach | 1440x810 | 本部 — 装備購入 (アタッチメント) |
 | hub_shop_gadget | 1440x810 | 本部 — 装備購入 (ガジェット) |
+| hub_shop_buy | 1440x810 | 本部 — 装備購入 (購入数の確認) |
 | hub_medical | 1440x810 | 本部 — 医務室 (SERUM) |
 | hub_training | 1440x810 | 本部 — 訓練所 (BASTION) |
 | hub_operations | 1440x810 | 本部 — 作戦室 (CRUSHER) |
 | hub_manage | 1440x810 | 本部 — IGNIS (ロードアウト / 装備購入) |
 | hub_loadout | 1440x810 | 本部 — ロードアウト |
 | hub_menu | 1440x810 | 本部 — メニュー (ESC) |
+| hub_station_serum | 1440x810 | 本部 — 医務室 (SERUM) |
+| hub_station_ignis | 1440x810 | 本部 — IGNIS |
+| hub_station_bastion | 1440x810 | 本部 — 訓練所 (隊員を選ぶ) |
+| hub_station_crusher | 1440x810 | 本部 — 作戦室 (CRUSHER) |
 | hub_bench | 1440x810 | 本部 — ロードアウト (作業台) |
 | hub_bench_pick | 1440x810 | 本部 — ロードアウト (パーツ選択) |
 | hub_squad | 1440x810 | 本部 — 隊員情報 |
