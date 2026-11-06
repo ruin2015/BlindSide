@@ -132,6 +132,7 @@ namespace Blindside.Hub
                     bool owned = D.OwnsAttachment(a.key);
                     into.Add(new HubRow
                     {
+                        face = HubCatalog.ArtOf(a),
                         name = a.name + "  (" + HubCatalog.AttachmentSlots[a.slot] + ")", note = a.note + "   分隊全員で使える",
                         value = owned ? "所持済み" : Yen("", a.price), current = owned,
                         button = owned ? "購入済み" : "購入", enabled = Editable && !owned && D.money >= a.price,
@@ -330,17 +331,26 @@ namespace Blindside.Hub
                 }, Kind.Gun, i);
             }
 
-            for (int i = 0; i < HubCatalog.Attachments.Length; i++)
-            {
-                var a = HubCatalog.Attachments[i];
-                bool owned = D.OwnsAttachment(a.key), on = p.attachments[a.slot] == a.key;
-                Add(into, new HubRow
+            // the parts the squad owns (or this operator still has on), by slot; one per slot — 装備 swaps the slot's part
+            int shown = 0;
+            for (int s = 0; s < HubCatalog.SlotCount; s++)
+                for (int i = 0; i < HubCatalog.Attachments.Length; i++)
                 {
-                    name = HubCatalog.AttachmentSlots[a.slot] + "  " + a.name, note = a.note,
-                    value = on ? "装備中" : (owned ? "所持" : "未所持 (装備購入)"), current = on,
-                    button = on ? "外す" : "装備", enabled = Editable && (on || owned),
-                }, Kind.Attachment, i);
-            }
+                    var a = HubCatalog.Attachments[i];
+                    if (a.slot != s) continue;
+                    bool owned = D.OwnsAttachment(a.key), on = p.attachments[a.slot] == a.key;
+                    if (!owned && !on) continue;
+                    shown++;
+                    Add(into, new HubRow
+                    {
+                        face = HubCatalog.ArtOf(a),
+                        name = HubCatalog.AttachmentSlots[a.slot] + "  " + a.name, note = a.note,
+                        value = on ? "装備中" : "所持", current = on,
+                        button = on ? "外す" : "装備", enabled = Editable,
+                    }, Kind.Attachment, i);
+                }
+            if (shown == 0)
+                Add(into, new HubRow { name = "アタッチメント  なし", note = "装備購入で購入すると、ここで装備できます" }, Kind.NoItem, -1);
 
             bool none = string.IsNullOrEmpty(p.gadget);
             Add(into, new HubRow
@@ -388,7 +398,7 @@ namespace Blindside.Hub
                     return op.DisplayName + " に " + a.name + " を付けました";
                 }
                 case Kind.NoItem:
-                    if (!Editable) return null;
+                    if (!Editable || i < 0) return null;   // (−1: the "no attachments yet" line)
                     p.gadget = ""; Save();
                     return op.DisplayName + " のアイテムを外しました";
                 case Kind.Item:
@@ -459,10 +469,10 @@ namespace Blindside.Hub
                 var m = D.WeaponOf(gun.key);
                 into.Add(new HubRow { name = "武器  " + gun.weaponName, note = ShopContent.GunNote(gun), value = "熟練度 Lv " + m.level });
             }
-            for (int s = 0; s < HubCatalog.AttachmentSlots.Length; s++)
+            for (int s = 0; s < HubCatalog.SlotCount; s++)
             {
                 var a = HubCatalog.AttachmentOf(p.attachments[s]);
-                into.Add(new HubRow { name = HubCatalog.AttachmentSlots[s] + "  " + (a != null ? a.name : "なし"), note = a != null ? a.note : "", value = a != null ? "装備中" : "" });
+                into.Add(new HubRow { face = HubCatalog.ArtOf(a), name = HubCatalog.AttachmentSlots[s] + "  " + (a != null ? a.name : "なし"), note = a != null ? a.note : "", value = a != null ? "装備中" : "" });
             }
             var g = HubCatalog.GadgetOf(p.gadget);
             into.Add(new HubRow { name = "アイテム  " + (g != null ? g.name : "なし"), note = g != null ? g.note : "", value = g != null ? "所持 " + D.GadgetOf(g.key).count : "" });

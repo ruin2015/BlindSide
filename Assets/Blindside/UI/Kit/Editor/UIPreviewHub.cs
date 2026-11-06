@@ -1,5 +1,6 @@
 // Render Previews / Lint states of the squad HQ's screen (no 3D: a plain backdrop behind the menu canvas), on a sample save
-// (¥58,000, CRUSHER Lv 3 with 4 points, SCAR and a suppressor bought, two frag grenades and a potion, IGNIS trained a little):
+// (¥58,000, CRUSHER Lv 3 with 4 points, SCAR, a suppressor, a 4x scope and a vertical grip bought, two frag grenades and a potion,
+// IGNIS trained a little; FLARE carries the suppressor and the scope):
 //   hub_overlay       the topbar, a few floating labels and the prompt (CRUSHER's 作戦室 in reach: F + G 話す)
 //   hub_shop          装備購入 — 武器
 //   hub_shop_attach   装備購入 — アタッチメント
@@ -34,10 +35,10 @@ namespace Blindside.UI.EditorTools
             var c = d.OperatorOf("CRUSHER"); c.level = 3; c.points = 4; c.hp = 1; c.atk = 1;
             var i = d.OperatorOf("IGNIS"); i.level = 2; i.points = 2; i.trained[2] = 2; i.atk = 2; i.trained[0] = 1; i.hp = 1;
             d.ownedWeapons.Add("SCAR");
-            d.ownedAttachments.Add("suppressor");
+            d.ownedAttachments.Add("suppressor"); d.ownedAttachments.Add("scope4x"); d.ownedAttachments.Add("vgrip");
             d.GadgetOf("frag").count = 2;
             d.GadgetOf("potion").count = 1;
-            var f = d.OperatorOf("FLARE"); f.gadget = "frag"; f.attachments[0] = "suppressor";
+            var f = d.OperatorOf("FLARE"); f.gadget = "frag"; f.attachments[0] = "suppressor"; f.attachments[1] = "scope4x";
             d.RecordOf("").plays = 3; d.RecordOf("").wins = 2;
             return d;
         }

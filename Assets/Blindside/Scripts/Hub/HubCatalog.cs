@@ -4,7 +4,8 @@
 //               guns, attachments, the carried item) · 医務室 SERUM (medical items) · 装備購入 the supply clerk (guns, attachments, gadgets)
 //   Weapons     every squad operator's guns (OperatorData.weapons). The first is the operator's own (owned from the start); the others
 //               are sold at the shop (WeaponPrice) and, once bought, can be equipped by whoever lists them
-//   Attachments bought once for the squad (Attachments, a slot each: マズル / 光学機器 / グリップ / マガジン), one per slot per operator
+//   Attachments 19 parts with their illustrations (Resources/Equipment), bought once for the squad, one per slot per operator; slots
+//               マズル / 光学機器 / グリップ / マガジン / バレル / ストック
 //   Items       consumables (Gadgets): tactical ones at the shop, medical ones at the 医務室; one carried per operator. Attachments and
 //               items are kept and equipped in the save; the match does not read them yet (phase 2)
 //   Training    money for one stat point: TrainCost(n) for the operator's n-th session in that stat (0-based), MaxTrain per stat
@@ -108,22 +109,40 @@ namespace Blindside.Hub
         };
 
         // ---- attachments ---------------------------------------------------------------------------------------------------------
-        public static readonly string[] AttachmentSlots = { "マズル", "光学機器", "グリップ", "マガジン" };
+        /// <summary>The slots, in save order (OperatorProgress.attachments): the first four are the original ones.</summary>
+        public static readonly string[] AttachmentSlots = { "マズル", "光学機器", "グリップ", "マガジン", "バレル", "ストック" };
+        public const int SlotCount = 6;
 
         public sealed class Attachment
         {
             public string key, name, note;
             public int slot, price;
+            /// <summary>The illustration: Resources/Equipment/{art}.png (1254² source, imported as a 256 sprite).</summary>
+            public string art;
         }
 
+        // listed by slot as the shop shows them: 光学機器 · マズル · バレル · マガジン · ストック · グリップ
         public static readonly Attachment[] Attachments =
         {
-            new Attachment { key = "suppressor", slot = 0, name = "サプレッサー",     note = "発砲音を抑え、位置を知られにくくする", price = 8000 },
-            new Attachment { key = "compensator", slot = 0, name = "コンペンセイター", note = "反動を抑えて命中率を上げる",           price = 6000 },
-            new Attachment { key = "dotsight",  slot = 1, name = "ドットサイト",     note = "近距離での照準が速くなる",             price = 5000 },
-            new Attachment { key = "scope",     slot = 1, name = "スコープ",         note = "遠距離の命中率が上がる",               price = 9000 },
-            new Attachment { key = "foregrip",  slot = 2, name = "フォアグリップ",   note = "射撃の安定性が上がる",                 price = 5000 },
-            new Attachment { key = "extmag",    slot = 3, name = "拡張マガジン",     note = "1回の射撃で撃てる弾数が増える",        price = 7000 },
+            new Attachment { key = "holo",        slot = 1, art = "01_holographic_sight",   name = "ホロサイト",           note = "近距離での照準が速くなる",                 price = 5000 },
+            new Attachment { key = "scope2x",     slot = 1, art = "02_scope_2x",            name = "2倍スコープ",          note = "中距離の命中率が少し上がる",               price = 6000 },
+            new Attachment { key = "scope4x",     slot = 1, art = "03_scope_4x",            name = "4倍スコープ",          note = "中〜遠距離の命中率が上がる",               price = 8000 },
+            new Attachment { key = "scope8x",     slot = 1, art = "04_scope_8x",            name = "8倍スコープ",          note = "遠距離の命中率が大きく上がる",             price = 10000 },
+            new Attachment { key = "scope16x",    slot = 1, art = "05_scope_16x",           name = "16倍スコープ",         note = "超遠距離向け。近距離では扱いにくい",       price = 12000 },
+            new Attachment { key = "suppressor",  slot = 0, art = "06_suppressor",          name = "サプレッサー",         note = "発砲音を抑え、位置を知られにくくする",     price = 8000 },
+            new Attachment { key = "muzzlebrake", slot = 0, art = "07_muzzle_brake",        name = "マズルブレーキ",       note = "反動を大きく抑える",                       price = 6000 },
+            new Attachment { key = "compensator", slot = 0, art = "08_compensator",         name = "コンペンセイター",     note = "縦の反動を抑えて命中率を上げる",           price = 6000 },
+            new Attachment { key = "flashhider",  slot = 0, art = "09_flash_hider",         name = "フラッシュハイダー",   note = "発砲炎を抑え、発見されにくくする",         price = 5000 },
+            new Attachment { key = "extbarrel",   slot = 4, art = "10_extended_barrel",     name = "ロングバレル",         note = "射程が伸びる",                             price = 9000 },
+            new Attachment { key = "quickmag",    slot = 3, art = "11_quickdraw_magazine",  name = "クイックドローマガジン", note = "装填が速くなる",                         price = 6000 },
+            new Attachment { key = "extmag",      slot = 3, art = "12_extended_magazine",   name = "拡張マガジン",         note = "1回の射撃で撃てる弾数が増える",            price = 7000 },
+            new Attachment { key = "beltmag",     slot = 3, art = "13_belt_magazine",       name = "ベルトマガジン",       note = "弾数が大きく増えるが、機動力が下がる",     price = 11000 },
+            new Attachment { key = "drummag",     slot = 3, art = "14_drum_magazine",       name = "ドラムマガジン",       note = "弾数が増えるが、装填が遅くなる",           price = 9000 },
+            new Attachment { key = "foldstock",   slot = 5, art = "15_folding_stock",       name = "折りたたみストック",   note = "機動力が上がるが、安定性が下がる",         price = 5000 },
+            new Attachment { key = "fixedstock",  slot = 5, art = "16_fixed_stock",         name = "固定ストック",         note = "射撃の安定性が上がる",                     price = 5000 },
+            new Attachment { key = "adjstock",    slot = 5, art = "17_adjustable_stock",    name = "調整式ストック",       note = "機動力と安定性のバランスが良い",           price = 7000 },
+            new Attachment { key = "vgrip",       slot = 2, art = "18_vertical_grip",       name = "バーチカルグリップ",   note = "縦の反動を抑える",                         price = 5000 },
+            new Attachment { key = "agrip",       slot = 2, art = "19_angled_grip",         name = "アングルグリップ",     note = "構えが速くなる",                           price = 5000 },
         };
 
         public static Attachment AttachmentOf(string key)
@@ -131,6 +150,16 @@ namespace Blindside.Hub
             if (string.IsNullOrEmpty(key)) return null;
             foreach (var a in Attachments) if (a.key == key) return a;
             return null;
+        }
+
+        static readonly Dictionary<string, Sprite> art = new Dictionary<string, Sprite>(24);
+
+        /// <summary>The part's illustration (loaded once; null when it is missing).</summary>
+        public static Sprite ArtOf(Attachment a)
+        {
+            if (a == null || string.IsNullOrEmpty(a.art)) return null;
+            if (!art.TryGetValue(a.art, out var s)) { s = Resources.Load<Sprite>("Equipment/" + a.art); art[a.art] = s; }
+            return s;
         }
 
         public static Gadget GadgetOf(string key)

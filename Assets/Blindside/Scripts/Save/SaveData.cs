@@ -32,7 +32,8 @@ namespace Blindside.Save
         /// <summary>The gadget the operator carries (Hub.HubCatalog.Gadgets key; "" = none). Phase 2 takes it into the match.</summary>
         public string gadget = "";
         /// <summary>The attachment in each slot (Hub.HubCatalog.AttachmentSlots order; "" = none). Phase 2 takes them into the match.</summary>
-        public string[] attachments = { "", "", "", "" };
+        public string[] attachments = { "", "", "", "", "", "" };
+        public const int AttachmentSlots = 6;   // マズル / 光学機器 / グリップ / マガジン / バレル / ストック (v4 saves had the first four)
 
         public int StatPoints(int i)
         {
@@ -64,7 +65,7 @@ namespace Blindside.Save
     [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 4;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training); 4: attachments
+        public const int CurrentVersion = 5;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training); 4: attachments; 5: six slots, 19 parts
 
         public int version = CurrentVersion;
         public string createdUtc = "";      // ISO 8601 (round-trip "o")
@@ -158,6 +159,18 @@ namespace Blindside.Save
             }
         }
 
+        /// <summary>v4's first attachment set → the part that replaced each (v5: the 19 illustrated parts).</summary>
+        static string RenamedPart(string key)
+        {
+            switch (key)
+            {
+                case "dotsight": return "holo";
+                case "scope": return "scope4x";
+                case "foregrip": return "vgrip";
+                default: return key;
+            }
+        }
+
         /// <summary>Fills what an older or hand-edited file left out.</summary>
         public void Normalize()
         {
@@ -177,16 +190,18 @@ namespace Blindside.Save
                 if (o.trained == null || o.trained.Length != 5) { var t = new int[5]; if (o.trained != null) for (int i = 0; i < 5 && i < o.trained.Length; i++) t[i] = o.trained[i]; o.trained = t; }
                 for (int i = 0; i < 5; i++) if (o.trained[i] < 0) o.trained[i] = 0;
                 if (o.gadget == null) o.gadget = "";
-                if (o.attachments == null || o.attachments.Length != 4)
+                int n = OperatorProgress.AttachmentSlots;
+                if (o.attachments == null || o.attachments.Length != n)
                 {
-                    var a = new[] { "", "", "", "" };
-                    if (o.attachments != null) for (int i = 0; i < 4 && i < o.attachments.Length; i++) a[i] = o.attachments[i] ?? "";
+                    var a = new string[n];
+                    for (int i = 0; i < n; i++) a[i] = o.attachments != null && i < o.attachments.Length ? o.attachments[i] ?? "" : "";
                     o.attachments = a;
                 }
-                for (int i = 0; i < 4; i++) if (o.attachments[i] == null) o.attachments[i] = "";
+                for (int i = 0; i < n; i++) o.attachments[i] = RenamedPart(o.attachments[i] ?? "");
             }
             if (ownedAttachments == null) ownedAttachments = new List<string>();
             ownedAttachments.RemoveAll(string.IsNullOrEmpty);
+            for (int i = 0; i < ownedAttachments.Count; i++) ownedAttachments[i] = RenamedPart(ownedAttachments[i]);
             if (ownedWeapons == null) ownedWeapons = new List<string>();
             ownedWeapons.RemoveAll(string.IsNullOrEmpty);
             if (gadgets == null) gadgets = new List<ItemCount>();
