@@ -1,6 +1,6 @@
 // Render Previews / Lint states of the squad HQ's screen (no 3D: a plain backdrop behind the menu canvas), on a sample save
-// (¥58,000, CRUSHER Lv 3 with 4 points, SCAR, a suppressor, a 4x scope and a vertical grip bought, two frag grenades and a potion,
-// IGNIS trained a little; FLARE carries the suppressor and the scope):
+// (¥58,000, CRUSHER Lv 3 with 4 points, SCAR bought; parts by count: a suppressor, two 4x scopes, a vertical grip; two frag grenades
+// and a potion; IGNIS trained a little; FLARE's MX50 carries the suppressor and one scope — one scope and the grip are left):
 //   hub_overlay       the topbar, a few floating labels and the prompt (CRUSHER's 作戦室 in reach: F + G 話す)
 //   hub_shop          装備購入 — 武器
 //   hub_shop_attach   装備購入 — アタッチメント
@@ -35,10 +35,11 @@ namespace Blindside.UI.EditorTools
             var c = d.OperatorOf("CRUSHER"); c.level = 3; c.points = 4; c.hp = 1; c.atk = 1;
             var i = d.OperatorOf("IGNIS"); i.level = 2; i.points = 2; i.trained[2] = 2; i.atk = 2; i.trained[0] = 1; i.hp = 1;
             d.ownedWeapons.Add("SCAR");
-            d.ownedAttachments.Add("suppressor"); d.ownedAttachments.Add("scope4x"); d.ownedAttachments.Add("vgrip");
+            d.AttachmentStockOf("suppressor").count = 1; d.AttachmentStockOf("scope4x").count = 2; d.AttachmentStockOf("vgrip").count = 1;
             d.GadgetOf("frag").count = 2;
             d.GadgetOf("potion").count = 1;
-            var f = d.OperatorOf("FLARE"); f.gadget = "frag"; f.attachments[0] = "suppressor"; f.attachments[1] = "scope4x";
+            var f = d.OperatorOf("FLARE"); f.gadget = "frag";
+            var fit = f.FitOf("MX50"); fit.parts[0] = "suppressor"; fit.parts[1] = "scope4x";   // (FLARE's first gun)
             d.RecordOf("").plays = 3; d.RecordOf("").wins = 2;
             return d;
         }
@@ -107,6 +108,10 @@ namespace Blindside.UI.EditorTools
         public static void BuildLoadout(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Loadout, 1);
         public static void BuildSquad(UIPreview.Stage s) { var hs = Screen(s); hs.Menu.Open(); hs.OpenStation(HubStation.Growth, 0); }
         public static void BuildMenu(UIPreview.Stage s) => Screen(s).Menu.Open();
+        /// <summary>hub_bench: the workbench on FLARE's MX50 (suppressor + 4x scope fitted); hub_bench_pick: its 光学機器 picker open.</summary>
+        public static void BuildBench(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, -1);
+        public static void BuildBenchPick(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, 1);
+        public const string Bench = "hub_bench", BenchPick = "hub_bench_pick";
 
         public static void BuildTalk(UIPreview.Stage s)
         {

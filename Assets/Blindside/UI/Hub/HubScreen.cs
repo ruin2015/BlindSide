@@ -37,7 +37,12 @@ namespace Blindside.Hub
         readonly List<Label> labels = new List<Label>(12);
 
         ShopContent shopC; MedicalContent medC; TrainingContent trainC; OperationsContent opsC;
-        LoadoutContent loadC; IgnisContent ignisC; SquadInfoContent squadC;
+        LoadoutContent loadC, itemsC; IgnisContent ignisC; SquadInfoContent squadC;
+        HubLoadoutScreen loadout;
+        public HubLoadoutScreen LoadoutScreen => loadout;
+
+        /// <summary>IGNIS's ロードアウト: the workbench screen.</summary>
+        public void OpenLoadout(int operatorIndex = 0) => loadout.Open(operatorIndex);
         HubMenu menu;
         public HubMenu Menu => menu;
 
@@ -48,7 +53,7 @@ namespace Blindside.Hub
         public bool Editable => SaveSystem.Current != null || (!Application.isPlaying && previewData != null);
 
         public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
-                               || (menu != null && menu.IsOpen) || leaving;
+                               || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
         public KitGrowthPanel Growth => growth;
@@ -71,7 +76,9 @@ namespace Blindside.Hub
             s.talk = HubTalkPanel.Build(s.root);
             s.list.EscBlocked = () => s.growth.IsOpen;
             s.shopC = new ShopContent(s); s.medC = new MedicalContent(s); s.trainC = new TrainingContent(s);
-            s.opsC = new OperationsContent(s); s.loadC = new LoadoutContent(s); s.ignisC = new IgnisContent(s, s.loadC, s.shopC);
+            s.opsC = new OperationsContent(s); s.loadC = new LoadoutContent(s); s.itemsC = new LoadoutContent(s, true);
+            s.ignisC = new IgnisContent(s, s.itemsC, s.shopC);
+            s.loadout = HubLoadoutScreen.Build(s.root, s);
             s.squadC = new SquadInfoContent(s);
             s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle);
             s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen;

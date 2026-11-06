@@ -127,15 +127,17 @@ namespace Blindside.Hub
             }
             if (tab == 1)
             {
+                // by count: each copy goes on one gun of one operator
                 foreach (var a in HubCatalog.Attachments)
                 {
-                    bool owned = D.OwnsAttachment(a.key);
+                    int have = D.AttachmentStockOf(a.key).count, fitted = D.AttachmentsFitted(a.key);
+                    bool full = have >= SaveData.MaxAttachmentStock;
                     into.Add(new HubRow
                     {
                         face = HubCatalog.ArtOf(a),
-                        name = a.name + "  (" + HubCatalog.AttachmentSlots[a.slot] + ")", note = a.note + "   分隊全員で使える",
-                        value = owned ? "所持済み" : Yen("", a.price), current = owned,
-                        button = owned ? "購入済み" : "購入", enabled = Editable && !owned && D.money >= a.price,
+                        name = a.name + "  (" + HubCatalog.AttachmentSlots[a.slot] + ")", note = a.Summary,
+                        value = Yen("", a.price) + "  所持 " + have + (fitted > 0 ? " (装着 " + fitted + ")" : ""), current = have > 0,
+                        button = full ? "上限" : "購入", enabled = Editable && !full && D.money >= a.price,
                     });
                 }
                 return;
@@ -161,11 +163,12 @@ namespace Blindside.Hub
             {
                 if (row >= HubCatalog.Attachments.Length) return null;
                 var a = HubCatalog.Attachments[row];
-                if (D.OwnsAttachment(a.key)) return null;
+                var line = D.AttachmentStockOf(a.key);
+                if (line.count >= SaveData.MaxAttachmentStock) return null;
                 if (!Pay(a.price)) return "所持金が足りません";
-                D.ownedAttachments.Add(a.key);
+                line.count++;
                 Save();
-                return a.name + " を購入しました (隊員・装備管理で装備できます)";
+                return a.name + " を購入しました (所持 " + line.count + " · ロードアウトで1丁に1つ装着)";
             }
             return BuyGadget(NthOf(false, row));
         }
@@ -268,24 +271,27 @@ namespace Blindside.Hub
     }
 
     // ---- IGNIS: the choice first --------------------------------------------------------------------------------------------------
-    /// <summary>IGNIS's station: what to do — ロードアウト (LoadoutContent) or 装備購入 (the shop) — then that panel.</summary>
+    /// <summary>IGNIS's station: what to do — ロードアウト (the workbench: HubLoadoutScreen), アイテム (LoadoutContent, items only) or
+    /// 装備購入 (the shop) — then that screen.</summary>
     public sealed class IgnisContent : HubContentBase
     {
-        readonly IHubContent loadout, shop;
-        public IgnisContent(HubScreen s, IHubContent loadout, IHubContent shop) : base(s) { this.loadout = loadout; this.shop = shop; }
+        readonly IHubContent items, shop;
+        public IgnisContent(HubScreen s, IHubContent items, IHubContent shop) : base(s) { this.items = items; this.shop = shop; }
         public override string Title => "IGNIS";
         public override string En => "LOADOUT / SHOP";
 
         public override void Fill(int tab, List<HubRow> into)
         {
             into.Clear();
-            into.Add(new HubRow { name = "ロードアウト", note = "隊員ごとに武器・アタッチメント・アイテムを装備する", button = "開く", enabled = true, band = UITheme.Current.blue });
+            into.Add(new HubRow { name = "ロードアウト", note = "作業台で武器を選び、部位ごとにパーツを装着する", button = "開く", enabled = true, band = UITheme.Current.blue });
+            into.Add(new HubRow { name = "アイテム", note = "隊員ごとに出撃時のアイテムを選ぶ", button = "開く", enabled = true, band = UITheme.Current.paper2 });
             into.Add(new HubRow { name = "装備購入", note = "武器・アタッチメント・ガジェットを購入する", button = "開く", enabled = true, band = UITheme.Current.acc });
         }
 
         public override string Act(int tab, int row)
         {
-            screen.List.Open(row == 0 ? loadout : shop);
+            if (row == 0) { screen.List.Close(); screen.OpenLoadout(); }
+            else screen.List.Open(row == 1 ? items : shop);
             return null;
         }
 
@@ -295,9 +301,11 @@ namespace Blindside.Hub
     // ---- ロードアウト ------------------------------------------------------------------------------------------------------------
     public sealed class LoadoutContent : HubContentBase
     {
-        public LoadoutContent(HubScreen s) : base(s) { }
-        public override string Title => "ロードアウト";
-        public override string En => "LOADOUT";
+        /// <summary>Only the item rows (IGNIS's アイテム: the guns and parts are on the workbench).</summary>
+        readonly bool itemsOnly;
+        public LoadoutContent(HubScreen s, bool itemsOnly = false) : base(s) { this.itemsOnly = itemsOnly; }
+        public override string Title => itemsOnly ? "アイテム" : "ロードアウト";
+        public override string En => itemsOnly ? "ITEMS" : "LOADOUT";
         public override int TabCount => Squad.Count;
         public override string Tab(int i) => SquadTab(i);
 
@@ -315,7 +323,7 @@ namespace Blindside.Hub
             var op = Squad[tab];
             var p = D.OperatorOf(op.key);
 
-            var guns = HubCatalog.GunsOf(op);
+            var guns = itemsOnly ? new WeaponData[0] : HubCatalog.GunsOf(op);
             int choice = Loadout.Choice(op);
             for (int i = 0; i < guns.Length; i++)
             {
@@ -331,26 +339,31 @@ namespace Blindside.Hub
                 }, Kind.Gun, i);
             }
 
-            // the parts the squad owns (or this operator still has on), by slot; one per slot — 装備 swaps the slot's part
+            // the carried gun's parts: one per slot, each a copy from the stock (a copy on another gun — anyone's — is not free).
+            // Listed: the parts on this gun and the ones with a free copy; 装着 takes a copy (swapping out the slot's part)
+            var gun = Loadout.Of(op, true);
+            var fit = gun != null ? p.FindFit(gun.key) : null;
             int shown = 0;
+            if (!itemsOnly)
             for (int s = 0; s < HubCatalog.SlotCount; s++)
                 for (int i = 0; i < HubCatalog.Attachments.Length; i++)
                 {
                     var a = HubCatalog.Attachments[i];
                     if (a.slot != s) continue;
-                    bool owned = D.OwnsAttachment(a.key), on = p.attachments[a.slot] == a.key;
-                    if (!owned && !on) continue;
+                    bool on = fit != null && fit.parts[a.slot] == a.key;
+                    int free = D.AttachmentsFree(a.key);
+                    if (!on && free <= 0) continue;
                     shown++;
                     Add(into, new HubRow
                     {
                         face = HubCatalog.ArtOf(a),
-                        name = HubCatalog.AttachmentSlots[a.slot] + "  " + a.name, note = a.note,
-                        value = on ? "装備中" : "所持", current = on,
-                        button = on ? "外す" : "装備", enabled = Editable,
+                        name = HubCatalog.AttachmentSlots[a.slot] + "  " + a.name, note = a.Summary,
+                        value = on ? "装着中" : "残り " + free, current = on,
+                        button = on ? "外す" : "装着", enabled = Editable && gun != null,
                     }, Kind.Attachment, i);
                 }
-            if (shown == 0)
-                Add(into, new HubRow { name = "アタッチメント  なし", note = "装備購入で購入すると、ここで装備できます" }, Kind.NoItem, -1);
+            if (shown == 0 && !itemsOnly)
+                Add(into, new HubRow { name = "アタッチメント  なし", note = "装備購入で購入すると、ここで " + (gun != null ? gun.weaponName : "武器") + " に装着できます" }, Kind.NoItem, -1);
 
             bool none = string.IsNullOrEmpty(p.gadget);
             Add(into, new HubRow
@@ -391,11 +404,14 @@ namespace Blindside.Hub
                 {
                     if (!Editable) return null;
                     var a = HubCatalog.Attachments[i];
-                    if (p.attachments[a.slot] == a.key) { p.attachments[a.slot] = ""; Save(); return op.DisplayName + " の" + a.name + "を外しました"; }
-                    if (!D.OwnsAttachment(a.key)) return "まだ所持していません (装備購入で買えます)";
-                    p.attachments[a.slot] = a.key;
+                    var gun = Loadout.Of(op, true);
+                    if (gun == null) return null;
+                    var fit = p.FitOf(gun.key);
+                    if (fit.parts[a.slot] == a.key) { fit.parts[a.slot] = ""; Save(); return gun.weaponName + " から" + a.name + "を外しました"; }
+                    if (D.AttachmentsFree(a.key) <= 0) return "空きがありません (装備購入で買い足せます)";
+                    fit.parts[a.slot] = a.key;   // (the slot's old part goes back to the stock: counts are derived from the fits)
                     Save();
-                    return op.DisplayName + " に " + a.name + " を付けました";
+                    return op.DisplayName + " の " + gun.weaponName + " に " + a.name + " を装着しました";
                 }
                 case Kind.NoItem:
                     if (!Editable || i < 0) return null;   // (−1: the "no attachments yet" line)
@@ -469,10 +485,12 @@ namespace Blindside.Hub
                 var m = D.WeaponOf(gun.key);
                 into.Add(new HubRow { name = "武器  " + gun.weaponName, note = ShopContent.GunNote(gun), value = "熟練度 Lv " + m.level });
             }
+            // the carried gun's parts
+            var fit = gun != null ? p.FindFit(gun.key) : null;
             for (int s = 0; s < HubCatalog.SlotCount; s++)
             {
-                var a = HubCatalog.AttachmentOf(p.attachments[s]);
-                into.Add(new HubRow { face = HubCatalog.ArtOf(a), name = HubCatalog.AttachmentSlots[s] + "  " + (a != null ? a.name : "なし"), note = a != null ? a.note : "", value = a != null ? "装備中" : "" });
+                var a = fit != null ? HubCatalog.AttachmentOf(fit.parts[s]) : null;
+                into.Add(new HubRow { face = HubCatalog.ArtOf(a), name = HubCatalog.AttachmentSlots[s] + "  " + (a != null ? a.name : "なし"), note = a != null ? a.Summary : "", value = a != null ? "装着中" : "" });
             }
             var g = HubCatalog.GadgetOf(p.gadget);
             into.Add(new HubRow { name = "アイテム  " + (g != null ? g.name : "なし"), note = g != null ? g.note : "", value = g != null ? "所持 " + D.GadgetOf(g.key).count : "" });

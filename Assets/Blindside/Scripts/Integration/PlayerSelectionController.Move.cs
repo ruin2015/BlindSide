@@ -231,13 +231,15 @@ namespace Blindside.Integration
             int c = Blindside.Combat.CombatSystem.HitChance(u, e, tr, preempt: true);
             int hs = Blindside.Combat.CombatSystem.HeadshotChance(u, e, tr, preempt: true);
             var w = u.Weapon;
-            int dmg = Mathf.RoundToInt(w.damage * 1.4f);   // Math.round(w.dmg*1.4) — the rounding shoot() deals with
+            // Math.round(w.dmg*1.4) — the rounding shoot() deals with (a unit's gear: its 攻撃力 % / no falloff, as Shoot applies it)
+            int dmg = Mathf.RoundToInt(Blindside.Combat.CombatModifiers.BaseDamage(u, 0f) * 1.4f);
+            int shots = Blindside.Combat.CombatModifiers.ShotsOf(u);
             string foe = ColorUtility.ToHtmlStringRGB(Foe);
             // .mbox .mb b → blue 22px (ModalRoutine); <b style="color:var(--foe)"> keeps the size, recoloured.
             // <small style="color:var(--dimp)"> / <small style="color:var(--dim)"> → 11px #6a7078 / #838a93.
             string body =
                 $"{KrOf(u)} → <color=#{foe}>{KrOf(e)}</color> ({e.HP}/{e.MaxHP})\n" +
-                $"先制攻撃: 命中 <b>{c}%</b> · ダメージ <b>{dmg}×{w.shots}</b>\n" +
+                $"先制攻撃: 命中 <b>{c}%</b> · ダメージ <b>{dmg}×{shots}</b>\n" +
                 $"ヘッドショット確率 <b><color=#{foe}>{hs}%</color></b> <size=11><color=#6A7078>(先制攻撃ボーナス適用 · ダメージ×2)</color></size>" +
                 (tr.Walls > 0 ? $" · 壁貫通 {tr.Walls}" : "") + "\n" +
                 "<size=11><color=#838A93>攻撃すると、この場で移動を終了します。無視すると、描いた経路のまま移動を続けます。</color></size>";
@@ -261,12 +263,17 @@ namespace Blindside.Integration
             float dist = Blindside.Combat.CombatSystem.Distance(a, t);
             chance = Blindside.Combat.CombatSystem.HitChance(a, t, path, preempt);
             hs = Blindside.Combat.CombatSystem.HeadshotChance(a, t, path, preempt);
-            dmg = Mathf.RoundToInt(w.DamageAt(w.damage, dist) * (preempt ? 1.4f : 1f));
+            dmg = Mathf.RoundToInt(Blindside.Combat.CombatModifiers.BaseDamage(a, dist) * (preempt ? 1.4f : 1f));
             // growth, as CombatSystem.Shoot applies it
             if (a is Blindside.Combat.ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
             if (t is Blindside.Combat.ICombatModifiers tm && tm.DamageTakenScale != 1f) dmg = Mathf.Max(1, Mathf.RoundToInt(dmg * tm.DamageTakenScale));
             if (a.ShieldUp || !Blindside.Combat.CombatSystem.CanShoot(a, t, path) || Blindside.Combat.CombatSystem.ShieldBlocks(t, a)) return 0f;
-            return w.shots * (chance / 100f) * dmg * (1f + hs / 100f);
+            // (the gear's extra rounds; a マズルブレーキ's first round counts with its own chance)
+            int shots = Blindside.Combat.CombatModifiers.ShotsOf(a);
+            var g = Blindside.Combat.CombatModifiers.GearOf(a);
+            float hits = shots * (chance / 100f);
+            if (g != null && g.firstAcc != 0f) hits += (Mathf.Clamp(chance + g.firstAcc, 5f, 95f) - chance) / 100f;
+            return hits * dmg * (1f + hs / 100f);
         }
 
         IEnumerator AskEngageForecast(ITurnUnit u, ITurnUnit e, System.Action<bool> answer)
@@ -295,7 +302,7 @@ namespace Blindside.Integration
             float e1 = ExpectedVolley(u, e, tr, true, out int c, out int hs, out int dmg);
             int eAfter = Mathf.Max(floor, Mathf.RoundToInt(e.HP - e1));
             a = EngageSides.Of(u, side, u.HP);
-            EngageSides.Volley(ref a, c, dmg, u.Weapon.shots, hs, true);
+            EngageSides.Volley(ref a, c, dmg, Blindside.Combat.CombatModifiers.ShotsOf(u), hs, true);
             // … and the return fire, when it is expected to live and can shoot back (CombatSystem.ExchangeBody)
             var tb = Blindside.Combat.CombatSystem.TraceLine(map, e.X, e.Y, u.X, u.Y);
             b = EngageSides.Of(e, side, eAfter);
@@ -303,7 +310,7 @@ namespace Blindside.Integration
             {
                 float e2 = ExpectedVolley(e, u, tb, false, out int c2, out int hs2, out int dmg2);
                 a.after = Mathf.Max(floor, Mathf.RoundToInt(u.HP - e2));
-                EngageSides.Volley(ref b, c2, dmg2, e.Weapon.shots, hs2, false);
+                EngageSides.Volley(ref b, c2, dmg2, Blindside.Combat.CombatModifiers.ShotsOf(e), hs2, false);
             }
         }
 

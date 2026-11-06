@@ -65,6 +65,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.Manage, label = "本部 — IGNIS (ロードアウト / 装備購入)", build = UIPreviewHub.BuildManage },
             new State { name = UIPreviewHub.LoadoutState, label = "本部 — ロードアウト", build = UIPreviewHub.BuildLoadout },
             new State { name = UIPreviewHub.Menu, label = "本部 — メニュー (ESC)", build = UIPreviewHub.BuildMenu },
+            new State { name = UIPreviewHub.Bench, label = "本部 — ロードアウト (作業台)", build = UIPreviewHub.BuildBench },
+            new State { name = UIPreviewHub.BenchPick, label = "本部 — ロードアウト (パーツ選択)", build = UIPreviewHub.BuildBenchPick },
             new State { name = UIPreviewHub.Squad, label = "本部 — 隊員情報", build = UIPreviewHub.BuildSquad },
             new State { name = UIPreviewHub.Talk, label = "本部 — 会話", build = UIPreviewHub.BuildTalk },
             new State { name = UIPreviewPause.Menu, label = "ゲームメニュー (ESC)", build = UIPreviewPause.BuildMenu },

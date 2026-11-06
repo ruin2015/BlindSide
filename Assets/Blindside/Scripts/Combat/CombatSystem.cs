@@ -159,7 +159,12 @@ namespace Blindside.Combat
             if (d > w.range) c -= (d - w.range) * w.accuracyFalloffPerTile;
             c -= path.Walls * 22f;
             if (preempt) c += 15f;
-            if (attacker is ICombatModifiers m && m.AccuracyBonus != 0f) c += m.AccuracyBonus;   // growth (精密力 / mastery)
+            if (attacker is ICombatModifiers m)
+            {
+                if (m.AccuracyBonus != 0f) c += m.AccuracyBonus;   // growth (精密力 / mastery)
+                var g = m.Gear;
+                if (g != null) c += g.AccuracyAt(d);               // attachments (flat + the range band's)
+            }
             return JsRound(c, 5, 95);
         }
 
@@ -178,6 +183,8 @@ namespace Blindside.Combat
             if (d > w.range) c -= 5f;
             if (d <= 2.5f) c += 4f;
             c -= path.Walls * 4f;
+            var g = CombatModifiers.GearOf(attacker);
+            if (g != null) c += g.headshot;                        // attachments (scopes, grips …)
             return JsRound(c, 2, 60);
         }
 
@@ -271,8 +278,12 @@ namespace Blindside.Combat
 
             int chance = HitChance(attacker, target, path, preempt);
             int hsChance = HeadshotChance(attacker, target, path, preempt);
-            // the gun's damage at this distance (its own falloff curve), ×1.4 on a preemptive shot
-            int dmg = Mathf.RoundToInt(w.DamageAt(w.damage, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
+            // attachments: extra rounds, the first round's own hit chance (マズルブレーキ); none without gear
+            var gear = CombatModifiers.GearOf(attacker);
+            int shots = CombatModifiers.ShotsOf(attacker);
+            int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(chance + gear.firstAcc, 5, 95) : chance;
+            // the gun's damage at this distance (its own falloff curve, or none with a ロングバレル; the gear's 攻撃力 %), ×1.4 on a preemptive shot
+            int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(attacker, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
             // growth: the shooter's 攻撃力 / mastery, the target's 防御力 (only when set: a unit without growth keeps the exact numbers)
             if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
             float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
@@ -282,7 +293,7 @@ namespace Blindside.Combat
             var pres = Presenter;
             if (pres != null)
             {
-                pres.Show(attacker, target, chance, dmg, w.shots, preempt, path.Walls, blocked, blocked ? 0 : hsChance);
+                pres.Show(attacker, target, chance, dmg, shots, preempt, path.Walls, blocked, blocked ? 0 : hsChance);
                 yield return Sleep(0.7f);
             }
 
@@ -290,11 +301,11 @@ namespace Blindside.Combat
             // The target falls the moment its HP reaches 0. The rest of the volley is still resolved — the same GameRng draws
             // and counts as before, so a seeded match plays out identically — but no longer shown (no shot, no hit, no event).
             bool down = false;
-            for (int i = 0; i < w.shots; i++)
+            for (int i = 0; i < shots; i++)
             {
                 if (!target.Alive) break;
                 if (!down) attacker.View?.PlayFire();   // animation only
-                bool hit = Blindside.Core.GameRng.Range(0f, 100f) < chance;
+                bool hit = Blindside.Core.GameRng.Range(0f, 100f) < (i == 0 ? firstChance : chance);
                 bool crit = false;
                 int dealt = 0;
                 if (hit)
@@ -323,14 +334,14 @@ namespace Blindside.Combat
                 if (target.HP <= 0) { down = true; target.View?.PlayDeath(); }   // animation only (kill() itself follows the volley)
                 if (hit && blocked) target.View?.PlayDodge(true);   // the shield takes it (animation only); a miss just flies wide
                 OnShotFired?.Invoke(attacker, target, hit, crit);
-                OnShot?.Invoke(new ShotEvent(attacker, target, i, w.shots, hit, crit, hit && blocked, dealt));
+                OnShot?.Invoke(new ShotEvent(attacker, target, i, shots, hit, crit, hit && blocked, dealt));
                 if (pres != null)
                 {
                     // if(crit){ ...; combatUpdate(t); combatCrit(hs); await headshotFx(a,t,d); } — headshotFx's
                     // badge/flash hang off OnDamage(crit); its `await hitStop(150)` is this one.
                     if (crit) { pres.UpdateHp(target); pres.Crit(headshots); yield return HitStopFor(150f); }
                     pres.UpdateHp(target);
-                    yield return Sleep(w.shots > 4 ? 0.09f : 0.15f);   // combatUpdate(t); await sleep(w.shots>4?90:150)
+                    yield return Sleep(shots > 4 ? 0.09f : 0.15f);   // combatUpdate(t); await sleep(w.shots>4?90:150)
                     continue;
                 }
                 if (crit) yield return HitStopFor(150f);
@@ -338,13 +349,13 @@ namespace Blindside.Combat
             }
 
             // log(`${a.kr} → ${t.kr}: ${blocked?'シールドに阻まれた':`${hits}/${w.shots} 命中, ${total} ダメージ`}${hs?` (ヘッドショット ×${hs})`:''}${o.preempt?' (先制)':''}`, a.team===G.side?'a':'f')
-            HudLog.Add($"{Kr(attacker)} → {Kr(target)}: {(blocked ? "シールドに阻まれた" : $"{hits}/{w.shots} 命中, {total} ダメージ")}{(headshots > 0 ? $" (ヘッドショット ×{headshots})" : "")}{(preempt ? " (先制)" : "")}",
+            HudLog.Add($"{Kr(attacker)} → {Kr(target)}: {(blocked ? "シールドに阻まれた" : $"{hits}/{shots} 命中, {total} ダメージ")}{(headshots > 0 ? $" (ヘッドショット ×{headshots})" : "")}{(preempt ? " (先制)" : "")}",
                 HudLog.TeamType(attacker.Team));
-            pres?.Result(hits, w.shots, total, blocked, headshots);   // combatResult(hits,w.shots,total,blocked,hs)
+            pres?.Result(hits, shots, total, blocked, headshots);   // combatResult(hits,w.shots,total,blocked,hs)
 
             bool killed = target.HP <= 0;
             if (attacker.Alive) attacker.View?.PlayReload();   // animation only
-            OnResolved?.Invoke(attacker, target, new ShotResult(hits, w.shots, headshots, total, blocked, killed));
+            OnResolved?.Invoke(attacker, target, new ShotResult(hits, shots, headshots, total, blocked, killed));
             if (killed)
             {
                 target.View?.PlayDeath();

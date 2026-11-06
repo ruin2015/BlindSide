@@ -31,9 +31,31 @@ namespace Blindside.Save
         public int[] trained = new int[5];
         /// <summary>The gadget the operator carries (Hub.HubCatalog.Gadgets key; "" = none). Phase 2 takes it into the match.</summary>
         public string gadget = "";
-        /// <summary>The attachment in each slot (Hub.HubCatalog.AttachmentSlots order; "" = none). Phase 2 takes them into the match.</summary>
-        public string[] attachments = { "", "", "", "", "", "" };
-        public const int AttachmentSlots = 6;   // マズル / 光学機器 / グリップ / マガジン / バレル / ストック (v4 saves had the first four)
+        /// <summary>v4 / v5: the parts in each slot, for whatever gun was carried. Read once by Normalize (the parts go back to the stock),
+        /// then left empty — the parts are fitted per weapon now (fits).</summary>
+        public string[] attachments = new string[0];
+        public const int AttachmentSlots = 6;   // マズル / 光学機器 / グリップ / マガジン / バレル / ストック
+        /// <summary>The parts fitted to each of this operator's guns (one copy of a part per fit: SaveData.attachmentStock).</summary>
+        public List<WeaponFit> fits = new List<WeaponFit>();
+
+        /// <summary>The fit of gun `weapon` (made empty when it has none).</summary>
+        public WeaponFit FitOf(string weapon)
+        {
+            weapon = weapon ?? "";
+            if (fits == null) fits = new List<WeaponFit>();
+            foreach (var f in fits) if (f != null && f.weapon == weapon) return f;
+            var made = new WeaponFit { weapon = weapon };
+            fits.Add(made);
+            return made;
+        }
+
+        /// <summary>The fit of gun `weapon`, or null when nothing was ever fitted to it (no entry is made).</summary>
+        public WeaponFit FindFit(string weapon)
+        {
+            if (fits == null) return null;
+            foreach (var f in fits) if (f != null && f.weapon == weapon) return f;
+            return null;
+        }
 
         public int StatPoints(int i)
         {
@@ -44,6 +66,14 @@ namespace Blindside.Save
         {
             switch (i) { case 0: hp += n; break; case 1: def += n; break; case 2: atk += n; break; case 3: mob += n; break; default: prec += n; break; }
         }
+    }
+
+    /// <summary>The attachments on one operator's one gun: a part per slot (Data.Attachments.Slots order; "" = none).</summary>
+    [Serializable]
+    public class WeaponFit
+    {
+        public string weapon = "";   // WeaponData.key
+        public string[] parts = { "", "", "", "", "", "" };
     }
 
     /// <summary>How many of a consumable item (a gadget) the squad holds.</summary>
@@ -65,7 +95,7 @@ namespace Blindside.Save
     [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 5;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training); 4: attachments; 5: six slots, 19 parts
+        public const int CurrentVersion = 6;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training); 4: attachments; 5: six slots, 19 parts; 6: parts by count, fitted per operator per gun
 
         public int version = CurrentVersion;
         public string createdUtc = "";      // ISO 8601 (round-trip "o")
@@ -87,10 +117,40 @@ namespace Blindside.Save
         public List<string> ownedWeapons = new List<string>();
         /// <summary>Gadgets in stock (bought at the shop / the 医務室).</summary>
         public List<ItemCount> gadgets = new List<ItemCount>();
-        /// <summary>Attachments bought at the shop (Hub.HubCatalog.Attachments key), for the whole squad.</summary>
+        /// <summary>v4 / v5: attachments bought once for the squad. Read once by Normalize (each becomes one in attachmentStock), then empty.</summary>
         public List<string> ownedAttachments = new List<string>();
+        /// <summary>Attachments bought at the shop, by count: each copy fits one gun of one operator (fitted copies count too —
+        /// AttachmentsFree tells how many are on no gun).</summary>
+        public List<ItemCount> attachmentStock = new List<ItemCount>();
 
-        public bool OwnsAttachment(string key) => !string.IsNullOrEmpty(key) && ownedAttachments != null && ownedAttachments.Contains(key);
+        public const int MaxAttachmentStock = 9;
+
+        /// <summary>The stock line of attachment `key` (made at 0 when it has none).</summary>
+        public ItemCount AttachmentStockOf(string key)
+        {
+            key = key ?? "";
+            if (attachmentStock == null) attachmentStock = new List<ItemCount>();
+            foreach (var g in attachmentStock) if (g != null && g.key == key) return g;
+            var made = new ItemCount { key = key };
+            attachmentStock.Add(made);
+            return made;
+        }
+
+        /// <summary>How many copies of `key` are fitted to some gun, over the whole squad.</summary>
+        public int AttachmentsFitted(string key)
+        {
+            int n = 0;
+            if (string.IsNullOrEmpty(key) || operators == null) return 0;
+            foreach (var o in operators)
+                if (o != null && o.fits != null)
+                    foreach (var f in o.fits)
+                        if (f != null && f.parts != null)
+                            foreach (var p in f.parts) if (p == key) n++;
+            return n;
+        }
+
+        /// <summary>Copies of `key` bought and on no gun yet.</summary>
+        public int AttachmentsFree(string key) => AttachmentStockOf(key).count - AttachmentsFitted(key);
 
         public bool OwnsWeapon(string key) => !string.IsNullOrEmpty(key) && ownedWeapons != null && ownedWeapons.Contains(key);
 
@@ -190,18 +250,31 @@ namespace Blindside.Save
                 if (o.trained == null || o.trained.Length != 5) { var t = new int[5]; if (o.trained != null) for (int i = 0; i < 5 && i < o.trained.Length; i++) t[i] = o.trained[i]; o.trained = t; }
                 for (int i = 0; i < 5; i++) if (o.trained[i] < 0) o.trained[i] = 0;
                 if (o.gadget == null) o.gadget = "";
+                // fits: one per gun, six slots each
                 int n = OperatorProgress.AttachmentSlots;
-                if (o.attachments == null || o.attachments.Length != n)
+                if (o.fits == null) o.fits = new List<WeaponFit>();
+                o.fits.RemoveAll(f => f == null);
+                foreach (var f in o.fits)
                 {
-                    var a = new string[n];
-                    for (int i = 0; i < n; i++) a[i] = o.attachments != null && i < o.attachments.Length ? o.attachments[i] ?? "" : "";
-                    o.attachments = a;
+                    if (f.weapon == null) f.weapon = "";
+                    if (f.parts == null || f.parts.Length != n)
+                    {
+                        var a = new string[n];
+                        for (int i = 0; i < n; i++) a[i] = f.parts != null && i < f.parts.Length ? f.parts[i] ?? "" : "";
+                        f.parts = a;
+                    }
+                    for (int i = 0; i < n; i++) f.parts[i] = f.parts[i] ?? "";
                 }
-                for (int i = 0; i < n; i++) o.attachments[i] = RenamedPart(o.attachments[i] ?? "");
             }
-            if (ownedAttachments == null) ownedAttachments = new List<string>();
-            ownedAttachments.RemoveAll(string.IsNullOrEmpty);
-            for (int i = 0; i < ownedAttachments.Count; i++) ownedAttachments[i] = RenamedPart(ownedAttachments[i]);
+            // v4 / v5: parts bought once for the squad, fitted per operator (whatever gun) → one copy each in the stock, nothing fitted
+            if (attachmentStock == null) attachmentStock = new List<ItemCount>();
+            attachmentStock.RemoveAll(g => g == null || string.IsNullOrEmpty(g.key));
+            foreach (var g in attachmentStock) if (g.count < 0) g.count = 0;
+            if (ownedAttachments != null)
+                foreach (var k in ownedAttachments)
+                    if (!string.IsNullOrEmpty(k)) { var line = AttachmentStockOf(RenamedPart(k)); if (line.count < 1) line.count = 1; }
+            ownedAttachments = new List<string>();
+            foreach (var o in operators) o.attachments = new string[0];
             if (ownedWeapons == null) ownedWeapons = new List<string>();
             ownedWeapons.RemoveAll(string.IsNullOrEmpty);
             if (gadgets == null) gadgets = new List<ItemCount>();

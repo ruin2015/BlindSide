@@ -144,7 +144,7 @@ namespace Blindside.Integration
             }
             else
             {
-                int shots = u.Weapon.shots;
+                int shots = CombatModifiers.ShotsOf(u);
                 for (int i = 0; i < shots; i++)
                 {
                     // fxTracer(u,{rx:c.end.x+(rand-.5)*.3, ry:c.end.y+(rand-.5)*.3},true)
@@ -153,7 +153,8 @@ namespace Blindside.Integration
                                     u.View != null ? u.View.MuzzlePoint : (Vector3?)null);
                     yield return new WaitForSeconds(.11f);
                 }
-                marks?.Add(Blindside.Vision.MarkBoard.Other(u.Team), u.X, u.Y, Blindside.Vision.MarkKind.Shot);
+                var gear = CombatModifiers.GearOf(u);   // a サプレッサー leaves no 銃声 mark
+                if (gear == null || !gear.silenced) marks?.Add(Blindside.Vision.MarkBoard.Other(u.Team), u.X, u.Y, Blindside.Vision.MarkKind.Shot);
                 if (c.breachPanel >= 0)
                 {
                     var bp = map.Panels[c.breachPanel];
@@ -322,7 +323,7 @@ namespace Blindside.Integration
                 else
                 {
                     var t = (SimUnit)c.unit;
-                    html = $"{R(KrOf(t))} {t.HP}/{t.MaxHP}\n先制命中 {B(ch + "%")} · {JsRound(u.Weapon.damage * 1.4f)}×{u.Weapon.shots}" +
+                    html = $"{R(KrOf(t))} {t.HP}/{t.MaxHP}\n先制命中 {B(ch + "%")} · {JsRound(CombatModifiers.BaseDamage(u, 0f) * 1.4f)}×{CombatModifiers.ShotsOf(u)}" +
                            $"\nヘッドショット {B(CombatSystem.HeadshotChance(u, c.unit, path, true) + "%")}";
                 }
             }

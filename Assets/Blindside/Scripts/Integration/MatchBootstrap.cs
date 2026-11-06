@@ -25,6 +25,8 @@ namespace Blindside.Integration
         public float AccuracyBonus { get; set; }
         public float DamageTakenScale { get; set; } = 1f;
         public float MoveBonus { get; set; }
+        /// <summary>The fitted attachments (Progress.ProgressBonus from the save); null for everyone else.</summary>
+        public AttachmentEffect Gear { get; set; }
         public string Id { get; set; }
         // X/Y/Facing/Alive raise Changed when their value actually changes — the cue for anything that
         // derives from them (the vision polygon) to recompute instead of polling every frame.
@@ -83,7 +85,7 @@ namespace Blindside.Integration
         /// <summary>u.alertT (mkUnit: -1e9) — the overhead "!" after an encounter.</summary>
         public float AlertT { get; set; } = -1e9f;
         /// <summary>speedOf(u): `u.mv+(u.stim?1:0)`.</summary>
-        public float Speed => Mv + (Stim ? 1 : 0) + WeaponData.SpeedBonusOf(Weapon);
+        public float Speed => Mv + (Stim ? 1 : 0) + WeaponData.SpeedBonusOf(Weapon) + (Gear != null ? Gear.speed : 0f);   // (+ クイックドローマガジン)
 
         public float RX { get; set; }
         public float RY { get; set; }
@@ -498,7 +500,13 @@ namespace Blindside.Integration
                 if (t is IRevealable rt) rt.RevealT = Mathf.Max(rt.RevealT, now + 2.5f);
             };
             // shoot(): addMark(other(a.team),a.x,a.y,'shot') once the burst is done.
-            combat.OnResolved += (a, t, r) => marks.Add(MarkBoard.Other(a.Team), a.X, a.Y, MarkKind.Shot);
+            // (a サプレッサー: no 銃声 mark for the enemy)
+            combat.OnResolved += (a, t, r) =>
+            {
+                var g = Blindside.Combat.CombatModifiers.GearOf(a);
+                if (g != null && g.silenced) return;
+                marks.Add(MarkBoard.Other(a.Team), a.X, a.Y, MarkKind.Shot);
+            };
             // resolveEncounter(): e.revealT=T+3000; u.revealT=T+3000 — EnemyAI's contact moment.
             ai.OnEncounter += (mover, enemy, mutual) =>
             {

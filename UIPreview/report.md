@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 11:56
+Screen 1440x810 · 0 issues · generated 2026-11-06 13:07
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -40,6 +40,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_manage | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_loadout | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_bench | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_bench_pick | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_squad | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_talk | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | pause_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -122,27 +124,28 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 65종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 66종)
 
 - Brighten ×6
 - Chip ×531
 - ClickRelay ×3
 - CornerBrackets ×27
-- CutCornerGraphic ×161
+- CutCornerGraphic ×162
 - EngagePreview ×3
 - ExpGainPopup ×1
 - HazardStripe ×185
 - HubListPanel ×9
+- HubLoadoutScreen ×2
 - HubMenu ×2
 - HubMinimap ×1
-- HubScreen ×12
+- HubScreen ×14
 - HubTalkPanel ×1
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×37
-- KitBrighten ×113
+- KitBrighten ×143
 - KitChoice ×5
 - KitCommandMenu ×13
 - KitGradient ×12
@@ -160,14 +163,14 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitTextButton ×63
 - KitTint ×299
 - KitTitleLeft ×6
-- LintIgnoreClip ×867
+- LintIgnoreClip ×869
 - LintIgnoreOverlap ×295
 - MainMenuScreen ×6
 - OperationResultScreen ×3
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×297
-- SlantedGraphic ×2912
+- SlantedGraphic ×2935
 - SlantedMask ×288
 - TacticalPanel ×1147
 - TitleSelectScreen ×6
@@ -219,6 +222,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_manage | 1440x810 | 本部 — IGNIS (ロードアウト / 装備購入) |
 | hub_loadout | 1440x810 | 本部 — ロードアウト |
 | hub_menu | 1440x810 | 本部 — メニュー (ESC) |
+| hub_bench | 1440x810 | 本部 — ロードアウト (作業台) |
+| hub_bench_pick | 1440x810 | 本部 — ロードアウト (パーツ選択) |
 | hub_squad | 1440x810 | 本部 — 隊員情報 |
 | hub_talk | 1440x810 | 本部 — 会話 |
 | pause_menu | 1440x810 | ゲームメニュー (ESC) |

@@ -5,6 +5,8 @@
 //   機動力 (mob)   +0.2 m move range per point
 //   精密力 (prec)  +0.5 hit chance (percentage points) per point
 //   weapon mastery  per level above 1: +3% damage and +0.3 hit chance (accuracy only a little, by design)
+//   attachments     the parts fitted at the HQ, summed (Data.Attachments: hit / headshot by range band, rounds, damage, falloff, SPD,
+//                   mobility, no 銃声 mark) — SimUnit.Gear
 // The same numbers are shown on the HQ's stat panel (Describe*).
 using UnityEngine;
 using Blindside.Integration;
@@ -37,6 +39,9 @@ namespace Blindside.Progress
             u.AccuracyBonus = Accuracy(p, w);
             u.DamageTakenScale = TakenScale(p);
             u.MoveBonus = Move(p);
+            // the attachments fitted at the HQ to the gun it carries (null when none: the unit plays as before)
+            var fit = u.Weapon != null ? p.FindFit(u.Weapon.key) : null;
+            u.Gear = fit != null ? Blindside.Data.Attachments.Sum(fit.parts) : null;
         }
     }
 }

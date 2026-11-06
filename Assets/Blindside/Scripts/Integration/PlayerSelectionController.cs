@@ -736,7 +736,7 @@ namespace Blindside.Integration
             // the current move 16 + the maximum (MoveRange) 11, white at .55 over the ink2 cell as its opaque sRGB colour
             m.grid[0] = $"{(foe ? MoveRange(u) : M1(u.MoveLeft))}<size=11><color=#9A9C9E>/{MoveRange(u)}m</color></size>";
             m.grid[1] = SpeedOf(u);
-            m.grid[2] = w != null ? $"{w.damage}×{w.shots}" : "-";
+            m.grid[2] = w != null ? $"{w.damage}×{Blindside.Combat.CombatModifiers.ShotsOf(u)}" : "-";
             m.grid[3] = w != null ? w.accuracy.ToString() : "-";
             m.grid[4] = w != null ? w.range.ToString() : "-";
 
