@@ -607,6 +607,10 @@ namespace Blindside.Integration
                 foreach (var u in units) if (u.Team == acting) u.GadgetUsed = false;
                 if (acting == OperatorTeam.Attack) abilityCtx.Drones.ResetMoveBudget();
             };
+            // the battle music: once the placing is over — the first attack phase (after the attack side's deployment, or the defense
+            // side's preparation); the player's matches only (not the tutorial, not an AI-vs-AI batch). The same track goes on across retries.
+            if (playerTeam.HasValue && !tutorialMode)
+                turns.OnPhaseBegin += phase => { if (phase == MatchPhase.Attack) Music.Play(Music.BattleTrack); };
             selection.BindAbilities(abilities, abilityCtx);
             // Deploy phase (attack side): the helicopter the intro flew in stays in the scene and drops the squad.
             if (playerTeam == OperatorTeam.Attack && !tutorialMode)

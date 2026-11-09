@@ -46,6 +46,8 @@ namespace Blindside.Flow
 
         IEnumerator Start()
         {
+            // the music: the title's theme on the title, nothing (faded out) elsewhere for now
+            if (role == SceneRole.Title) Music.Play(Music.TitleTrack); else Music.Stop();
             yield return null;   // every Awake / OnEnable / Start of the scene has run
             if (role == SceneRole.Hub) yield break;   // the hub runs itself (Blindside.Hub.HubDirector); it has no title UI
             if (title == null) { if (role != SceneRole.Title) Debug.LogError("[SceneEntry] no TitleSelectScreen in the scene"); yield break; }

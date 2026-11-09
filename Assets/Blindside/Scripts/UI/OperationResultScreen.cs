@@ -194,8 +194,9 @@ namespace Blindside.UI
 
             // the button
             float be = reduce ? (r >= ButtonAt ? 1f : 0f) : UIEase.Tactical(Mathf.Clamp01((r - ButtonAt) / .4f));
+            bool clickable = be >= 1f && resultGroup.alpha >= .99f;
+            be *= resultGroup.alpha;   // (ignoreParentGroups: the result's fade applied here)
             if (buttonGroup.alpha != be) buttonGroup.alpha = be;
-            bool clickable = be >= 1f;
             if (buttonGroup.blocksRaycasts != clickable) { buttonGroup.blocksRaycasts = clickable; buttonGroup.interactable = clickable; }
         }
 
@@ -519,6 +520,9 @@ namespace Blindside.UI
             var bRow = HudKit.NewRect("HqRow", resultRoot);
             UILayout.Place(bRow, ScreenW - 112f - 300f + 12f, y + 18f, 300f, 52f);
             buttonGroup = bRow.gameObject.AddComponent<CanvasGroup>();
+            // the result's own group lets clicks through to the skipping dim (blocksRaycasts off), and a parent group's "off" also
+            // switches off every group under it — so the button's group stands on its own (its fade follows the result's by hand)
+            buttonGroup.ignoreParentGroups = true;
             var b = TacticalButton.Create(bRow, "ReturnToHq", "➜", "本部へ戻る", "RETURN TO HQ", null, new Vector2(300f, 52f));
             UILayout.Place((RectTransform)b.transform, 0f, 0f, 300f, 52f);
             b.onClick.AddListener(() => { Hide(); onHq?.Invoke(); });
