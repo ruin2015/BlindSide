@@ -15,12 +15,15 @@ namespace Blindside.Abilities
 {
     public class HeartbeatAbility : IAbility
     {
-        public const float HeartbeatRange = 7f;
+        public const float HeartbeatRange = 7f, HeartbeatRangeCoop = 10f;
+
+        /// <summary>The sensor's reach (co-op rank 3, 逃さない: further).</summary>
+        public static float Range(IAbilityUnit u) => Blindside.Combat.CoopRules.Has(u, "GHOST", Blindside.Combat.CoopRules.Unique3) ? HeartbeatRangeCoop : HeartbeatRange;
 
         public string Key => "heartbeat";
 
         public AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => new AbilitySpec(AbilityTargetKind.Instant,
-            hint: "心拍センサー", sub: "視界内 " + HeartbeatRange.ToString("0") + "m 以内の敵の心拍を壁越しに感知する");
+            hint: "心拍センサー", sub: "視界内 " + Range(u).ToString("0") + "m 以内の敵の心拍を壁越しに感知する");
 
         /// <summary>The enemies `u` would sense now (alive, in its view cone within HeartbeatRange or in the near circle; walls don't matter).</summary>
         public static void Sense(IAbilityUnit u, AbilityContext ctx, List<IAbilityUnit> into)
@@ -32,7 +35,7 @@ namespace Blindside.Abilities
                 if (e == null || !e.Alive || e.Team == u.Team || e.IsHostage) continue;
                 float dx = e.X - u.X, dy = e.Y - u.Y, d = Mathf.Sqrt(dx * dx + dy * dy);
                 if (d <= VisionConfig.Circle) { into.Add(e); continue; }
-                if (d > HeartbeatRange) continue;
+                if (d > Range(u)) continue;
                 float a = Mathf.Atan2(dy, dx) - u.Facing;
                 while (a > Mathf.PI) a -= 2f * Mathf.PI;
                 while (a < -Mathf.PI) a += 2f * Mathf.PI;
@@ -51,14 +54,18 @@ namespace Blindside.Abilities
 
     public class HoloScanAbility : IAbility
     {
-        public const float ScanRadius = 7f;
+        public const float ScanRadius = 7f, ScanRadiusCoop = 10f;
+
+        /// <summary>The scan's reach (co-op rank 3, 性能強化: wider); rank 8 (完全掌握) destroys what it finds instead.</summary>
+        public static float Radius(IAbilityUnit u) => Blindside.Combat.CoopRules.Has(u, "SILENCE", Blindside.Combat.CoopRules.Unique3) ? ScanRadiusCoop : ScanRadius;
+        static bool Destroys(IAbilityUnit u) => Blindside.Combat.CoopRules.Has(u, "SILENCE", Blindside.Combat.CoopRules.Unique8);
         /// <summary>Phases a gadget stays dead: the rest of this one and the enemy's next — back on at SILENCE's next turn.</summary>
         public const int DisableTurns = 2;
 
         public string Key => "holo";
 
         public AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => new AbilitySpec(AbilityTargetKind.Instant,
-            hint: "ホロスキャン", sub: "周囲 " + ScanRadius.ToString("0") + "m の敵ガジェットを検出し、1ターン無力化する");
+            hint: "ホロスキャン", sub: "周囲 " + Radius(u).ToString("0") + "m の敵ガジェットを検出し、" + (Destroys(u) ? "破壊する" : "1ターン無力化する"));
 
         public IEnumerator Use(IAbilityUnit u, AbilityTarget target, AbilityContext ctx)
         {
@@ -67,11 +74,13 @@ namespace Blindside.Abilities
             // the cameras that watch for the other side (an attacker's scan finds the defenders' cameras)
             if (u.Team == OperatorTeam.Attack)
             {
+                bool destroy = Destroys(u);
                 foreach (var c in ctx.Cameras)
                 {
                     if (!c.alive || !Near(u, c.x, c.y)) continue;
                     c.discovered = true;
                     c.disabledLeft = DisableTurns;
+                    if (destroy) c.alive = false;
                     cams.Add(c);
                 }
                 foreach (var f in ctx.Electrics)
@@ -82,6 +91,8 @@ namespace Blindside.Abilities
                     f.disabledLeft = DisableTurns;
                     fields.Add(f);
                 }
+                // 完全掌握: the fields are gone for good (their walls stay off)
+                if (destroy) foreach (var f in fields) ctx.Electrics.Remove(f);
             }
             if (ctx.Vision != null) ctx.Vision.MapVersion++;
             ctx.System.RaiseHoloScan(u, cams, fields);
@@ -90,8 +101,8 @@ namespace Blindside.Abilities
 
         static bool Near(IAbilityUnit u, float x, float y)
         {
-            float dx = x - u.X, dy = y - u.Y;
-            return dx * dx + dy * dy <= ScanRadius * ScanRadius;
+            float dx = x - u.X, dy = y - u.Y, r = Radius(u);
+            return dx * dx + dy * dy <= r * r;
         }
 
         /// <summary>The reinforced walls a shock field keeps electrified (ShockAbility's rule: a cell within r + .6), switched on / off.</summary>

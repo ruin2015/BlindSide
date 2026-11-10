@@ -34,17 +34,55 @@ namespace Blindside.Progress
             var p = d.OperatorOf(u.Op.key);
             var w = d.WeaponOf(u.Weapon != null ? u.Weapon.key : "");
             int hp = Hp(p);
+            if (d.mealBuff) hp += Campaign.MealHp;   // 炊事支援: a good meal before the sortie
             if (hp != 0) { u.MaxHP += hp; u.HP = u.MaxHP; }
-            u.DamageScale = DamageScale(p, w);
-            u.AccuracyBonus = Accuracy(p, w);
             u.DamageTakenScale = TakenScale(p);
             u.MoveBonus = Move(p);
+            ApplyWeapon(u);
+            // the items it carries out of the HQ (only those the squad still holds): the first ready, the rest after it is spent; the
+            // slots past the first need co-op rank 4 / 7 (CoopPerks.GadgetSlots); frag grenades first (the ones used in the field)
+            var carry = new System.Collections.Generic.List<string>(3);
+            var held = new System.Collections.Generic.Dictionary<string, int>();
+            int slots = CoopPerks.GadgetSlots(d, u.Op.key);
+            for (int i = 0; i < slots && i < OperatorProgress.ItemSlots; i++)
+            {
+                string k = p.Slot(i);
+                if (string.IsNullOrEmpty(k)) continue;
+                held.TryGetValue(k, out int n);
+                if (d.GadgetOf(k).count <= n) continue;
+                held[k] = n + 1;
+                carry.Add(k);
+            }
+            carry.Sort((a, b) => (b == "frag" ? 1 : 0) - (a == "frag" ? 1 : 0));
+            u.Item = carry.Count > 0 ? carry[0] : "";
+            u.ItemSpent = false;
+            u.ItemQueue.Clear();
+            for (int i = 1; i < carry.Count; i++) u.ItemQueue.Add(carry[i]);
+            // FLARE's co-op with this operator (CoopPerks): the rank its perks read; BASTION's rank-3 堅牢な移動 moves 2
+            u.CoopRank = Campaign.Rank(d, u.Op.key);
+            if (u.Op.key == "BASTION" && u.CoopRank >= CoopPerks.Unique3 && u.Mv < 2) u.Mv = 2;
+            // 二丁持ち (rank 6): the second gun picked at the HQ (owned)
+            u.Weapon2 = null;
+            if (u.CoopRank >= CoopPerks.TwoGuns)
+            {
+                var w2 = Blindside.Data.Loadout.Second(u.Op);
+                if (w2 != null && w2 != u.Weapon && Blindside.Hub.HubCatalog.Owns(d, w2)) u.Weapon2 = w2;
+            }
+        }
+
+        /// <summary>What depends on the gun in hand: the growth's damage and accuracy with it (its mastery) and its fitted attachments.
+        /// Again after 持ち替え.</summary>
+        public static void ApplyWeapon(SimUnit u)
+        {
+            var d = SaveSystem.Current;
+            if (d == null || u == null || u.Op == null) return;
+            var p = d.OperatorOf(u.Op.key);
+            var w = d.WeaponOf(u.Weapon != null ? u.Weapon.key : "");
+            u.DamageScale = DamageScale(p, w);
+            u.AccuracyBonus = Accuracy(p, w);
             // the attachments fitted at the HQ to the gun it carries (null when none: the unit plays as before)
             var fit = u.Weapon != null ? p.FindFit(u.Weapon.key) : null;
             u.Gear = fit != null ? Blindside.Data.Attachments.Sum(fit.parts) : null;
-            // the item it carries out of the HQ (only while the squad still holds one)
-            u.Item = !string.IsNullOrEmpty(p.gadget) && d.GadgetOf(p.gadget).count > 0 ? p.gadget : "";
-            u.ItemSpent = false;
         }
     }
 }

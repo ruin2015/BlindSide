@@ -513,7 +513,11 @@ namespace Blindside.Integration
             L.Add(new Command { id = "move", kr = "移動", en = "MOVE", ic = "➜", ok = u.MoveLeft > .3f, sub = M1(u.MoveLeft) + "m" });
             L.Add(new Command { id = "face", kr = "視界変更", en = "VIEW", ic = "◐", ok = true, sub = u.LockFacing ? "固定" : "" });
             // a raised shield (BASTION) leaves no hand for the gun
-            if (!prep) L.Add(new Command { id = "fire", kr = "攻撃", en = "FIRE", ic = "✛", ok = !u.Acted && !u.Shield, sub = u.Shield ? "シールド中" : "" });
+            bool shieldStops = u.Shield && !Blindside.Combat.CoopRules.CanFireShielded(u);
+            // 二丁持ち (co-op rank 6): swap to the other gun — free, any time before acting
+            if (!prep && u.Weapon2 != null)
+                L.Add(new Command { id = "swap", kr = "持ち替え", en = "SWAP", ic = "⌖", ok = !u.Acted, sub = u.Weapon2.weaponName });
+            if (!prep) L.Add(new Command { id = "fire", kr = "攻撃", en = "FIRE", ic = "✛", ok = !u.Acted && !shieldStops, sub = shieldStops ? "シールド中" : "" });
             string ab = u.AbilityKey, abName = u.Op != null ? u.Op.abilityName : ab;
             L.Add(new Command
             {
@@ -598,6 +602,7 @@ namespace Blindside.Integration
             if (c == "escort") { DoEscort(u); return; }                          // 人質確保 (.Escort.cs)
             if (c == "reinforce") { StartReinforce(u); return; }
             if (c == "item") { HideMenu(); StartThrow(u); return; }               // 破片手榴弾 (.Grenade.cs)
+            if (c == "swap") { SwapGun(u); return; }                             // 持ち替え (co-op rank 6)
             if (c == "rescue") { DoRescue(u); return; }                          // 救出 (.Rescue.cs)                  // 壁強化 (.Reinforce.cs)
             if (c == "skill" && StartAbility(u)) return;                         // all ten abilities (.Ability.cs / .SupportAbility.cs)
             if (c == "gadget" && u.Team == OperatorTeam.Defense) { HideMenu(); OpenCamPanel(u); return; }   // openCamPanel(u) (.Cameras.cs)

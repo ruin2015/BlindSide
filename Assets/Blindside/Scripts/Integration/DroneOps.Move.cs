@@ -111,6 +111,8 @@ namespace Blindside.Integration
 
         /// <summary>The player's drone has just put an enemy on the map (presentation: the squad's radio call).</summary>
         public System.Action<Drone, SimUnit> EnemySpotted;
+        /// <summary>A drone has spotted an enemy (its owner, the enemy) - the match record's spotting assist.</summary>
+        public System.Action<object, object> Spotted;
 
         void MarkSeen(Drone d, float nx, float ny)
         {
@@ -121,6 +123,7 @@ namespace Blindside.Integration
                 if (!vision.LineOfSight(nx, ny, e.X, e.Y, OperatorTeam.Attack)) continue;
                 if (HasLiveMark(e.X, e.Y)) continue;
                 Marks?.Add(OperatorTeam.Attack, e.X, e.Y, MarkKind.Spotted);
+                Spotted?.Invoke(d.owner, e);
                 if (own) { HudLog.Add($"ドローン: {e.Kr}の位置を表示", HudLogType.Ally); Sfx.Alert(); EnemySpotted?.Invoke(d, e); }
             }
 

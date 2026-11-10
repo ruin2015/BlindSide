@@ -5,21 +5,29 @@ using UnityEngine;
 
 namespace Blindside.Abilities
 {
-    /// <summary>Port of 'stim': heal +50 HP and +50% move range to an ally within 2.5m (self included).</summary>
+    /// <summary>Port of 'stim': heal +50 HP and +50% move range to an ally within 2.5m (self included).
+    /// Co-op: rank 3 (アドレナリン活性) heals 75; rank 8 (ナノボット支援) reaches any ally, wherever.</summary>
     public class StimAbility : IAbility
     {
         public string Key => "stim";
 
-        public AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => new AbilitySpec(
-            AbilityTargetKind.Ally, range: 2.5f,
-            hint: "薬剤を投与する味方を選択してください", sub: "2.5m以内の味方 (自分を含む)",
-            validAlly: a => a.Alive && a.Team == u.Team && AbilitySystem.Dist(a, u) <= 2.5f);
+        public static int Heal(IAbilityUnit u) => Blindside.Combat.CoopRules.Has(u, "SERUM", Blindside.Combat.CoopRules.Unique3) ? 75 : 50;
+        static bool Anywhere(IAbilityUnit u) => Blindside.Combat.CoopRules.Has(u, "SERUM", Blindside.Combat.CoopRules.Unique8);
+
+        public AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => Anywhere(u)
+            ? new AbilitySpec(AbilityTargetKind.Ally, range: 999f,
+                hint: "ナノボットを送る味方を選択してください", sub: "どこにいる味方でも (自分を含む) · 回復 " + Heal(u),
+                validAlly: a => a.Alive && a.Team == u.Team)
+            : new AbilitySpec(AbilityTargetKind.Ally, range: 2.5f,
+                hint: "薬剤を投与する味方を選択してください", sub: "2.5m以内の味方 (自分を含む) · 回復 " + Heal(u),
+                validAlly: a => a.Alive && a.Team == u.Team && AbilitySystem.Dist(a, u) <= 2.5f);
 
         public IEnumerator Use(IAbilityUnit u, AbilityTarget target, AbilityContext ctx)
         {
             var a = target.Ally;
-            int hpAdded = Mathf.Min(a.MaxHP, a.HP + 50) - a.HP;
-            a.HP = Mathf.Min(a.MaxHP, a.HP + 50);
+            int heal = Heal(u);
+            int hpAdded = Mathf.Min(a.MaxHP, a.HP + heal) - a.HP;
+            a.HP = Mathf.Min(a.MaxHP, a.HP + heal);
             float moveAdded = Blindside.Combat.CombatModifiers.MoveRange(a.Mv, a.Weapon, a) * 0.5f;
             a.MoveLeft += moveAdded;
             a.Stim = true;

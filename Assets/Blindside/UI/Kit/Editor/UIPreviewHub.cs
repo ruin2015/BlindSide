@@ -93,7 +93,7 @@ namespace Blindside.UI.EditorTools
             var areas = new System.Collections.Generic.List<HubArea>();
             HubArea Area(string n, float x0, float x1, float z0, float z1) { var go = new GameObject("PreviewArea_" + n); go.transform.position = new Vector3((x0 + x1) * .5f, 0f, (z0 + z1) * .5f); var a = go.AddComponent<HubArea>(); a.displayName = n; a.size = new Vector2(x1 - x0, z1 - z0); areas.Add(a); return a; }
             Area("医務室", -16f, -9f, -11f, -3f); Area("装備購入", -16f, -9f, -3f, 5f); Area("隊員・装備管理", -16f, -9f, 5f, 11f);
-            Area("作戦室", -6f, 6f, 5f, 11f); Area("訓練所", 9f, 16f, -11f, 11f); Area("多目的室", -4f, 4f, -19f, -11f);
+            Area("作戦室", -6f, 6f, 5f, 11f); Area("訓練所", 9f, 16f, -11f, 11f); Area("炊事場", -4f, 4f, -19f, -11f); Area("電子戦室", 5f, 13f, -19f, -11f);
             var player = new GameObject("PreviewPlayer").transform;
             player.position = new Vector3(1.5f, 0f, 6.2f); player.rotation = Quaternion.Euler(0f, 40f, 0f);
             hs.BuildMinimap(walls, npcs, areas, player);

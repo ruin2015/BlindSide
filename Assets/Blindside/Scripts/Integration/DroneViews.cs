@@ -69,7 +69,7 @@ namespace Blindside.Integration
             Destroy(body.GetComponent<Collider>());
             body.transform.SetParent(go.transform, false);
             body.transform.localScale = new Vector3(.26f, .08f, .26f);
-            var lit = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            var lit = new Material(Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard"));
             if (lit.HasProperty("_BaseColor")) lit.SetColor("_BaseColor", Body);
             if (lit.HasProperty("_Color")) lit.SetColor("_Color", Body);
             body.GetComponent<MeshRenderer>().sharedMaterial = lit;

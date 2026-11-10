@@ -62,6 +62,7 @@ namespace Blindside.Integration
             // the save (a real match only: not the tutorial's, not the editor's test play): experience, mastery, money, contribution
             // (a win only) and the record, in one write
             bool real = !tutorialMode && !PlaySession.IsTest;
+            if (Record != null) Record.Rounds = RoundsPlayed;
             Record?.Close();
             Blindside.Progress.AwardReport report = real ? Blindside.Progress.MatchAward.Grant(Record, side, win, Live) : null;
             // the rescue operation won: GHOST and SILENCE join the squad for good (their guns with them); written with the rest below

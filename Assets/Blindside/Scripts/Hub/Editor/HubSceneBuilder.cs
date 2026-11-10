@@ -4,7 +4,9 @@
 //   the building 32 × 22 m, walls 8.5 m (camera clearance):  lobby (centre, the player starts here) · 作戦室 (north: the big screen, the table; CRUSHER) ·
 //   the west wing: 医務室 (south: beds, curtain, cabinet; SERUM) · 装備購入 (middle: counter, shelves; the supply clerk) ·
 //   隊員・装備管理 (north: lockers, workbench, gun rack, terminal; IGNIS) · 訓練所 (east: targets, mat, bench press, dumbbells, a heavy bag;
-//   BASTION) · 多目的室 (a room off the lobby's south wall, x −4 … 4, z −19 … −11: table, chairs, whiteboard; nobody)
+//   BASTION) · 炊事場 (the old 多目的室 off the lobby's south wall, x −4 … 4, z −19 … −11: counter, stove, fridge, a dining table;
+//   the cook — 炊事支援) · 電子戦室 (GHOST and SILENCE's room, x 5 … 13, z −19 … −11, its door on the lobby's south wall at x 7:
+//   desks with monitors, server racks; they stand there once rescued)
 //   a sign (HubSign) over every room's door and an area (HubArea) per room plus the lobby, for the place name and the minimap.
 //   The operators open their station with F and talk with G
 //   figures: sized and grounded on their baked mesh (SkinnedMeshRenderer.bounds is the import-time box, not the mesh), the toe bone's
@@ -97,7 +99,11 @@ namespace Blindside.Hub.EditorTools
 
             // stations
             // the supply clerk keeps the shop (equipment); the operators run the rest (F: the station, G: talk)
-            Staff(HubStation.Shop, "補給係", "装備購入", new Vector3(-14.2f, 0f, 1f), 90f, new Color(1f, .78f, .12f));
+            Staff(HubStation.Shop, "補給係", "装備購入 · 贈り物", new Vector3(-14.2f, 0f, 1f), 90f, new Color(1f, .78f, .12f));
+            Staff(HubStation.Kitchen, "炊事係", "炊事場 · 炊事支援", new Vector3(0f, 0f, -18.3f), 0f, new Color(.95f, .55f, .25f));
+            // 電子戦室: GHOST and SILENCE (talk: G / F) — HubDirector hides them until they have joined the squad
+            Operator("GHOST", HubStation.Talk, "電子戦室", new Vector3(EwX0 + 2f, 0f, -16.8f), 0f, 2.4f);
+            Operator("SILENCE", HubStation.Talk, "電子戦室", new Vector3(EwX1 - 2f, 0f, -16.8f), 0f, 2.4f);
             Operator("CRUSHER", HubStation.Operations, "作戦室 · 出撃", new Vector3(0f, 0f, 8.6f), 180f, 3.4f);   // behind the table
             foreach (var r in Rooms)
                 if (!string.IsNullOrEmpty(r.key)) Operator(r.key, r.station, r.caption, r.spot, r.yaw, 2.6f);
@@ -167,6 +173,8 @@ namespace Blindside.Hub.EditorTools
         // ---- the rooms ------------------------------------------------------------------------------------------------------------------
         // 多目的室 hangs off the lobby's south wall (x −4 … 4, z −19 … −11, its door the lobby's middle)
         const float MultiZ0 = -11f, MultiZ1 = -19f, MultiHalfW = 4f;
+        // 電子戦室 beside it (x EwX0 … EwX1, the same depth), its door on the lobby's south wall at x EwDoor
+        const float EwX0 = 5f, EwX1 = 13f, EwDoor = 7f;
 
         sealed class Room
         {
@@ -192,8 +200,10 @@ namespace Blindside.Hub.EditorTools
                        door = new Vector3(-8.7f, 3.1f, 8f),   spot = new Vector3(-13f, 0f, 8.4f),   yaw = 100f },
             new Room { key = "BASTION", name = "訓練所",         caption = "訓練所",          station = HubStation.Training,   area = XZ(9f, 16f, -11f, 11f),
                        door = new Vector3(8.7f, 3.1f, 0f),    spot = new Vector3(12.4f, 0f, -1.2f), yaw = -90f },
-            new Room { key = null,      name = "多目的室",       caption = "",                station = HubStation.Talk,       area = XZ(-MultiHalfW, MultiHalfW, MultiZ1, MultiZ0),
+            new Room { key = null,      name = "炊事場",         caption = "",                station = HubStation.Kitchen,    area = XZ(-MultiHalfW, MultiHalfW, MultiZ1, MultiZ0),
                        door = new Vector3(0f, 3.1f, MultiZ0 + .3f) },
+            new Room { key = null,      name = "電子戦室",       caption = "GHOST · SILENCE", station = HubStation.Talk,     area = XZ(EwX0, EwX1, MultiZ1, MultiZ0),
+                       door = new Vector3(EwDoor, 3.1f, MultiZ0 + .3f) },
             new Room { key = null,      name = "作戦室",         caption = "",                station = HubStation.Talk,       area = XZ(-6f, 6f, 5f, 11f),
                        door = new Vector3(0f, 3.1f, 4.7f) },
             new Room { key = null,      name = "装備購入",       caption = "",                station = HubStation.Talk,       area = XZ(-16f, -9f, -3f, 5f),
@@ -225,10 +235,15 @@ namespace Blindside.Hub.EditorTools
             float mz = (MultiZ0 + MultiZ1) * .5f, ml = MultiZ0 - MultiZ1;
             Box("Floor", new Vector3(0f, -.1f, mz), new Vector3(MultiHalfW * 2f + .6f, .2f, ml + .6f), floor);
             Box("Ceiling", new Vector3(0f, WallH + .1f, mz), new Vector3(MultiHalfW * 2f + .6f, .2f, ml + .6f), ceil, shadows: false);
+            float ex = (EwX0 + EwX1) * .5f, ew = EwX1 - EwX0;
+            Box("Floor", new Vector3(ex, -.1f, mz), new Vector3(ew + .6f, .2f, ml + .6f), floor);
+            Box("Ceiling", new Vector3(ex, WallH + .1f, mz), new Vector3(ew + .6f, .2f, ml + .6f), ceil, shadows: false);
 
             // outer walls; the lobby's south wall has the 多目的室 door in the middle
             WallX(-16f, 16f, 11f);
-            WallX(-16f, -1.6f, MultiZ0); WallX(1.6f, 16f, MultiZ0);
+            WallX(-16f, -1.6f, MultiZ0); WallX(1.6f, EwDoor - 1.3f, MultiZ0); WallX(EwDoor + 1.3f, 16f, MultiZ0);
+            // 電子戦室
+            WallZ(EwX0, MultiZ1, MultiZ0); WallZ(EwX1, MultiZ1, MultiZ0); WallX(EwX0, EwX1, MultiZ1);
             WallZ(-16f, -11f, 11f); WallZ(16f, -11f, 11f);
             // 多目的室
             WallZ(-MultiHalfW, MultiZ1, MultiZ0); WallZ(MultiHalfW, MultiZ1, MultiZ0); WallX(-MultiHalfW, MultiHalfW, MultiZ1);
@@ -256,7 +271,8 @@ namespace Blindside.Hub.EditorTools
             Lamp(new Vector3(-12.5f, LampY,-7f), new Color(.7f, 1f, .8f), 7f, 1.2f);
             Lamp(new Vector3(12.5f, LampY,0f), new Color(1f, .95f, .9f), 12f, 1.6f);
             Lamp(new Vector3(0f, LampY,-8.5f), new Color(1f, .85f, .7f), 8f, 1.3f);
-            Lamp(new Vector3(0f, LampY,-15f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 多目的室
+            Lamp(new Vector3(0f, LampY,-15f), new Color(1f, .9f, .75f), 8f, 1.4f);      // 炊事場
+            Lamp(new Vector3(EwDoor, LampY, -15f), new Color(.55f, .7f, 1f), 8f, 1.2f);  // 電子戦室
         }
 
         static void WallX(float x0, float x1, float z) =>
@@ -296,7 +312,7 @@ namespace Blindside.Hub.EditorTools
             Box("Sofa", new Vector3(-4.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
             Box("Sofa", new Vector3(4.5f, .3f, -10.2f), new Vector3(3f, .6f, .9f), fabric);
 
-            MedicalRoom(); LoadoutRoom(); TrainingRoom(); MultiRoom();
+            MedicalRoom(); LoadoutRoom(); TrainingRoom(); KitchenRoom(); EwRoom();
         }
 
         // ---- room interiors -------------------------------------------------------------------------------------------------------------
@@ -349,7 +365,57 @@ namespace Blindside.Hub.EditorTools
             Box("DecoStripe", new Vector3(15.83f, 2.4f, 0f), new Vector3(.02f, .12f, 14f), red, shadows: false);
         }
 
-        /// <summary>多目的室 — the room off the lobby's south wall (x −4 … 4, z −19 … −11).</summary>
+        /// <summary>炊事場 — the old 多目的室 (x −4 … 4, z −19 … −11): a counter across the back with the cook behind it, a stove, a sink,
+        /// a fridge and shelves; the dining table by the door.</summary>
+        static void KitchenRoom()
+        {
+            var wood = Mat("Wood", new Color(.36f, .27f, .2f), .2f);
+            var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
+            var steel = Mat("Steel", new Color(.55f, .58f, .62f), .7f);
+            var fabric = Mat("Fabric", new Color(.2f, .23f, .28f), .05f);
+            var white = Mat("Board", new Color(.93f, .94f, .95f), .6f);
+            var ember = Mat("Ember", new Color(.95f, .45f, .15f), .3f, new Color(.4f, .12f, .02f));
+            // the counter (the cook stands behind it) and the back wall's kitchen
+            Box("Counter", new Vector3(0f, .48f, -17.2f), new Vector3(5.2f, .96f, .8f), wood);
+            Box("DecoCounterTop", new Vector3(0f, .97f, -17.2f), new Vector3(5.3f, .04f, .9f), steel, shadows: false);
+            Box("Stove", new Vector3(-2f, .45f, -18.6f), new Vector3(1.6f, .9f, .7f), metal);
+            Box("DecoStoveFire", new Vector3(-2f, .91f, -18.6f), new Vector3(1.2f, .02f, .4f), ember, shadows: false);
+            Box("Pot", new Vector3(-2.3f, 1.1f, -18.6f), new Vector3(.45f, .35f, .45f), steel);
+            Box("Sink", new Vector3(.6f, .45f, -18.6f), new Vector3(1.4f, .9f, .7f), steel);
+            Box("Fridge", new Vector3(3.3f, 1f, -18.5f), new Vector3(.9f, 2f, .8f), white);
+            for (int i = 0; i < 2; i++) Box("Shelf", new Vector3(0f, 1.9f + i * .5f, -18.85f), new Vector3(3.4f, .05f, .3f), wood, shadows: false);
+            // the dining table by the door
+            Box("Table", new Vector3(0f, .38f, -13.4f), new Vector3(2.8f, .76f, 1.2f), wood);
+            for (int i = 0; i < 3; i++)
+            {
+                Box("Chair", new Vector3(-1f + i, .23f, -14.4f), new Vector3(.45f, .46f, .45f), fabric);
+                Box("Chair", new Vector3(-1f + i, .23f, -12.4f), new Vector3(.45f, .46f, .45f), fabric);
+            }
+        }
+
+        /// <summary>電子戦室 — GHOST and SILENCE's room (x EwX0 … EwX1, z −19 … −11): desks with monitors along the back, server racks
+        /// with their lights, a map table.</summary>
+        static void EwRoom()
+        {
+            var ink = Mat("Ink", new Color(.08f, .09f, .1f), .4f);
+            var metal = Mat("Metal", new Color(.4f, .43f, .47f), .55f);
+            var screen = Mat("Screen", new Color(.05f, .2f, .35f), .8f, new Color(.1f, .5f, .9f) * 1.6f);
+            var violet = Mat("ScreenViolet", new Color(.2f, .08f, .3f), .8f, new Color(.6f, .25f, 1f) * 1.4f);
+            var cyan = Mat("ScreenCyan", new Color(.05f, .25f, .3f), .8f, new Color(.1f, .9f, 1f) * 1.4f);
+            float cx = (EwX0 + EwX1) * .5f;
+            Box("Desk", new Vector3(cx, .4f, -18.4f), new Vector3(5.6f, .8f, .9f), ink);
+            for (int i = 0; i < 4; i++)
+                Box("DecoMonitor", new Vector3(cx - 2.1f + i * 1.4f, 1.25f, -18.6f), new Vector3(1.1f, .65f, .05f), i < 2 ? violet : cyan, shadows: false);
+            for (int i = 0; i < 2; i++)
+            {
+                Box("ServerRack", new Vector3(EwX0 + .5f, 1.1f, -14.2f + i * 1.3f), new Vector3(.7f, 2.2f, 1f), metal);
+                Box("DecoRackLights", new Vector3(EwX0 + .87f, 1.1f, -14.2f + i * 1.3f), new Vector3(.02f, 1.8f, .7f), screen, shadows: false);
+            }
+            Box("MapTable", new Vector3(cx, .45f, -13.6f), new Vector3(2.2f, .9f, 1.4f), ink);
+            Box("DecoMapTableTop", new Vector3(cx, .91f, -13.6f), new Vector3(2f, .02f, 1.2f), screen, shadows: false);
+        }
+
+        /// <summary>(the old 多目的室's furniture, no longer built)</summary>
         static void MultiRoom()
         {
             const float x = 0f, dz = 3f;   // the interior as laid out for a room centred at z −18, moved to z −15
@@ -581,7 +647,7 @@ namespace Blindside.Hub.EditorTools
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (m == null)
             {
-                var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                var sh = Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard");
                 m = new Material(sh);
                 AssetDatabase.CreateAsset(m, path);
             }

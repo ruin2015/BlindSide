@@ -260,8 +260,8 @@ namespace Blindside.Combat
         public IEnumerator Shoot(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, bool sureHit = false)
         {
             if (!attacker.Alive || !target.Alive) yield break;
-            // behind a raised shield (BASTION) there is no shooting — not in an encounter, not in return fire
-            if (attacker.ShieldUp)
+            // behind a raised shield (BASTION) there is no shooting — not in an encounter, not in return fire (co-op rank 8: he can)
+            if (attacker.ShieldUp && !CoopRules.CanFireShielded(attacker))
             {
                 HudLog.Add($"{Kr(attacker)}: シールド展開中のため射撃できません");
                 yield break;
@@ -290,6 +290,8 @@ namespace Blindside.Combat
             if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
             float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
             bool blocked = ShieldBlocks(target, attacker);
+            // 弱点露出 (GHOST's co-op): twice the crit chance and twice the damage
+            if (CoopRules.IsExposed(target)) { hsChance = Mathf.Min(95, hsChance * 2); dmg *= 2; }
 
             // combatShow(a,t,chance,dmg,w.shots,o.preempt,tr.walls,blocked,blocked?0:hsC); await sleep(700);
             var pres = Presenter;
@@ -374,6 +376,68 @@ namespace Blindside.Combat
                 yield return Sleep(0.75f);
                 pres.Hide();
                 yield return Sleep(0.15f);
+            }
+
+            // 追撃 (co-op rank 2): allies who see the target fire one round each with it
+            if (!pursuing && PursuitAllies != null && attacker.Alive && target.Alive && !blocked)
+            {
+                pursuers.Clear();
+                PursuitAllies(attacker, target, pursuers);
+                if (pursuers.Count > 0)
+                {
+                    pursuing = true;
+                    try { for (int i = 0; i < pursuers.Count && i < CoopRules.MaxPursuers && target.Alive; i++) yield return PursuitShot(pursuers[i], target); }
+                    finally { pursuing = false; }
+                }
+            }
+        }
+
+        /// <summary>The player's side's 追撃 (co-op rank 2): given the shooter and its target, fills the allies who join in (they see the
+        /// target and can shoot it). Null: no pursuit (AI-only matches, the tutorial).</summary>
+        public System.Action<ICombatUnit, ICombatUnit, List<ICombatUnit>> PursuitAllies;
+        readonly List<ICombatUnit> pursuers = new List<ICombatUnit>(4);
+        bool pursuing;
+
+        /// <summary>One round from `a` at `t` (the pursuit): its own hit and crit roll, the gun's damage at the distance; the kill as a
+        /// normal shot's.</summary>
+        IEnumerator PursuitShot(ICombatUnit a, ICombatUnit t)
+        {
+            if (!a.Alive || !t.Alive || a.Weapon == null) yield break;
+            if (a.ShieldUp && !CoopRules.CanFireShielded(a)) yield break;
+            var path = TraceLine(a, t);
+            float dist = Distance(a, t);
+            if (path.Blocked || dist > a.Weapon.range + 4f) yield break;
+            a.Facing = Mathf.Atan2(t.Y - a.Y, t.X - a.X);
+            a.View?.SetFacing(a.Facing);
+            OnShotStart?.Invoke(a, t);
+            a.View?.PlayFire();
+            int chance = HitChance(a, t, path, false), hs = HeadshotChance(a, t, path, false);
+            int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(a, dist));
+            if (a is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+            if (CoopRules.IsExposed(t)) { hs = Mathf.Min(95, hs * 2); dmg *= 2; }
+            bool blocked = ShieldBlocks(t, a);
+            bool hit = Blindside.Core.GameRng.Range(0f, 100f) < chance, crit = false;
+            int dealt = 0;
+            if (hit && !blocked)
+            {
+                crit = Blindside.Core.GameRng.Range(0f, 100f) < hs;
+                int d = crit ? dmg * 2 : dmg;
+                float takenScale = t is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
+                if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
+                dealt = d;
+                t.HP = Mathf.Max(FloorHP, t.HP - d);
+                t.View?.PlayHit(crit);
+                OnDamage?.Invoke(t, d, crit);
+            }
+            OnShotFired?.Invoke(a, t, hit, crit);
+            OnShot?.Invoke(new ShotEvent(a, t, 0, 1, hit, crit, hit && blocked, dealt));
+            HudLog.Add($"{Kr(a)}: 追撃 → {Kr(t)} {(hit && !blocked ? dealt + " ダメージ" + (crit ? " (ヘッドショット)" : "") : "外れ")}", HudLog.TeamType(a.Team));
+            yield return Sleep(.35f);
+            if (t.HP <= 0)
+            {
+                t.View?.PlayDeath();
+                OnKill?.Invoke(t, a);
+                HudLog.Add($"{Kr(t)}が倒された", t.Team == HudLog.Side ? HudLogType.Foe : HudLogType.Ally);
             }
         }
 

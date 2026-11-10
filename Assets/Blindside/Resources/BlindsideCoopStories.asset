@@ -1,0 +1,255 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84c994a90fd09e845a5add0613a3d5f0, type: 3}
+  m_Name: BlindsideCoopStories
+  m_EditorClassIdentifier: Assembly-CSharp::Blindside.Progress.CoopStories
+  episodes:
+  - key: CRUSHER
+    rank: 1
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 2
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 3
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 4
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 5
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 6
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 7
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 8
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 9
+    title: 
+    text: 
+  - key: CRUSHER
+    rank: 10
+    title: 
+    text: 
+  - key: SERUM
+    rank: 1
+    title: 
+    text: 
+  - key: SERUM
+    rank: 2
+    title: 
+    text: 
+  - key: SERUM
+    rank: 3
+    title: 
+    text: 
+  - key: SERUM
+    rank: 4
+    title: 
+    text: 
+  - key: SERUM
+    rank: 5
+    title: 
+    text: 
+  - key: SERUM
+    rank: 6
+    title: 
+    text: 
+  - key: SERUM
+    rank: 7
+    title: 
+    text: 
+  - key: SERUM
+    rank: 8
+    title: 
+    text: 
+  - key: SERUM
+    rank: 9
+    title: 
+    text: 
+  - key: SERUM
+    rank: 10
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 1
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 2
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 3
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 4
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 5
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 6
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 7
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 8
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 9
+    title: 
+    text: 
+  - key: IGNIS
+    rank: 10
+    title: 
+    text: 
+  - key: BASTION
+    rank: 1
+    title: 
+    text: 
+  - key: BASTION
+    rank: 2
+    title: 
+    text: 
+  - key: BASTION
+    rank: 3
+    title: 
+    text: 
+  - key: BASTION
+    rank: 4
+    title: 
+    text: 
+  - key: BASTION
+    rank: 5
+    title: 
+    text: 
+  - key: BASTION
+    rank: 6
+    title: 
+    text: 
+  - key: BASTION
+    rank: 7
+    title: 
+    text: 
+  - key: BASTION
+    rank: 8
+    title: 
+    text: 
+  - key: BASTION
+    rank: 9
+    title: 
+    text: 
+  - key: BASTION
+    rank: 10
+    title: 
+    text: 
+  - key: GHOST
+    rank: 1
+    title: 
+    text: 
+  - key: GHOST
+    rank: 2
+    title: 
+    text: 
+  - key: GHOST
+    rank: 3
+    title: 
+    text: 
+  - key: GHOST
+    rank: 4
+    title: 
+    text: 
+  - key: GHOST
+    rank: 5
+    title: 
+    text: 
+  - key: GHOST
+    rank: 6
+    title: 
+    text: 
+  - key: GHOST
+    rank: 7
+    title: 
+    text: 
+  - key: GHOST
+    rank: 8
+    title: 
+    text: 
+  - key: GHOST
+    rank: 9
+    title: 
+    text: 
+  - key: GHOST
+    rank: 10
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 1
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 2
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 3
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 4
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 5
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 6
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 7
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 8
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 9
+    title: 
+    text: 
+  - key: SILENCE
+    rank: 10
+    title: 
+    text: 

@@ -26,7 +26,7 @@ namespace Blindside.Integration
         static readonly Color SensorGreen = new Color32(0x2f, 0xd8, 0x86, 0xff);
         static readonly Color Casing = new Color32(0x2a, 0x30, 0x38, 0xff);
 
-        class Mine { public float x, y; public bool alive = true; public GameObject go; }
+        class Mine { public float x, y; public bool alive = true, revealed; public GameObject go; }
 
         class Sensor
         {
@@ -93,6 +93,16 @@ namespace Blindside.Integration
             turns = null; marks = null; ai = null; presenter = null;
         }
 
+        /// <summary>SILENCE's rank-8 完全掌握: every mine and sensor shows for the attack. Returns how many.</summary>
+        public int RevealAll()
+        {
+            int n = 0;
+            foreach (var m in mines) if (m.alive) { m.revealed = true; n++; }
+            foreach (var s in sensors) { if (!s.discovered) n++; s.discovered = true; }
+            SyncVisibility();
+            return n;
+        }
+
         /// <summary>MovementSystem.OnStep: an attacker has just moved a step.</summary>
         public void Step(ITurnUnit tu)
         {
@@ -142,7 +152,7 @@ namespace Blindside.Integration
         void SyncVisibility()
         {
             bool all = playerTeam != OperatorTeam.Attack;
-            foreach (var m in mines) if (m.go != null) m.go.SetActive(all && m.alive);
+            foreach (var m in mines) if (m.go != null) m.go.SetActive((all || m.revealed) && m.alive);
             foreach (var s in sensors) if (s.go != null) s.go.SetActive(all || s.discovered);
         }
 

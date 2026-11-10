@@ -45,6 +45,9 @@ namespace Blindside.Hub
         public void OpenLoadout(int operatorIndex = 0) => loadout.Open(operatorIndex);
         HubMenu menu;
         public HubMenu Menu => menu;
+        HubCoopScreen coop;
+        /// <summary>The menu's コープ screen.</summary>
+        public HubCoopScreen Coop => coop;
 
         /// <summary>Previews: a sample save shown instead of the session's.</summary>
         public SaveData previewData;
@@ -54,7 +57,7 @@ namespace Blindside.Hub
 
         public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
                                || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen)
-                               || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || leaving;
+                               || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || (coop != null && coop.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
         public KitGrowthPanel Growth => growth;
@@ -83,8 +86,9 @@ namespace Blindside.Hub
             s.shop = HubShopScreen.Build(s.root, s);
             s.loadout = HubLoadoutScreen.Build(s.root, s);
             s.squadC = new SquadInfoContent(s);
-            s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle);
-            s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen;
+            s.coop = HubCoopScreen.Build(s.root, s);
+            s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle, () => s.coop.Open());
+            s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.coop.IsOpen;
             s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.shop.IsOpen;
             s.shop.Closed = s.station.Reenter;
             s.RefreshTopbar();
@@ -134,7 +138,21 @@ namespace Blindside.Hub
             locationText = HudKit.AddText(loc, "", 16f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Name", UITheme.TextRole.Title);
             locationText.textWrappingMode = TextWrappingModes.NoWrap; locationText.overflowMode = TextOverflowModes.Ellipsis;
             UILayout.Place(locationText.rectTransform, 42f, 0f, 200f, 46f);
+
+            // the calendar (Progress.Campaign), under the place: DAY n · 昼/夜, the days left to the next main quest, the leave days
+            var cal = HudKit.NewRect("Calendar", root);
+            UILayout.Place(cal, 392f, 66f, 330f, 30f);
+            HudKit.AddImage(cal, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .78f));
+            cal.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 10f);
+            dayText = HudKit.AddText(cal, "", 14f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Day", UITheme.TextRole.Display);
+            dayText.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dayText.rectTransform, 14f, 0f, 120f, 30f);
+            dueText = HudKit.AddText(cal, "", 12f, theme.acc, true, TextAlignmentOptions.MidlineRight, "Due", UITheme.TextRole.Body);
+            dueText.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dueText.rectTransform, 120f, 0f, 196f, 30f);
         }
+
+        TMP_Text dayText, dueText;
 
         TMP_Text locationText;
         string location;
@@ -320,6 +338,7 @@ namespace Blindside.Hub
         {
             if (n == null || AnyOpen) return;
             if (n.station == HubStation.Talk) { OpenTalk(n); return; }
+            if (n.station == HubStation.Kitchen) { station.Open(HubStationScreen.KitchenKey); return; }
             // the operators' stations and the shop open their station screen (art, greeting, big options) first
             string key = n.CanTalk ? n.operatorKey : n.station == HubStation.Shop ? HubCatalog.ClerkKey : null;
             if (key != null) { station.Open(key); return; }
@@ -339,8 +358,11 @@ namespace Blindside.Hub
         public void OpenTalk(HubNpc n)
         {
             if (n == null || AnyOpen || !n.CanTalk) return;
-            talk.Open(BuildAssetRegistry.Operator(n.operatorKey), HubCatalog.Lines(n.operatorKey));
+            station.OpenTalk(n.operatorKey);
         }
+
+        /// <summary>The talk's 話す: the operator's lines in the talk box.</summary>
+        public void OpenChat(string key) => talk.Open(BuildAssetRegistry.Operator(key), HubCatalog.Lines(key));
 
         /// <summary>A station's panel by kind (tab `tab`; previews too). The old Growth / Loadout stations open the management panel.</summary>
         public void OpenStation(HubStation st, int tab = 0)
@@ -367,6 +389,8 @@ namespace Blindside.Hub
         void Update()
         {
             // the growth panel closed: the squad list under it shows the new points
+            // the HQ opens on the main quest's day (a sub quest or a leave may have run past it)
+            if (!deadlineChecked && Application.isPlaying && SaveSystem.Current != null && station != null) { deadlineChecked = true; TimeSpent(); }
             bool g = growth != null && growth.IsOpen;
             if (growthWasOpen && !g && list.IsOpen) list.Refresh();
             growthWasOpen = g;
@@ -375,10 +399,30 @@ namespace Blindside.Hub
         public void RefreshTopbar()
         {
             var d = Data;
-            if (SaveSystem.Current == null && Application.isPlaying) { moneyText.SetText("¥ —"); rankText.SetText("—"); return; }
+            if (SaveSystem.Current == null && Application.isPlaying) { moneyText.SetText("¥ —"); rankText.SetText("—"); dayText.SetText("DAY —"); dueText.SetText(""); return; }
             moneyText.SetText(HubContentBase.Yen("", d.money));
             rankText.SetText(Blindside.Progress.RankTable.Name(Blindside.Progress.RankTable.RankOf(d.rankPoints)));
+            dayText.SetText("DAY " + Blindside.Progress.Campaign.DayNumber(d) + " · " + Blindside.Progress.Campaign.TimeName(d));
+            int left = Blindside.Progress.Campaign.DaysLeft(d);
+            string due = left >= 0 ? "メイン作戦まで " + left + "日" : "";
+            if (d.leaveDays > 0) due += (due.Length > 0 ? "  ·  " : "") + "休暇 " + d.leaveDays + "日";
+            dueText.SetText(due);
         }
+
+        /// <summary>Time went by at the HQ: the topbar redrawn and, once the next main quest has fallen due, the HQ sends the squad out
+        /// (CRUSHER with 出撃 alone). True when that happened.</summary>
+        public bool TimeSpent()
+        {
+            RefreshTopbar();
+            if (SaveSystem.Current == null || !Blindside.Progress.Campaign.DeadlineReached(Data)) return false;
+            if (list.IsOpen) list.Close();
+            if (talk.IsOpen) talk.Close();
+            if (shop.IsOpen) shop.Close();
+            station.OpenDeadline();
+            return true;
+        }
+
+        bool deadlineChecked;
 
         public void Sortie(HubCatalog.Operation o)
         {

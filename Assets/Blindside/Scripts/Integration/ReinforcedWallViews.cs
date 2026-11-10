@@ -118,7 +118,7 @@ namespace Blindside.Integration
             return go;
         }
 
-        static Shader LitShader => Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        static Shader LitShader => Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard");
 
         public static Material Make(string name, Color col, float metallic, float smoothness, bool unlit)
         {

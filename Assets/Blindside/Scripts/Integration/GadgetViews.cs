@@ -182,7 +182,7 @@ namespace Blindside.Integration
         Material MirrorMat()
         {
             if (mirrorMat != null) return mirrorMat;
-            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var shader = Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard");
             var m = new Material(shader) { name = "MirrorPanel" };
             float a = Side == OperatorTeam.Defense ? .42f : .88f;
             var col = new Color(MirrorGlass.r, MirrorGlass.g, MirrorGlass.b, a);
@@ -225,7 +225,7 @@ namespace Blindside.Integration
 
         static Material Lit(Color c)
         {
-            var m = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            var m = new Material(Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard"));
             if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
             if (m.HasProperty("_Color")) m.SetColor("_Color", c);
             return m;

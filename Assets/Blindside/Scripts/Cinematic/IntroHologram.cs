@@ -107,12 +107,15 @@ namespace Blindside.Cinematic
                 foreach (var mf in town.GetComponentsInChildren<MeshFilter>(true))
                 {
                     var r = mf.GetComponent<MeshRenderer>();
-                    if (mf.sharedMesh != null && r != null && !lower.Contains(r)) Clone(mf, townMat, "Town");
+                    if (mf.sharedMesh != null && r != null && r.enabled && !lower.Contains(r)) Clone(mf, townMat, "Town");
                 }
             }
             if (streets != null)
                 foreach (var mf in streets.GetComponentsInChildren<MeshFilter>(true))
-                    if (mf.sharedMesh != null) Clone(mf, streetMat, "Street");
+                {
+                    var r = mf.GetComponent<MeshRenderer>();
+                    if (mf.sharedMesh != null && (r == null || r.enabled)) Clone(mf, streetMat, "Street");
+                }
 
             // ground grid
             var ground = GameObject.CreatePrimitive(PrimitiveType.Quad);

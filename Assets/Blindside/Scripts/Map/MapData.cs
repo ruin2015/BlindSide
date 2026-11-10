@@ -112,6 +112,12 @@ namespace Blindside.Map
         /// <summary>The rescue intro: the house intro's flight, its hologram showing the captured operators (IntroCameraRig.RescueStyle).
         /// Implies the house intro.</summary>
         public bool rescueIntro;
+        /// <summary>The operation this map is played as (its map catalog entry): the intro title's code word (Resources/Intro/
+        /// IntroOperationTitle_{code}.png — none: OPERATION BLINDSIDE), its Japanese name and the briefing's weather / location / clock
+        /// lines (empty: the defaults). Not in the map's own data.</summary>
+        public string operationCode, operationNameJa, briefWeather, briefLocation, briefClock;
+        /// <summary>The operation's weather (MissionAtmosphere): night, rain.</summary>
+        public bool night, rain;
         /// <summary>Where the captured operators are held (the rescue intro's markers; `hostage` is the first). Empty: only `hostage`.</summary>
         public Vector2Int[] rescueHostages;
 

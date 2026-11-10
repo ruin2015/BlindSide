@@ -151,6 +151,7 @@ namespace Blindside.Save
             if (d == null) return;
             d.LastTeam = team;
             d.lastMap = map ?? "";
+            Blindside.Progress.Campaign.Sortied(d, map);   // (a sub quest takes its day)
             SaveSystem.Write(true);
         }
 

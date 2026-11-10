@@ -20,6 +20,8 @@ namespace Blindside.Progress
         public string weapon = "";         // the weapon key it used
         public OperatorTeam team;
         public bool alive = true;
+        public bool captive;               // held at the start (the rescue): not part of the squad's own damage
+        public int maxHp = 100;
         public int damageTaken, damageDealt, attacks, shots, hits, walls, kills, assists;
     }
 
@@ -29,6 +31,12 @@ namespace Blindside.Progress
         public static bool Enabled = true;
 
         public readonly List<UnitRecord> Lines = new List<UnitRecord>();
+        /// <summary>Rounds the match took (set at its end).</summary>
+        public int Rounds;
+        /// <summary>Every kill's helpers: (the killer's key, the helper's key) — Campaign's combat bond.</summary>
+        public readonly List<(string killer, string helper)> Assists = new List<(string, string)>();
+        /// <summary>Who spotted whom (a drone, a camera, a sensor of the same side): the spotter helps the kill too.</summary>
+        readonly Dictionary<object, object> spottedBy = new Dictionary<object, object>();
         readonly Dictionary<object, UnitRecord> byUnit = new Dictionary<object, UnitRecord>();
         readonly Dictionary<object, HashSet<object>> damagedBy = new Dictionary<object, HashSet<object>>();
         CombatSystem combat; AbilitySystem abilities;
@@ -43,10 +51,24 @@ namespace Blindside.Progress
                     key = u.Op != null ? u.Op.key : u.Id,
                     weapon = u.Weapon != null ? u.Weapon.key : "",
                     team = u.Team,
+                    captive = u.Captive,
+                    maxHp = u.MaxHP,
                 };
                 byUnit[u] = r;
                 Lines.Add(r);
             }
+        }
+
+        /// <summary>`spotter` revealed `target` (its drone / scan): if an ally of the spotter kills it, the spotter assisted.</summary>
+        public void NoteSpot(object spotter, object target)
+        {
+            if (spotter != null && target != null) spottedBy[target] = spotter;
+        }
+
+        /// <summary>Max HP after the growth bonuses (set once the units are ready).</summary>
+        public void RefreshMaxHp()
+        {
+            foreach (var kv in byUnit) if (kv.Key is SimUnit u) kv.Value.maxHp = u.MaxHP;
         }
 
         public UnitRecord Of(object unit) => unit != null && byUnit.TryGetValue(unit, out var r) ? r : null;
@@ -134,12 +156,16 @@ namespace Blindside.Progress
             if (v == null) return;                     // (the hostage)
             var k = Of(killer);
             if (k != null && k.team != v.team) k.kills++;
-            if (!damagedBy.TryGetValue(victim, out var set)) return;
-            foreach (var who in set)
+            var helpers = new HashSet<object>();
+            if (damagedBy.TryGetValue(victim, out var set)) foreach (var who in set) helpers.Add(who);
+            if (spottedBy.TryGetValue(victim, out var sp)) helpers.Add(sp);
+            foreach (var who in helpers)
             {
                 if (who == killer) continue;
                 var h = Of(who);
-                if (h != null && h.team != v.team) h.assists++;
+                if (h == null || h.team == v.team) continue;
+                h.assists++;
+                if (k != null && k.team == h.team) Assists.Add((k.key, h.key));
             }
         }
     }

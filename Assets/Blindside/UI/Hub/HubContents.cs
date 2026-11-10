@@ -310,7 +310,7 @@ namespace Blindside.Hub
         public override string Tab(int i) => SquadTab(i);
 
         // the rows, in order: the guns (null ones skipped) · every attachment · item なし · every gadget
-        enum Kind { Gun, Attachment, NoItem, Item }
+        enum Kind { Gun, Attachment, NoItem, Item, Gun2, ItemSlot }
         readonly List<Kind> kinds = new List<Kind>(24);
         readonly List<int> refs = new List<int>(24);
 
@@ -365,22 +365,49 @@ namespace Blindside.Hub
             if (shown == 0 && !itemsOnly)
                 Add(into, new HubRow { name = "アタッチメント  なし", note = "装備購入で購入すると、ここで " + (gun != null ? gun.weaponName : "武器") + " に装着できます" }, Kind.NoItem, -1);
 
-            bool none = string.IsNullOrEmpty(p.gadget);
-            Add(into, new HubRow
+            // 二丁持ち (FLARE's co-op rank 6): the second gun — any other owned gun of this operator
+            var gunsAll = HubCatalog.GunsOf(op);
+            if (Blindside.Progress.CoopPerks.HasTwoGuns(D, op.key) && gunsAll.Length > 1)
             {
-                name = "アイテム  なし", note = "アイテムを持たずに出撃する", value = none ? "装備中" : "", current = none,
-                button = none ? "装備中" : "外す", enabled = Editable && !none,
-            }, Kind.NoItem, 0);
+                int c1 = Loadout.Choice(op), c2 = Loadout.Choice2(op);
+                for (int i = 0; i < gunsAll.Length; i++)
+                {
+                    var w = gunsAll[i];
+                    if (w == null || i == c1) continue;
+                    bool owned = HubCatalog.Owns(D, w), on = i == c2;
+                    Add(into, new HubRow
+                    {
+                        name = "サブ武器  " + w.weaponName, note = "二丁持ち (コープ Rank 6) · 戦闘中に持ち替えられる", band = op.color,
+                        value = on ? "装備中" : (owned ? "所持" : "未所持"), current = on,
+                        button = on ? "外す" : "装備", enabled = owned && (Editable || !Application.isPlaying),
+                    }, Kind.Gun2, i);
+                }
+            }
+
+            // the item slots: 1, then 2 / 3 with FLARE's co-op rank 4 / 7; 装備 fills the first empty one
+            int slots = Blindside.Progress.CoopPerks.GadgetSlots(D, op.key);
+            for (int s = 0; s < OperatorProgress.ItemSlots; s++)
+            {
+                bool open = s < slots;
+                var g = open ? HubCatalog.GadgetOf(p.Slot(s)) : null;
+                Add(into, new HubRow
+                {
+                    name = "アイテム枠 " + (s + 1) + "  " + (!open ? "（コープ Rank " + (s == 1 ? 4 : 7) + " で解放）" : g != null ? g.name : "なし"),
+                    note = g != null ? g.note : open ? "空き" : "",
+                    value = g != null ? "所持 " + D.GadgetOf(g.key).count : "", current = g != null,
+                    button = g != null ? "外す" : "—", enabled = Editable && open && g != null,
+                }, Kind.ItemSlot, s);
+            }
             for (int i = 0; i < HubCatalog.Gadgets.Length; i++)
             {
                 var g = HubCatalog.Gadgets[i];
-                int have = D.GadgetOf(g.key).count;
-                bool on = p.gadget == g.key;
+                int have = D.GadgetOf(g.key).count, carried = 0;
+                for (int s = 0; s < slots; s++) if (p.Slot(s) == g.key) carried++;
                 Add(into, new HubRow
                 {
                     name = "アイテム  " + g.name, note = g.note + (g.medical ? " (医務室)" : " (装備購入)"),
-                    value = (on ? "装備中 · " : "") + "所持 " + have, current = on,
-                    button = on ? "装備中" : "装備", enabled = Editable && !on && have > 0,
+                    value = (carried > 0 ? "装備中 ×" + carried + " · " : "") + "所持 " + have, current = carried > 0,
+                    button = "装備", enabled = Editable && have > carried,
                 }, Kind.Item, i);
             }
         }
@@ -417,14 +444,33 @@ namespace Blindside.Hub
                     if (!Editable || i < 0) return null;   // (−1: the "no attachments yet" line)
                     p.gadget = ""; Save();
                     return op.DisplayName + " のアイテムを外しました";
+                case Kind.ItemSlot:
+                    if (!Editable || string.IsNullOrEmpty(p.Slot(i))) return null;
+                    p.SetSlot(i, ""); Save();
+                    return op.DisplayName + " のアイテム枠 " + (i + 1) + " を空けました";
                 case Kind.Item:
                 {
                     if (!Editable) return null;
                     var g = HubCatalog.Gadgets[i];
-                    if (D.GadgetOf(g.key).count <= 0) return "所持していません";
-                    p.gadget = g.key;
+                    int slots = Blindside.Progress.CoopPerks.GadgetSlots(D, op.key), carried = 0, empty = -1;
+                    for (int s = 0; s < slots; s++) { if (p.Slot(s) == g.key) carried++; else if (empty < 0 && string.IsNullOrEmpty(p.Slot(s))) empty = s; }
+                    if (D.GadgetOf(g.key).count <= carried) return "所持数が足りません";
+                    if (empty < 0)
+                    {
+                        if (slots > 1) return "アイテム枠が空いていません (外してから装備)";
+                        empty = 0;   // (one slot: the new item replaces the old, as before)
+                    }
+                    p.SetSlot(empty, g.key);
                     Save();
-                    return op.DisplayName + " に " + g.name + " を装備しました";
+                    return op.DisplayName + " のアイテム枠 " + (empty + 1) + " に " + g.name + " を装備しました";
+                }
+                case Kind.Gun2:
+                {
+                    var guns = HubCatalog.GunsOf(op);
+                    if (!HubCatalog.Owns(D, guns[i])) return "まだ所持していません (装備購入で買えます)";
+                    if (Loadout.Choice2(op) == i) { Loadout.SetChoice2(op, -1); return op.DisplayName + " のサブ武器を外しました"; }
+                    Loadout.SetChoice2(op, i);
+                    return op.DisplayName + " のサブ武器を " + guns[i].weaponName + " にしました";
                 }
             }
             return null;
@@ -492,8 +538,14 @@ namespace Blindside.Hub
                 var a = fit != null ? HubCatalog.AttachmentOf(fit.parts[s]) : null;
                 into.Add(new HubRow { face = HubCatalog.ArtOf(a), name = HubCatalog.AttachmentSlots[s] + "  " + (a != null ? a.name : "なし"), note = a != null ? a.Summary : "", value = a != null ? "装着中" : "" });
             }
-            var g = HubCatalog.GadgetOf(p.gadget);
-            into.Add(new HubRow { name = "アイテム  " + (g != null ? g.name : "なし"), note = g != null ? g.note : "", value = g != null ? "所持 " + D.GadgetOf(g.key).count : "" });
+            int slotsOpen = Blindside.Progress.CoopPerks.GadgetSlots(D, op.key);
+            for (int s = 0; s < slotsOpen; s++)
+            {
+                var g = HubCatalog.GadgetOf(p.Slot(s));
+                into.Add(new HubRow { name = "アイテム" + (slotsOpen > 1 ? "枠 " + (s + 1) : "") + "  " + (g != null ? g.name : "なし"), note = g != null ? g.note : "", value = g != null ? "所持 " + D.GadgetOf(g.key).count : "" });
+            }
+            var w2 = Blindside.Progress.CoopPerks.HasTwoGuns(D, op.key) ? Loadout.Second(op) : null;
+            if (w2 != null) into.Add(new HubRow { name = "サブ武器  " + w2.weaponName, note = "二丁持ち · 戦闘中に持ち替え", value = "" });
         }
 
         public override string Act(int tab, int row)

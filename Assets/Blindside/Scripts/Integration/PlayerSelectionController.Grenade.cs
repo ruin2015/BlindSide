@@ -221,8 +221,11 @@ namespace Blindside.Integration
             u.Facing = throwAngle;
             u.Acted = true;
             u.ItemSpent = true;
+            string spentKey = u.Item;
             var d = Blindside.Save.SaveSystem.Current;
-            if (d != null) { var line = d.GadgetOf(u.Item); line.count = Mathf.Max(0, line.count - 1); }
+            if (d != null) { var line = d.GadgetOf(spentKey); line.count = Mathf.Max(0, line.count - 1); }
+            // the next slot's item comes out (co-op item slots)
+            if (u.ItemQueue.Count > 0) { u.Item = u.ItemQueue[0]; u.ItemQueue.RemoveAt(0); u.ItemSpent = false; }
             u.View?.PlayAbility("frag");
             Log(KrOf(u) + ": 破片手榴弾を投げた", "a");
             UnitsChanged?.Invoke();
@@ -235,7 +238,7 @@ namespace Blindside.Integration
             var col = g.GetComponent<Collider>(); if (col != null) Destroy(col);
             g.transform.localScale = Vector3.one * .2f;
             var mr = g.GetComponent<MeshRenderer>();
-            var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var lit = Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard");
             var mat = new Material(lit);
             var dark = new Color(.13f, .13f, .14f);
             mat.SetColor("_BaseColor", dark); mat.SetColor("_Color", dark);

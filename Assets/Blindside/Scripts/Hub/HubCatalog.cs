@@ -21,7 +21,7 @@ using Blindside.Save;
 namespace Blindside.Hub
 {
     /// <summary>What an NPC opens. Growth / Loadout are the old separate panels (kept so older scenes load; Management replaces both).</summary>
-    public enum HubStation { Growth, Shop, Talk, Training, Operations, Loadout, Management, Medical }
+    public enum HubStation { Growth, Shop, Talk, Training, Operations, Loadout, Management, Medical, Kitchen }
 
     public static class HubCatalog
     {
@@ -226,7 +226,10 @@ namespace Blindside.Hub
                 case "BASTION": return new[] { "強靭な肉体にこそ、強靭な精神が宿るものだ。", "鍛錬を怠るなよ。" };
                 // (later: a line per operation, shown while the pointer is on it)
                 case "CRUSHER": return new[] { "これが現在の作戦だ。よく選ぶように。" };
-                case ClerkKey: return new[] { "いらっしゃい。今日は何にする？" };
+                case ClerkKey: return new[] { "いらっしゃい。今日は何にする？", "仲間への贈り物なら、いいのが揃ってるよ。" };
+                case "KITCHEN": return new[] { "腹が減っては戦はできぬ、ってね。誰と作る？", "今日の献立は任せるよ。" };
+                case "GHOST": return new[] { "……何か用か。", "ここは静かでいい。" };
+                case "SILENCE": return new[] { "電波は今日も静か。……話でもする？", "ここなら誰にも盗聴されないわ。" };
             }
             return new[] { "……" };
         }
@@ -258,6 +261,16 @@ namespace Blindside.Hub
                     "強化壁だろうと関係ない。焼き切るだけだ。",
                     "能力の割り振りと装備の調整は俺が見てやる。",
                     "新しいアタッチメントはショップで手に入る。",
+                };
+                case "GHOST": return new[]
+                {
+                    "助けてくれた借りは、戦場で返す。",
+                    "足音を消すコツ？ ……呼吸と同じだ。",
+                };
+                case "SILENCE": return new[]
+                {
+                    "敵のカメラも地雷も、私の前では眠ってもらうわ。",
+                    "あの時、来てくれて嬉しかった。……本当よ。",
                 };
                 case "BASTION": return new[]
                 {

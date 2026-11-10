@@ -12,4 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d36e1810fb09d245a641fe482987fb3, type: 3}
   m_Name: BlindsideMapCatalog
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Flow.MapCatalog
-  entries: []
+  entries:
+  - id: map_b909c9d2
+    displayName: QUIETPLACE
+    listed: 1
+    mapJson: {fileID: 4900000, guid: 15297153b09b73c4ba242c12a10d93b4, type: 3}
+    sceneName: map_b909c9d2
+    sourceStem: SILENCE
+    rescue: 0
+    rescueHostages: []
+    questKind: 0
+    questTime: 0
+    mainOrder: 2
+    daysAfterPrevious: 15
+    operationCode: QUIETPLACE
+    operationNameJa: "\u30AF\u30EF\u30A4\u30A8\u30C3\u30C8\u30D7\u30EC\u30A4\u30B9"
+    briefWeather: "\u591C\u9593 \xB7 \u5F37\u3044\u96E8 \xB7 \u8996\u754C\u4E0D\u826F"
+    briefLocation: "\u90CA\u5916\u306E\u5DE5\u696D\u5730\u533A \xB7 \u76EE\u6A19: \u6B66\u88C5\u52E2\u529B\u306E\u62E0\u70B9"
+    briefClock: 02:40
+    night: 1
+    rain: 1

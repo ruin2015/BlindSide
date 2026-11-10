@@ -322,11 +322,60 @@ namespace Blindside.UI
                 UILayout.Place(map.rectTransform, hx + 150f, 58f, 400f, 28f);
             }
 
+            BuildRankBadge(theme);
+
             // cards
             cards = new Card[report.lines.Count];
             for (int i = 0; i < cards.Length; i++) cards[i] = BuildCard(theme, report.lines[i], x0 + i * (CardW + CardGap));
 
             BuildBottom(theme, hx);
+        }
+
+        /// <summary>The operation's rank (S … E), top right: the big letter in a slanted plate, what it was made of (被害 / 殲滅 / ラウンド),
+        /// the reward's scale and the 褒賞休暇 it earned.</summary>
+        void BuildRankBadge(UITheme theme)
+        {
+            var rr = report.rank;
+            if (rr == null) return;
+            float w = 360f, h = 76f, x = ScreenW - 112f - w, y = 26f;
+            Color rc = rr.rank == QuestRank.S ? Gold : rr.rank == QuestRank.A ? theme.blue : rr.rank <= QuestRank.C ? Color.white : StatC;
+            var plate = HudKit.NewRect("RankPlate", resultRoot);
+            UILayout.Place(plate, x, y, w, h);
+            HudKit.AddImage(plate, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .92f));
+            plate.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 14f);
+            var band = HudKit.NewRect("DecoRankBand", plate);
+            UILayout.Place(band, 0f, 0f, 8f, h);
+            HudKit.AddImage(band, rc);
+            var en = HudKit.AddText(plate, "RANK", 11f, StatC, true, TextAlignmentOptions.TopLeft, "RankEn", UITheme.TextRole.Display);
+            en.characterSpacing = 12f;
+            UILayout.Place(en.rectTransform, 22f, 8f, 80f, 14f);
+            var letter = HudKit.AddText(plate, RankRules.Letter(rr.rank), 54f, rc, true, TextAlignmentOptions.MidlineLeft, "RankLetter", UITheme.TextRole.Display);
+            UILayout.Place(letter.rectTransform, 22f, 14f, 70f, 60f);
+            string parts = $"被害 {Mathf.RoundToInt((1f - rr.damage) * 100f)}%  ·  殲滅 {rr.killed}/{rr.enemies}  ·  {rr.rounds}ラウンド";
+            var p = HudKit.AddText(plate, parts, 13f, Color.white, true, TextAlignmentOptions.TopLeft, "RankParts", UITheme.TextRole.Body);
+            p.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(p.rectTransform, 96f, 14f, w - 110f, 20f);
+            string bonus = "報酬 ×" + report.rankScale.ToString("0.##");
+            if (report.leaveGained > 0) bonus += $"  ·  褒賞休暇 +{report.leaveGained}日";
+            var b = HudKit.AddText(plate, bonus, 13f, report.leaveGained > 0 ? Gold : StatC, true, TextAlignmentOptions.TopLeft, "RankBonus", UITheme.TextRole.Body);
+            b.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(b.rectTransform, 96f, 40f, w - 110f, 20f);
+
+            // the members left at the HQ who still earned a share (co-op)
+            if (report.bench.Count > 0)
+            {
+                var sb = new System.Text.StringBuilder("待機組  ");
+                for (int i = 0; i < report.bench.Count; i++)
+                {
+                    var op = BuildAssetRegistry.Operator(report.bench[i].key);
+                    if (i > 0) sb.Append("  ·  ");
+                    sb.Append(op != null ? op.DisplayName : report.bench[i].key).Append(" +").Append(report.bench[i].exp).Append(" EXP");
+                }
+                float x0 = Mathf.Round((ScreenW - (report.lines.Count * CardW + Mathf.Max(0, report.lines.Count - 1) * CardGap)) * .5f);
+                var bt = HudKit.AddText(resultRoot, sb.ToString(), 12f, StatC, true, TextAlignmentOptions.TopLeft, "Bench", UITheme.TextRole.Body);
+                bt.textWrappingMode = TextWrappingModes.NoWrap;
+                UILayout.Place(bt.rectTransform, Mathf.Min(x0, 112f), 90f, 820f, 16f);
+            }
         }
 
         Card BuildCard(UITheme theme, AwardLine line, float x)

@@ -32,6 +32,15 @@ namespace Blindside.Progress
         public readonly List<AwardLine> lines = new List<AwardLine>();
         public int mvp = -1;
         public bool saved;
+        /// <summary>How well it went (RankRules) — it scaled the money, the contribution and the experience.</summary>
+        public RankResult rank = new RankResult();
+        public float rankScale = 1f;
+        /// <summary>褒賞休暇 days this result earned (S / A).</summary>
+        public int leaveGained;
+        /// <summary>Co-op levels reached in this match (from the kills' helpers): "FLARE · IGNIS" …</summary>
+        public readonly List<string> coopUps = new List<string>();
+        /// <summary>Squad members left at the HQ who earned a share anyway (CoopPerks: co-op rank 1 / 3 / 5): key and experience.</summary>
+        public readonly List<(string key, int exp)> bench = new List<(string, int)>();
         public bool Promoted => rankTo > rankFrom;
     }
 
@@ -48,6 +57,7 @@ namespace Blindside.Progress
             var stage = StageRewards.For(map);
             var rep = new AwardReport { win = win, map = map, mapLabel = stage.label ?? "", expScale = stage.expScale, saved = save != null };
             if (record == null) return rep;
+            Rate(rep, record, side, win);
 
             var lines = record.Team(side);
             foreach (var r in lines)
@@ -59,7 +69,7 @@ namespace Blindside.Progress
                 line.wLevelFrom = wp.level; line.wExpFrom = wp.exp;
                 if (win)
                 {
-                    line.exp = Mathf.RoundToInt(ProgressRules.MatchExp(r) * Mathf.Max(0f, stage.expScale));
+                    line.exp = Mathf.RoundToInt(ProgressRules.MatchExp(r) * Mathf.Max(0f, stage.expScale) * rep.rankScale);
                     int gained = ProgressRules.AddExp(ref op.level, ref op.exp, line.exp, ProgressRules.LevelNeed, ProgressRules.MaxLevel);
                     line.pointsGained = gained * ProgressRules.PointsPerLevel;
                     op.points += line.pointsGained;
@@ -71,7 +81,7 @@ namespace Blindside.Progress
                 rep.lines.Add(line);
             }
 
-            Finish(rep, data, win, StageRewards.For(map));
+            Finish(rep, data, win, StageRewards.For(map), record);
             return rep;
         }
 
@@ -81,24 +91,62 @@ namespace Blindside.Progress
             var stage = StageRewards.For(map);
             var rep = new AwardReport { win = win, map = map, mapLabel = stage.label ?? "", expScale = stage.expScale, saved = save != null };
             if (record == null) return rep;
+            Rate(rep, record, side, win);
             live.FlushAll();
             foreach (var r in record.Team(side))
             {
                 var s = live.StartOf(r);
                 var op = data.OperatorOf(r.key); var wp = data.WeaponOf(r.weapon);
+                // a good rank adds to the experience already given during the match (a poor one only cuts the money and contribution)
+                if (win && rep.rankScale > 1f)
+                {
+                    int bonus = Mathf.RoundToInt(live.TotalExp(r) * (rep.rankScale - 1f));
+                    int lv = ProgressRules.AddExp(ref op.level, ref op.exp, bonus, ProgressRules.LevelNeed, ProgressRules.MaxLevel);
+                    op.points += lv * ProgressRules.PointsPerLevel;
+                    if (!string.IsNullOrEmpty(r.weapon)) ProgressRules.AddExp(ref wp.level, ref wp.exp, bonus, ProgressRules.MasteryNeed, ProgressRules.MaxMastery);
+                }
                 rep.lines.Add(new AwardLine
                 {
-                    rec = r, exp = live.TotalExp(r),
+                    rec = r, exp = Mathf.RoundToInt(live.TotalExp(r) * (win ? Mathf.Max(1f, rep.rankScale) : 1f)),
                     levelFrom = s.level, expFrom = s.exp, levelTo = op.level, expTo = op.exp, pointsGained = (op.level - s.level) * ProgressRules.PointsPerLevel,
                     wLevelFrom = s.wLevel, wExpFrom = s.wExp, wLevelTo = wp.level, wExpTo = wp.exp,
                 });
             }
-            Finish(rep, data, win, stage);
+            Finish(rep, data, win, stage, record);
             return rep;
         }
 
-        // the MVP, the money and the contribution
-        static void Finish(AwardReport rep, SaveData data, bool win, StageRewards.Entry stage)
+        /// <summary>The members who didn't go out: each with co-op rank 1 / 3 / 5 gets 1/3, 1/2 or all of the sortie's average experience.</summary>
+        static void Bench(AwardReport rep, SaveData data)
+        {
+            if (rep.lines.Count == 0) return;
+            int total = 0;
+            var went = new HashSet<string>();
+            foreach (var l in rep.lines) { total += l.exp; went.Add(l.rec.key); }
+            int avg = total / rep.lines.Count;
+            if (avg <= 0) return;
+            foreach (var op in Blindside.Hub.HubCatalog.Squad)
+            {
+                if (op == null || went.Contains(op.key)) continue;
+                float share = CoopPerks.BenchShare(data, op.key);
+                if (share <= 0f) continue;
+                int exp = Mathf.RoundToInt(avg * share);
+                var p = data.OperatorOf(op.key);
+                int lv = ProgressRules.AddExp(ref p.level, ref p.exp, exp, ProgressRules.LevelNeed, ProgressRules.MaxLevel);
+                p.points += lv * ProgressRules.PointsPerLevel;
+                rep.bench.Add((op.key, exp));
+            }
+        }
+
+        /// <summary>The rank (RankRules) and its scale.</summary>
+        static void Rate(AwardReport rep, MatchRecord record, OperatorTeam side, bool win)
+        {
+            rep.rank = RankRules.Evaluate(record, side, record.Rounds, win);
+            rep.rankScale = win ? RankRules.Multiplier(rep.rank.rank) : 1f;
+        }
+
+        // the MVP, the money and the contribution; the campaign (rank -> leave, the main quests' progress, the kills' bonds)
+        static void Finish(AwardReport rep, SaveData data, bool win, StageRewards.Entry stage, MatchRecord record = null)
         {
             for (int i = 0; i < rep.lines.Count; i++)
             {
@@ -113,11 +161,17 @@ namespace Blindside.Progress
             rep.rankFrom = RankTable.RankOf(data.rankPoints);
             if (win)
             {
-                rep.money = stage.money;
-                rep.contribution = stage.contribution;
-                data.money += stage.money;
-                data.rankPoints += stage.contribution;
+                rep.money = Mathf.RoundToInt(stage.money * rep.rankScale);
+                rep.contribution = Mathf.RoundToInt(stage.contribution * rep.rankScale);
+                data.money += rep.money;
+                data.rankPoints += rep.contribution;
+                rep.leaveGained = RankRules.LeaveDays(rep.rank.rank);
             }
+            if (win) Bench(rep, data);
+            if (record != null && win)
+                foreach (var pair in record.Assists)
+                    if (Campaign.AddCoop(data, pair.killer, pair.helper, Campaign.CoopCombat)) rep.coopUps.Add(pair.killer + " · " + pair.helper);
+            Campaign.QuestEnded(data, rep.map, win, rep.rank.rank);
             rep.pointsTo = data.rankPoints;
             rep.rankTo = RankTable.RankOf(data.rankPoints);
             rep.moneyTotal = data.money;

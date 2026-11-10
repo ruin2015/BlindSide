@@ -36,6 +36,14 @@ namespace Blindside.Hub
         {
             Active = this;
             if (view == null) view = Camera.main;
+            // an operator who hasn't joined the squad yet (GHOST, SILENCE before the rescue) isn't at the HQ
+            foreach (var n in FindObjectsByType<HubNpc>(FindObjectsInactive.Exclude))
+            {
+                if (!n.CanTalk) continue;
+                bool inSquad = false;
+                foreach (var o in HubCatalog.Squad) if (o != null && o.key == n.operatorKey) { inSquad = true; break; }
+                if (!inSquad) n.gameObject.SetActive(false);
+            }
             npcs.AddRange(FindObjectsByType<HubNpc>(FindObjectsInactive.Exclude));
             areas.AddRange(FindObjectsByType<HubArea>(FindObjectsInactive.Exclude));
             if (canvas != null)

@@ -435,7 +435,7 @@ namespace Blindside.Cinematic
             if (src != null) { m = new Material(src); m.mainTextureScale = tiles; }
             else
             {
-                m = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                m = new Material(Blindside.Rendering.ToonShader.Lit);
                 m.SetColor("_BaseColor", fallback);
                 m.SetFloat("_Smoothness", .15f);
             }

@@ -1,8 +1,10 @@
 // Ported from the 'hammer'/'launcher'/'thermite' cases of abilitySpec()/useAbility() in
 // blindside_source/04_gameplay_combat_ai.js (~line 218-220, 233-235).
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Blindside.Map;
+using Blindside.Combat;
 
 namespace Blindside.Abilities
 {
@@ -33,25 +35,65 @@ namespace Blindside.Abilities
             ctx.Map.BreakPanel(p.id, state);
             ctx.Vision.MapVersion++;
             ctx.System.RaiseBreachComplete(u, p, state, wasReinforced);
+            AfterBreak(u, p, wasReinforced, ctx);
         }
+
+        /// <summary>After the panel broke (the co-op perks: CRUSHER's wider breach, IGNIS's blast).</summary>
+        protected virtual void AfterBreak(IAbilityUnit u, WallPanel p, bool wasReinforced, AbilityContext ctx) { }
 
         /// <summary>A panel the launcher has holed (drones through, people not): thermite or a second launcher charge opens it
         /// the rest of the way.</summary>
         protected static bool Holed(WallPanel p, AbilityContext ctx) => ctx.Map.TileAt(p.cells[0].x, p.cells[0].y) == TileType.Hole;
     }
 
-    /// <summary>Port of 'hammer': adjacent normal walls only, 3 swings at 190ms, opens to rubble (fully passable).</summary>
+    /// <summary>Port of 'hammer': adjacent normal walls only, 3 swings at 190ms, opens to rubble (fully passable).
+    /// Co-op: rank 3 (破壊戦車) breaks up to two more plain panels touching the one hit; rank 8 (止められない力) breaks a reinforced
+    /// (not electrified) wall too, for two charges.</summary>
     public class HammerAbility : BreachAbilityBase
     {
         public override string Key => "hammer";
         protected override TileType ResultState => TileType.Rubble;
+        public const int ExtraPanels = 2;
 
-        public override AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => new AbilitySpec(
-            AbilityTargetKind.Panel,
-            hint: "破壊する壁を選択してください", sub: "隣接する通常の壁のみ可能",
-            // a mirror on a plain (unreinforced) wall breaks too
-            validPanel: p => ctx.Map.TileAt(p.cells[0].x, p.cells[0].y) == TileType.Wall
-                && !p.reinforced && AbilitySystem.PanelNear(p, u));
+        public override AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx)
+        {
+            bool strong = CoopRules.Has(u, "CRUSHER", CoopRules.Unique8) && u.Charges >= 2;
+            return new AbilitySpec(
+                AbilityTargetKind.Panel,
+                hint: "破壊する壁を選択してください",
+                sub: strong ? "隣接する壁 · 強化壁は能力2回分 (通電中は不可)" : "隣接する通常の壁のみ可能",
+                // a mirror on a plain (unreinforced) wall breaks too
+                validPanel: p => ctx.Map.TileAt(p.cells[0].x, p.cells[0].y) == TileType.Wall
+                    && (!p.reinforced || (strong && !p.electrified)) && AbilitySystem.PanelNear(p, u));
+        }
+
+        protected override void AfterBreak(IAbilityUnit u, WallPanel p, bool wasReinforced, AbilityContext ctx)
+        {
+            if (wasReinforced) u.Charges = System.Math.Max(0, u.Charges - 1);   // (the second charge of 止められない力)
+            if (!CoopRules.Has(u, "CRUSHER", CoopRules.Unique3)) return;
+            // 破壊戦車: the plain panels touching the one just broken, nearest first
+            var near = new List<WallPanel>();
+            foreach (var q in ctx.Map.Panels)
+            {
+                if (q.id == p.id || q.reinforced || ctx.Map.TileAt(q.cells[0].x, q.cells[0].y) != TileType.Wall) continue;
+                if (Touches(p, q)) near.Add(q);
+            }
+            near.Sort((a, b) => D2(a, p).CompareTo(D2(b, p)));
+            for (int i = 0; i < near.Count && i < ExtraPanels; i++)
+            {
+                ctx.Map.BreakPanel(near[i].id, TileType.Rubble);
+                ctx.System.RaiseBreachComplete(u, near[i], TileType.Rubble, false);
+            }
+            ctx.Vision.MapVersion++;
+        }
+
+        static bool Touches(WallPanel a, WallPanel b)
+        {
+            foreach (var c in a.cells) foreach (var d in b.cells) if (System.Math.Abs(c.x - d.x) <= 1 && System.Math.Abs(c.y - d.y) <= 1) return true;
+            return false;
+        }
+
+        static float D2(WallPanel a, WallPanel b) => (a.centerX - b.centerX) * (a.centerX - b.centerX) + (a.centerY - b.centerY) * (a.centerY - b.centerY);
 
         protected override IEnumerator PlayHitSequence(IAbilityUnit u, WallPanel p, AbilityContext ctx)
         {
@@ -105,6 +147,14 @@ namespace Blindside.Abilities
                 ctx.System.RaiseBreachSwing(u, p);
                 yield return new WaitForSeconds(0.16f);
             }
+        }
+
+        /// <summary>Co-op rank 3 (より大きな爆発): the charge blows out — enemies within BlastRadius of the panel are hurt (the presenter).</summary>
+        public const float BlastRadius = 2.2f;
+
+        protected override void AfterBreak(IAbilityUnit u, WallPanel p, bool wasReinforced, AbilityContext ctx)
+        {
+            if (CoopRules.Has(u, "IGNIS", CoopRules.Unique3)) ctx.System.RaiseBlast(u, p.centerX, p.centerY, BlastRadius);
         }
     }
 }

@@ -31,6 +31,17 @@ namespace Blindside.Save
         public int[] trained = new int[5];
         /// <summary>The gadget the operator carries (Hub.HubCatalog.Gadgets key; "" = none). Phase 2 takes it into the match.</summary>
         public string gadget = "";
+        /// <summary>The second and third item slots (co-op rank 4 / 7 — Progress.CoopPerks.GadgetSlots).</summary>
+        public string gadget2 = "", gadget3 = "";
+        public const int ItemSlots = 3;
+
+        public string Slot(int i) => i == 0 ? gadget : i == 1 ? gadget2 : gadget3;
+
+        public void SetSlot(int i, string key)
+        {
+            key = key ?? "";
+            if (i == 0) gadget = key; else if (i == 1) gadget2 = key; else gadget3 = key;
+        }
         /// <summary>v4 / v5: the parts in each slot, for whatever gun was carried. Read once by Normalize (the parts go back to the stock),
         /// then left empty — the parts are fitted per weapon now (fits).</summary>
         public string[] attachments = new string[0];
@@ -84,6 +95,14 @@ namespace Blindside.Save
         public int count;
     }
 
+    /// <summary>The bond between two people (Progress.Campaign: "CMDR" the commander, or operator keys; a ≤ b ordinally).</summary>
+    [Serializable]
+    public class CoopLink
+    {
+        public string a = "", b = "";
+        public int points;
+    }
+
     /// <summary>A weapon's mastery (shared by everyone who uses it).</summary>
     [Serializable]
     public class WeaponProgress
@@ -95,7 +114,7 @@ namespace Blindside.Save
     [Serializable]
     public class SaveData
     {
-        public const int CurrentVersion = 6;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training); 4: attachments; 5: six slots, 19 parts; 6: parts by count, fitted per operator per gun
+        public const int CurrentVersion = 7;     // 2: rank points, money, operator / weapon progress; 3: the HQ (owned weapons, gadgets, training); 4: attachments; 5: six slots, 19 parts; 6: parts by count, fitted per operator per gun; 7: the campaign (calendar, main quests, leave, co-op)
 
         public int version = CurrentVersion;
         public string createdUtc = "";      // ISO 8601 (round-trip "o")
@@ -124,6 +143,19 @@ namespace Blindside.Save
         /// <summary>Attachments bought at the shop, by count: each copy fits one gun of one operator (fitted copies count too —
         /// AttachmentsFree tells how many are on no gun).</summary>
         public List<ItemCount> attachmentStock = new List<ItemCount>();
+
+        // ---- the campaign (Progress.Campaign) ----
+        /// <summary>Half days gone since the campaign began (even: 昼, odd: 夜).</summary>
+        public int halfDays;
+        /// <summary>Main quests won, in story order (the next one is Campaign.NextMain).</summary>
+        public int mainCleared;
+        /// <summary>The half day the next main quest is due (−1: none).</summary>
+        public int mainDeadline = -1;
+        /// <summary>褒賞休暇 days earned and not used yet.</summary>
+        public int leaveDays;
+        /// <summary>炊事支援 done: the next sortie's squad gets more max HP.</summary>
+        public bool mealBuff;
+        public List<CoopLink> coop = new List<CoopLink>();
 
         public const int MaxAttachmentStock = 9;
 
@@ -266,6 +298,8 @@ namespace Blindside.Save
                 if (o.trained == null || o.trained.Length != 5) { var t = new int[5]; if (o.trained != null) for (int i = 0; i < 5 && i < o.trained.Length; i++) t[i] = o.trained[i]; o.trained = t; }
                 for (int i = 0; i < 5; i++) if (o.trained[i] < 0) o.trained[i] = 0;
                 if (o.gadget == null) o.gadget = "";
+                if (o.gadget2 == null) o.gadget2 = "";
+                if (o.gadget3 == null) o.gadget3 = "";
                 // fits: one per gun, six slots each
                 int n = OperatorProgress.AttachmentSlots;
                 if (o.fits == null) o.fits = new List<WeaponFit>();
@@ -309,12 +343,25 @@ namespace Blindside.Save
                 var line = GadgetOf(k);
                 line.count = Math.Min(9, line.count + g.count);
             }
-            foreach (var o in operators) o.gadget = RenamedGadget(o.gadget);
+            foreach (var o in operators) { o.gadget = RenamedGadget(o.gadget); o.gadget2 = RenamedGadget(o.gadget2); o.gadget3 = RenamedGadget(o.gadget3); }
             if (weapons == null) weapons = new List<WeaponProgress>();
             weapons.RemoveAll(w => w == null);
             foreach (var w in weapons) { if (w.key == null) w.key = ""; if (w.level < 1) w.level = 1; if (w.exp < 0) w.exp = 0; }
             if (rankPoints < 0) rankPoints = 0;
             if (money < 0) money = 0;
+            // the campaign (v7): a save made before it starts on day 1 with the main quests it has already won counted; the next one is
+            // due 15 days from now
+            if (coop == null) coop = new List<CoopLink>();
+            coop.RemoveAll(l => l == null || string.IsNullOrEmpty(l.a) || string.IsNullOrEmpty(l.b));
+            if (halfDays < 0) halfDays = 0;
+            if (leaveDays < 0) leaveDays = 0;
+            if (version < 7)
+            {
+                halfDays = 0; leaveDays = 0; mainDeadline = -1; mainCleared = 0;
+                var mains = Blindside.Progress.Campaign.Mains();
+                while (mainCleared < mains.Count && RecordOf(mains[mainCleared].stem).wins > 0) mainCleared++;
+                if (mainCleared > 0 && mainCleared < mains.Count) mainDeadline = halfDays + mains[mainCleared].daysAfterPrevious * Blindside.Progress.Campaign.Day;
+            }
             version = CurrentVersion;
         }
     }

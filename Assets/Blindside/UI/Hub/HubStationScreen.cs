@@ -22,11 +22,12 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Blindside.Data;
 using Blindside.Hub;
+using Blindside.Progress;
 using Blindside.Save;
 
 namespace Blindside.UI
 {
-    public class HubStationScreen : MonoBehaviour, ITimedEffect
+    public partial class HubStationScreen : MonoBehaviour, ITimedEffect
     {
         public const float OptX = 880f, OptW = 480f, OptTop = 150f, OptGap = 22f, OptMaxH = 108f, OptArea = 470f;
         public const float BubbleCps = 45f;
@@ -194,10 +195,13 @@ namespace Blindside.UI
         }
 
         // ---- open ----------------------------------------------------------------------------------------------------------------
-        /// <summary>Opens on `key`'s station (an operator key, or HubCatalog.ClerkKey).</summary>
-        public void Open(string key)
+        bool forced;   // the main quest's day (OpenDeadline): no way back
+
+        /// <summary>Opens on `key`'s station (an operator key, HubCatalog.ClerkKey or KitchenKey); `talk`: the operator's 会話 options instead.</summary>
+        public void Open(string key, bool talk = false)
         {
             stationKey = key;
+            forced = false;
             var op = BuildAssetRegistry.Operator(key);
             artImage.sprite = op != null ? OperatorArt.Body(key) : null;
             artImage.enabled = artImage.sprite != null;
@@ -206,12 +210,19 @@ namespace Blindside.UI
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
             onBack = null;
+            if (talk || (op != null && key != "SERUM" && key != "IGNIS" && key != "BASTION" && key != "CRUSHER"))
+            {
+                Tag("会話", "TALK");
+                TalkOptions(key);
+            }
+            else
             switch (key)
             {
                 case "SERUM": Tag("医務室", "MEDICAL"); SerumOptions(); break;
                 case "IGNIS": Tag("隊員・装備管理", "LOADOUT"); IgnisOptions(); break;
                 case "BASTION": Tag("訓練所", "TRAINING"); BastionStats(); break;
-                case "CRUSHER": Tag("作戦室", "OPERATIONS"); CrusherOptions(); break;
+                case "CRUSHER": Tag("作戦室", "OPERATIONS"); CampaignOps(); break;
+                case KitchenKey: Tag("炊事場", "KITCHEN"); KitchenOptions(); break;
                 default: Tag("装備購入", "SUPPLY"); ClerkOptions(); break;
             }
             RefreshMoney();
@@ -228,6 +239,7 @@ namespace Blindside.UI
 
         void Back()
         {
+            if (forced) return;
             if (onBack != null) { var b = onBack; onBack = null; b(); return; }
             Close();
         }
@@ -277,7 +289,9 @@ namespace Blindside.UI
         {
             SetOptions(null, new Option { title = "武器", sub = "を買う", icon = "⌖", click = () => screen.OpenStation(HubStation.Shop, 0) },
                              new Option { title = "アタッチメント", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 1) },
-                             new Option { title = "ガジェット", sub = "を買う", icon = "✹", click = () => screen.OpenStation(HubStation.Shop, 2) });
+                             new Option { title = "ガジェット", sub = "を買う", icon = "✹", click = () => screen.OpenStation(HubStation.Shop, 2) },
+                             new Option { title = "贈り物", sub = "を仲間に贈る", icon = "✚", click = GiftTargets });
+            onBack = null;
         }
 
         readonly List<HubCatalog.Operation> ops = new List<HubCatalog.Operation>(8);
@@ -328,7 +342,7 @@ namespace Blindside.UI
                 list[i] = new Option
                 {
                     title = op.DisplayName, face = OperatorArt.Face(op.key),
-                    sub = KitGrowthPanel.StatNames[stat] + " " + p.StatPoints(stat) + " pt  ·  訓練 " + done + " / " + HubCatalog.MaxTrain,
+                    sub = KitGrowthPanel.StatNames[stat] + " " + p.StatPoints(stat) + " pt  ·  訓練 " + done + " / " + HubCatalog.MaxTrain + "  ·  ½日",
                     value = max ? "上限" : cost.ToString("N0") + " 円",
                     enabled = Editable && !max && D.money >= cost,
                     click = () => Train(op, stat),
@@ -349,10 +363,15 @@ namespace Blindside.UI
             D.money -= cost;
             p.trained[stat]++;
             p.AddStat(stat, 1);
+            // half a day at the gym: FLARE trains alongside (co-op), and the partner gets on with BASTION a little
+            Campaign.Spend(D, Campaign.CostTraining);
+            bool up = Campaign.AddCoop(D, Campaign.Commander, op.key, Campaign.CoopTraining);
+            Campaign.AddCoop(D, "BASTION", op.key, Campaign.CoopTraining);
             SaveSystem.Write(false);
             RefreshMoney();
             BastionPartner(stat);
-            SetLine(op.DisplayName + "、" + KitGrowthPanel.StatNames[stat] + "が上がったぞ。その調子だ。");
+            SetLine(op.DisplayName + "、" + KitGrowthPanel.StatNames[stat] + "が上がったぞ。その調子だ。" + (up ? "  【コープランク UP】" : ""));
+            screen.TimeSpent();
         }
 
         // ---- the option buttons ----------------------------------------------------------------------------------------------------

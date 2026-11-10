@@ -80,7 +80,10 @@ namespace Blindside.Cinematic
             // The title is the picture glitch now (BlindsideTitle over Resources/Intro/IntroOperationTitle.png — the same words in
             // BSTactical); it runs its own ~3 s including the exit, so TitleOff doesn't cut it. The TMP title stays in the scene, hidden;
             // without the picture (or to go back) the old gather (IntroTitleAssemble) below runs as before.
-            var titleTex = Resources.Load<Texture2D>(TitleTexture);
+            // the operation's own title (MapData.operationCode), else OPERATION BLINDSIDE
+            var code = Blindside.Map.MapLibrary.Current.operationCode;
+            Texture2D titleTex = string.IsNullOrEmpty(code) ? null : Resources.Load<Texture2D>(TitleTexture + "_" + code);
+            if (titleTex == null) titleTex = Resources.Load<Texture2D>(TitleTexture);
             if (titleTex != null)
             {
                 if (titleGroup) titleGroup.alpha = 0f;

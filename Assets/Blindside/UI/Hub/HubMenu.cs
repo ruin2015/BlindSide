@@ -2,7 +2,7 @@
 //   DecoDim rgba(3,5,8,.62), takes every click
 //   "HQ MENU" 12 display (blue, spaced) + 「メニュー」 34 title, centred, 150 from the top; a 240 × 6 bar under it (blue 30% / grey)
 //   entries (KitTextButton 22, 52 apart, centred from 300): 隊員情報 (the squad page: every operator's stats, ability, loadout — the
-//   stat points are given there), 設定 (KitOptionsPanel), 保存, タイトルへ, 再開
+//   stat points are given there), コープ (HubCoopScreen: FLARE's co-op ranks and their stories), 設定 (KitOptionsPanel), 保存, タイトルへ, 再開
 //   hint 「ESC  再開」 11 / 12 (dim) under the entries
 // ESC closes it (a sub-panel open over it takes ESC first). The entrance is the dim's .2s fade (ITimedEffect.Evaluate); nothing per frame
 // once settled.
@@ -28,7 +28,7 @@ namespace Blindside.UI
         /// <summary>True while a panel opened from the menu (the squad page, the growth panel) is over it: it takes ESC.</summary>
         public System.Func<bool> Covered;
 
-        public static HubMenu Build(Transform parent, System.Action squad, System.Action save, System.Action title)
+        public static HubMenu Build(Transform parent, System.Action squad, System.Action save, System.Action title, System.Action coop = null)
         {
             var theme = UITheme.Current;
             var root = HudKit.NewRect("HubMenu", parent);
@@ -55,13 +55,14 @@ namespace Blindside.UI
             HudKit.AddImage(b2, new Color32(0xC2, 0xC2, 0xC3, 0xff));
 
             m.Entry(0, "Squad", "隊員情報", () => squad?.Invoke());
-            m.Entry(1, "Settings", "設定", () => m.options.Open());
-            m.Entry(2, "Save", "保存", () => save?.Invoke());
-            m.Entry(3, "Title", "タイトルへ", () => title?.Invoke());
-            m.Entry(4, "Resume", "再開", m.Close);
+            m.Entry(1, "Coop", "コープ", () => coop?.Invoke());
+            m.Entry(2, "Settings", "設定", () => m.options.Open());
+            m.Entry(3, "Save", "保存", () => save?.Invoke());
+            m.Entry(4, "Title", "タイトルへ", () => title?.Invoke());
+            m.Entry(5, "Resume", "再開", m.Close);
 
             var hint = HudKit.NewRect("Hint", root);
-            Top(hint, EntriesY + 5f * EntryStep + 10f, 18f);
+            Top(hint, EntriesY + 6f * EntryStep + 10f, 18f);
             var esc = HudKit.AddText(hint, "ESC", 11f, theme.dim, true, TextAlignmentOptions.MidlineRight, "Key", UITheme.TextRole.Display);
             esc.characterSpacing = 10f;
             esc.rectTransform.anchorMin = Vector2.zero; esc.rectTransform.anchorMax = new Vector2(.5f, 1f);

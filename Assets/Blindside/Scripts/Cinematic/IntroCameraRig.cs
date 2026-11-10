@@ -57,8 +57,22 @@ namespace Blindside.Cinematic
         bool introWorld;
 
         // The house the orbit and the helicopter approach are centred on: MapData.anchors.introHouseCenter (12.5, 11 on the default map).
-        static float HX => Blindside.Map.MapLibrary.Current.anchors.introHouseCenter.x;
-        static float HZ => Blindside.Map.MapLibrary.Current.anchors.introHouseCenter.y;
+        // (a map without the house — an editor map: the middle of its buildings, set when the intro starts — OwnWorld)
+        static float HX => ownWorld ? houseCentre.x : Blindside.Map.MapLibrary.Current.anchors.introHouseCenter.x;
+        static float HZ => ownWorld ? houseCentre.y : Blindside.Map.MapLibrary.Current.anchors.introHouseCenter.y;
+        // An editor map (not the house — MapData.useHouseIntro off): the flight still comes to the house model (its centre from the
+        // model itself — the map's anchors don't have one), but the hologram is this map's — drawn (MapFloorSync / MapWallSync) before
+        // the hologram copies it, framed on its middle (ownCentre) and scaled to it (Scale: its larger side against the house map's 26);
+        // town pieces standing on the map's ground are left out of the hologram.
+        static bool ownWorld;
+        static Vector2 houseCentre;
+        /// <summary>The intro's world (the house and its town) is up: MissionAtmosphere lets the rain fall on everything meanwhile.</summary>
+        public static bool IntroWorldShown { get; private set; }
+        Vector2 houseGridAwake; bool houseKnownAwake; float roofYAwake = 6.6f;
+        static Vector2 ownCentre;
+        static float ownScale = 1f;
+        static float Scale => ownWorld ? ownScale : 1f;
+        readonly System.Collections.Generic.List<Renderer> townOff = new System.Collections.Generic.List<Renderer>();
         bool introCutDone;
         // ---- the shot list (seconds on the Intro_Timeline clock, 22 s long) ----
         //   0 – HoloStart    the whole town from far off, centred on the target house, drifting in slowly; from HeliStart
@@ -101,7 +115,7 @@ namespace Blindside.Cinematic
         // when each captive's marker is driven in (s after the hologram begins); its card follows on impact
         const float RescueSlam0 = 2.3f, RescueSlamGap = 1.45f;
         // the camera round the hologram: RescueRadius out, RescueHeight up, turning RescueTurn degrees over the shot
-        const float RescueRadius = 34f, RescueHeight = 25f, RescueTurn = 55f, RescueBlend = 1.6f, RescueFov = 40f;
+        const float RescueRadius = 34f, RescueHeight = 25f, RescueTurn = 55f, RescueBlend = 1.6f, RescueFov = 40f, RescueLookAhead = 14f;
         static readonly (float at, float seconds, string text)[] RescueLines =
         {
             (.8f, 5.6f, "今回は救出作戦だ。\n気を引き締めろ。"),
@@ -376,14 +390,22 @@ namespace Blindside.Cinematic
                 if (any) { houseGrid = new Vector2(hb.center.x, -hb.center.z); roofY = hb.max.y; }
                 introHouse.SetActive(false);
             }
+            ownWorld = false;
+            houseGridAwake = houseGrid; houseKnownAwake = houseKnown; roofYAwake = roofY;
             BuildApproach(houseKnown ? houseGrid : new Vector2(HX, HZ), roofY);
             ready = true;
 
             if (director != null) { director.played += OnIntroPlayed; director.stopped += OnIntroStopped; }
         }
 
+        // the scene is going away (leaving Play, loading another scene): nothing is switched back on any more
+        bool tearingDown;
+        void OnDisable() { if (!gameObject.activeInHierarchy || !gameObject.scene.isLoaded) tearingDown = true; }
+        void OnApplicationQuit() => tearingDown = true;
+
         void OnDestroy()
         {
+            tearingDown = true;
             if (director != null) { director.played -= OnIntroPlayed; director.stopped -= OnIntroStopped; }
             holo.End();
         }
@@ -392,6 +414,8 @@ namespace Blindside.Cinematic
         {
             rescue = RescueStyle;
             lines = rescue ? RescueLines : Lines;
+            Blindside.Rendering.MissionAtmosphere.Apply(Blindside.Map.MapLibrary.Current);
+            SetUpOwnWorld();
             lowCut = false; rollNow = 0f;
             nextLine = 0; holoBegun = holoEnded = briefShown = false;
             EnsureIntroUi();
@@ -400,11 +424,46 @@ namespace Blindside.Cinematic
             if (!introCutDone) ShowIntroWorld(true);
         }
 
+        /// <summary>An editor map: the house's centre for the flight, the map's middle and scale for the hologram, and the map drawn
+        /// (its floor and walls) so the hologram copies this map and not the one the scene was saved with.</summary>
+        void SetUpOwnWorld()
+        {
+            var d = Blindside.Map.MapLibrary.Current;
+            ownWorld = d != null && !d.useHouseIntro && introHouse != null;
+            if (!ownWorld) return;
+            houseCentre = houseKnownAwake ? houseGridAwake : d.MapCenter;
+            var b = d.IndoorBounds();
+            ownCentre = b.width > 0 ? new Vector2(b.x + (b.width - 1) / 2f, b.y + (b.height - 1) / 2f) : d.MapCenter;
+            ownScale = Mathf.Max(1f, Mathf.Max(d.width, d.height) / 26f);
+            MapFloorSync.Apply(d);
+            MapWallSync.Bind(Blindside.Map.MapGrid.CreateDefault());
+        }
+
+        /// <summary>The town pieces (roads, fences, trees, buildings) standing on the map's ground: switched off just while the hologram
+        /// copies the town (it would draw them over the map), on again right after.</summary>
+        void TownOverMap(Blindside.Map.MapData d, bool off)
+        {
+            if (!off) { foreach (var r in townOff) if (r != null) r.enabled = true; townOff.Clear(); return; }
+            var env = introHouse.transform.Find("Environment");
+            if (env == null) return;
+            float x0 = -2.5f, x1 = d.width + 1.5f, z0 = -(d.height + 1.5f), z1 = 2.5f;
+            foreach (var r in env.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!r.enabled) continue;
+                var bb = r.bounds;
+                if (bb.max.x < x0 || bb.min.x > x1 || bb.max.z < z0 || bb.min.z > z1) continue;
+                if (bb.size.x > 200f || bb.size.z > 200f) continue;   // (a ground-wide piece, not something standing there)
+                r.enabled = false;
+                townOff.Add(r);
+            }
+        }
+
         // The intro shows the house (and its lawn) in the map's place; the map comes back when it ends.
         void ShowIntroWorld(bool on)
         {
-            if (introHouse == null) return;
+            if (introHouse == null || tearingDown) return;
             introWorld = on;
+            IntroWorldShown = on;
             introHouse.SetActive(on);
             if (on) { HideMapPieces(); return; }
             for (int i = 0; i < hiddenMap.Count; i++) if (hiddenMap[i] != null) hiddenMap[i].enabled = true;
@@ -522,9 +581,11 @@ namespace Blindside.Cinematic
                 var env = introHouse != null ? introHouse.transform.Find("Environment") : null;
                 var hostageCell = Blindside.Map.MapLibrary.Current.hostage;
                 var targets = rescue ? RescueTargets() : null;
-                if (holo.Begin(mapRoot, env != null ? env.Find("Buildings") : null, env != null ? env.Find("Streets") : null,
-                               GridSpace.GridToWorld(hostageCell.x, hostageCell.y), Camera.main, targets) && holoScreen != null)
-                    holoScreen.Play(holo.Texture);
+                if (ownWorld) TownOverMap(Blindside.Map.MapLibrary.Current, true);
+                bool begun = holo.Begin(mapRoot, env != null ? env.Find("Buildings") : null, env != null ? env.Find("Streets") : null,
+                               GridSpace.GridToWorld(hostageCell.x, hostageCell.y), Camera.main, targets);
+                if (ownWorld) TownOverMap(null, false);
+                if (begun && holoScreen != null) holoScreen.Play(holo.Texture);
                 if (rescue && miaCards != null && holo.Built)
                 {
                     miaCards.Clear();
@@ -564,7 +625,7 @@ namespace Blindside.Cinematic
             if (!briefShown && t >= BriefAt && briefing != null)
             {
                 briefShown = true;
-                briefing.Play(IntroBriefing.DefaultValues(System.DateTime.Now), BriefUntil - BriefAt);
+                briefing.Play(IntroBriefing.ValuesFor(Blindside.Map.MapLibrary.Current, System.DateTime.Now), BriefUntil - BriefAt);
             }
             while (radio != null && nextLine < lines.Length && t >= lines[nextLine].at)
             {
@@ -605,14 +666,17 @@ namespace Blindside.Cinematic
         {
             float t0 = HoloStart + HoloMoveIn;
             var wide = WideCamPos(t0);
-            var centre = GridSpace.GridToWorld(HX, HZ, 0f);
+            var centre = ownWorld ? GridSpace.GridToWorld(ownCentre.x, ownCentre.y, 0f) : GridSpace.GridToWorld(HX, HZ, 0f);
             var flat = new Vector3(wide.x - centre.x, 0f, wide.z - centre.z).normalized;
             float turn = RescueTurn * Mathf.Clamp01((t - t0) / (CutAt - t0));
-            var orbit = centre + Quaternion.Euler(0f, turn, 0f) * flat * RescueRadius + Vector3.up * RescueHeight;
+            var toCam = Quaternion.Euler(0f, turn, 0f) * flat;
+            var orbit = centre + toCam * (RescueRadius * Scale) + Vector3.up * (RescueHeight * Scale);
             float b = Mathf.Clamp01((t - t0) / RescueBlend);
             float e = b * b * b * (b * (b * 6f - 15f) + 10f);   // smootherstep
             pos = Vector3.Lerp(wide, orbit, e);
-            look = Vector3.Lerp(GridSpace.GridToWorld(HX, HZ, 1.2f), centre, e);
+            // (a bigger map: the look a little toward the camera, so the whole plan sits in the middle of the frame)
+            var aim = centre + toCam * (RescueLookAhead * (Scale - 1f));
+            look = Vector3.Lerp(GridSpace.GridToWorld(HX, HZ, 1.2f), aim, e);
             fov = Mathf.Lerp(WideFov, RescueFov, e);
         }
 

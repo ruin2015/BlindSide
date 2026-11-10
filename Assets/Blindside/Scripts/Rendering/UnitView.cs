@@ -576,6 +576,8 @@ namespace Blindside.Rendering
         }
 
         bool hidden;
+        /// <summary>Switched off by SetVisible (its renderers don't draw).</summary>
+        public bool Hidden => hidden;
         Renderer[] allRenderers;
 
         /// <summary>Shows/hides the HP bar only; independent of SetVisible (which hides the whole figure).</summary>

@@ -176,7 +176,7 @@ namespace Blindside.Integration
             if (!u.Alive) { Deselect(); return; }
             // out of move: straight to the end-of-action facing prompt — unless it can still fire (an attack after
             // moving is allowed; FIRE then ends the unit)
-            bool canFire = !u.Acted && !u.Shield;
+            bool canFire = !u.Acted && (!u.Shield || Blindside.Combat.CoopRules.CanFireShielded(u));
             if (turns.Phase != MatchPhase.Prep && u.MoveLeft <= 0 && !u.Ended && !canFire) { EnterFacing(u, true); return; }
             if (u.Ended) { Deselect(); return; }
             SelectUnit(u);

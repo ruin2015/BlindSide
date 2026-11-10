@@ -18,8 +18,14 @@ using Blindside.Cinematic;
 
 namespace Blindside.Integration
 {
-    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers, ICaptive
+    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers, ICaptive,
+                           Blindside.Combat.ICoopRanked, Blindside.Combat.IExposable
     {
+        /// <summary>FLARE's co-op rank with this operator (Progress.ProgressBonus: the player's side in a real match; else 0).</summary>
+        public int CoopRank { get; set; }
+        public string CoopKey => Op != null ? Op.key : Id;
+        /// <summary>弱点露出 (GHOST's rank-8 heartbeat): shots at it crit twice as often and hit twice as hard, until the defense's next phase.</summary>
+        public bool Exposed { get; set; }
         /// <summary>Held by the enemy (the rescue operation): not on the map (Placed false), no turn, until an attacker frees it.</summary>
         public bool Captive { get; set; }
         // growth (Progress.ProgressBonus: the player's operators in a real match); neutral for everyone else
@@ -83,6 +89,10 @@ namespace Blindside.Integration
         /// (Progress.ProgressBonus); ItemSpent once it has been used (one per match).</summary>
         public string Item { get; set; } = "";
         public bool ItemSpent { get; set; }
+        /// <summary>Items carried in the other slots (co-op rank 4 / 7): the next one comes out once Item is spent.</summary>
+        public readonly List<string> ItemQueue = new List<string>(2);
+        /// <summary>The second gun (co-op rank 6): 持ち替え swaps it with Weapon.</summary>
+        public WeaponData Weapon2 { get; set; }
         public bool DroneSpent { get; set; }
         public Blindside.Drones.Drone Drone { get; set; }
         public bool LockFacing { get; set; }
@@ -391,6 +401,7 @@ namespace Blindside.Integration
             hostageViews.Clear(); hostageFigures.Clear(); activeHostages.Clear();
 
             var mapData = MapLibrary.Current;
+            Blindside.Rendering.MissionAtmosphere.Apply(tutorialMode ? null : mapData);   // (the operation's night / rain)
             // the rescue operation (MapData.rescueIntro): the player's attack only — GHOST and SILENCE held instead of the civilian
             bool rescueMatch = mapData.rescueIntro && playerTeam == OperatorTeam.Attack && !tutorialMode;
             RescueMatch = rescueMatch;
@@ -733,7 +744,14 @@ namespace Blindside.Integration
             {
                 Record = new Blindside.Progress.MatchRecord(units);
                 Record.Bind(combat, abilities);
+                // spotting counts as helping the kill (a drone's sighting, a heartbeat scan)
+                var rec = Record;
+                droneOps.Spotted = rec.NoteSpot;
+                abilities.OnHeartbeat += (u, found) => { foreach (var e in found) rec.NoteSpot(u, e); };
             }
+            // FLARE's co-op perks in a real match (Progress.CoopPerks; the units' ranks came with ProgressBonus)
+            if (playerTeam.HasValue && !tutorialMode) BindCoop(playerTeam.Value, units, combat, vision, abilities, abilityCtx, turns, marks);
+
             // experience as it is earned (the player's side in a real match): given after every staged exchange, shown on the stage
             Live = null;
             if (Record != null && playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest)
@@ -911,6 +929,81 @@ namespace Blindside.Integration
             SyncView(view, hostage.X, hostage.Y, Mathf.PI / 2f, hostage.Alive, 1, 1);   // makeFigure/facing:0 → syncUnits eases to PI/2 (no escort)
             return view;
         }
+
+        // ---- FLARE's co-op perks ---------------------------------------------------------------------------------------------------
+        /// <summary>追撃 (rank 2): allies who see the target fire with the shooter · IGNIS's rank-3 blast hurts the enemies by the wall ·
+        /// GHOST's rank-8 heartbeat exposes what it senses · at the first attack phase, GHOST (rank 8) senses every enemy and SILENCE (rank 8)
+        /// finds every enemy gadget · 弱点露出 wears off when the defense's phase begins.</summary>
+        void BindCoop(OperatorTeam side, List<SimUnit> units, CombatSystem combat, VisionSystem vision, AbilitySystem abilities,
+                      AbilityContext ctx, TurnManager turns, Blindside.Vision.MarkBoard marks)
+        {
+            combat.PursuitAllies = (a, t, into) =>
+            {
+                if (a.Team != side || t.IsHostage || t.Team == side || !(t is IVisionAgent tv)) return;
+                foreach (var u in units)
+                {
+                    if (into.Count >= Blindside.Combat.CoopRules.MaxPursuers) break;
+                    if ((object)u == a || !u.Alive || u.Team != side || !u.Placed || u.Captive || u.CoopRank < Blindside.Combat.CoopRules.Pursuit) continue;
+                    if (!vision.Sees(u, tv) || !CombatSystem.CanShoot(u, t, combat.TraceLine(u, t))) continue;
+                    into.Add(u);
+                }
+            };
+            abilities.OnBlast += (u, x, y, r) =>
+            {
+                CombatFx.Boom(GridSpace.GridToWorld(x, y, .6f), new Color32(0xff, 0x7a, 0x2a, 0xff), 18);
+                foreach (var e in units)
+                {
+                    if (!e.Alive || e.Team == u.Team || e.Captive) continue;
+                    if ((e.X - x) * (e.X - x) + (e.Y - y) * (e.Y - y) > r * r) continue;
+                    e.HP = Mathf.Max(0, e.HP - CoopBlastDamage);
+                    WorldPopup.Show(e.X, e.Y, "-" + CoopBlastDamage + " BLAST", new Color32(0xff, 0x7a, 0x2a, 0xff));
+                    HudLog.Add($"{(u is SimUnit su ? su.Kr : u.Id)}: 爆風 → {e.Kr} {CoopBlastDamage} ダメージ", HudLog.TeamType(u.Team));
+                    if (e.HP <= 0) { e.View?.PlayDeath(); combat.ReportKill(e, u); HudLog.Add($"{e.Kr}が倒された", e.Team == HudLog.Side ? HudLogType.Foe : HudLogType.Ally); }
+                }
+            };
+            abilities.OnHeartbeat += (u, found) =>
+            {
+                if (!Blindside.Combat.CoopRules.Has(u, "GHOST", Blindside.Combat.CoopRules.Unique8)) return;
+                foreach (var e in found) if (e is SimUnit su) su.Exposed = true;
+                if (found.Count > 0) HudLog.Add("GHOST: 心拍を捉えた敵は弱点露出 (クリティカル率・ダメージ 2倍)", HudLogType.Ally);
+            };
+            bool opened = false;
+            turns.OnPhaseBegin += ph =>
+            {
+                if (ph == MatchPhase.Defense) foreach (var u in units) u.Exposed = false;
+                if (ph != MatchPhase.Attack || opened) return;
+                opened = true;
+                foreach (var u in units)
+                {
+                    if (!u.Alive || u.Team != side || u.Captive || u.CoopRank < Blindside.Combat.CoopRules.Unique8) continue;
+                    if (u.CoopKey == "GHOST")
+                    {
+                        int n = 0;
+                        foreach (var e in units)
+                        {
+                            if (!e.Alive || e.Team == side) continue;
+                            marks?.Add(side, e.X, e.Y, Blindside.Vision.MarkKind.Spotted);
+                            e.Exposed = true;
+                            Record?.NoteSpot(u, e);
+                            n++;
+                        }
+                        HudLog.Add($"GHOST: 敵 {n}人の心拍をすべて探知 — 全員が弱点露出", HudLogType.Ally);
+                    }
+                    else if (u.CoopKey == "SILENCE")
+                    {
+                        int n = 0;
+                        foreach (var c in ctx.Cameras) if (c.alive && !c.discovered) { c.discovered = true; n++; }
+                        foreach (var f in ctx.Electrics) if (!f.discovered) { f.discovered = true; n++; }
+                        if (mapGadgets != null) n += mapGadgets.RevealAll();
+                        if (vision != null) vision.MapVersion++;
+                        HudLog.Add($"SILENCE: 敵のガジェット {n}個をすべて探知", HudLogType.Ally);
+                    }
+                }
+            };
+        }
+
+        /// <summary>IGNIS's rank-3 より大きな爆発: the damage to each enemy in the blast.</summary>
+        public const int CoopBlastDamage = 35;
 
         static SimUnit MakeUnit(string id, OperatorTeam team, int x, int y, WeaponData weapon, float facing = 0f) => new SimUnit
         {

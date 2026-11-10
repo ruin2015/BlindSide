@@ -1,0 +1,1034 @@
+{
+    "entries": [
+        {
+            "path": "Assets/3DModels/BANDIT.fbx/Materials/Mat_VOLT_tripo_mat_289e832f.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Ghost/Materials/tripo_mat_d1673af0.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_HIBANA_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_tripo_part_0.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_tripo_part_1.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_tripo_part_2.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_tripo_part_3.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_tripo_part_5.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/HIBANA/Materials/Mat_FLARE_tripo_part_6.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Hostage/Materials/Mat_HOSTAGE.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MaskMan/Materials/Mat_TERRORIST.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/miazuma/Materials/Mat_MIASMA_miazuma_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/miazuma/Materials/Mat_MIASMA_tripo_part_0.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/miazuma/Materials/Mat_MIASMA_tripo_part_1.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/miazuma/Materials/Mat_MIASMA_tripo_part_3.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/miazuma/Materials/Mat_MIASMA_tripo_part_4.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MIRA.fbx/Materials/Mat_OBSIDIAN_MIRA_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MIRA.fbx/Materials/Mat_OBSIDIAN_tripo_part_0_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MIRA.fbx/Materials/Mat_OBSIDIAN_tripo_part_1.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MIRA.fbx/Materials/Mat_OBSIDIAN_tripo_part_2_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MIRA.fbx/Materials/Mat_OBSIDIAN_tripo_part_4_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/MIRA.fbx/Materials/Mat_OBSIDIAN_tripo_part_5.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/monta.fbx/Materials/Mat_BASTION_monta_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/monta.fbx/Materials/Mat_BASTION_tripo_part_0_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/monta.fbx/Materials/Mat_BASTION_tripo_part_1_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/monta.fbx/Materials/Mat_BASTION_tripo_part_2.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/monta.fbx/Materials/Mat_BASTION_tripo_part_4_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/monta.fbx/Materials/Mat_BASTION_tripo_part_5.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_0.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_1_003.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_2.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_3.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_4.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_5_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/RACE/Materials/Mat_WRAITH_tripo_part_6_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum/Materials/Mat_SERUM_serum_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum/Materials/Mat_SERUM_tripo_part_0_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum/Materials/Mat_SERUM_tripo_part_1_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum/Materials/Mat_SERUM_tripo_part_2_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum/Materials/Mat_SERUM_tripo_part_4_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum.fbx/Materials/Mat_SERUM_serum_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum.fbx/Materials/Mat_SERUM_tripo_part_0_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum.fbx/Materials/Mat_SERUM_tripo_part_1_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum.fbx/Materials/Mat_SERUM_tripo_part_2_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/serum.fbx/Materials/Mat_SERUM_tripo_part_4_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Silence/Materials/tripo_mat_f77e032f.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/SledgeMaterials/Mat_Sledge_Sledge_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/SledgeMaterials/Mat_Sledge_tripo_part_0_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/SledgeMaterials/Mat_Sledge_tripo_part_1_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/SledgeMaterials/Mat_Sledge_tripo_part_2_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/SledgeMaterials/Mat_Sledge_tripo_part_4_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_thermite_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_0_003.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_1_002.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_2_003.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_3_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_4_003.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_5_001.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_6.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/thermite.fbx/Materials/Mat_IGNIS_tripo_part_8.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Valkyre/Materials/Mat_ARGUS_tripo_part_0.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Valkyre/Materials/Mat_ARGUS_tripo_part_1.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Valkyre/Materials/Mat_ARGUS_tripo_part_3.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Valkyre/Materials/Mat_ARGUS_tripo_part_4.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/3DModels/Valkyre/Materials/Mat_ARGUS_Valkyre_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_ArmL.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_ArmR.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_Gun.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_Head.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_LegL.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_LegR.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_Spine.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/AnimationSample/Mat_Spine1.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Board.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Ceiling.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Ember.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Fabric.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Floor.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Glass.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Hazard.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Ink.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Leather.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Line.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Mark_1F96E8.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Mark_8C99A8.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Mark_66D98C.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Mark_E6364C.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Mark_FFC71F.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_MedCross.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_MedFloor.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_MedGreen.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_MedWhite.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Metal.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Rubber.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Screen.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Skin.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Steel.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Target.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Uniform.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Wall.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_Wood.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Hub/Hub_WorkMat.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Heli/Mat_Heli_Dark.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Heli/Mat_Heli_Hull.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Heli/Mat_Heli_Rope.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Heli/Mat_Heli_Stripe.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_EMISSION"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Heli/Mat_Helicopter.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_Chimney.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_GarageDoor.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_RoofShingle.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_RoofSlate.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_Siding.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_Step.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_Trim.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_Window.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_EMISSION"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/House/Mat_House_Wood.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Asphalt.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_NORMALMAP",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Bark.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Concrete.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Conifer.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Fence.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Gravel.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Leaves.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_LeavesDark.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_LeavesLight.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_RoadLine.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Rock.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Env_Sidewalk.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_IntroHouse.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_IntroLawn.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_NORMALMAP",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_IntroStoneHouse.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Street_asphalt.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_NORMALMAP",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Street_concrete.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Street_line.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Intro/Mat_Street_sidewalk.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ENVIRONMENTREFLECTIONS_OFF",
+                "_SPECULARHIGHLIGHTS_OFF"
+            ]
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Crate.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_CrateTop.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Extract.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Floor_Inside.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Floor_Outside.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Hard.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Mirror_Edge.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Reinforce_Frame.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Reinforce_Rail.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Wall_Hole.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Wall_HoleInner.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Wall_Steel.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Blindside/Art/Materials/Mat_Wall_Wood.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/AK47/Mat_AK47.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/AR15/Mat_AR15.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/DB/Mat_DB.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/M16/Mat_M16.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/M870/Mat_M870.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/MP5/Mat_MP5.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/MP7/Mat_MP7.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/MX50/Mat_MX50.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/P90/Mat_P90.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/SAIGA/Mat_SAIGA.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/SCAR/Mat_SCAR.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/GunModels/Vector/Mat_Vector.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_01.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_02.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_03.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_04.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_05.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_06.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_07.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_08.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_09.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_10.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_11.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_12.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_13.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_14.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_15.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_16.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_17.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_NORMALMAP",
+                "_PARALLAXMAP",
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_dec_01.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_ALPHATEST_ON"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_lod_01.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_SPECGLOSSMAP",
+                "_METALLICGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_lod_02.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_SPECGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/materials/rus_build_lod_03.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": [
+                "_SPECGLOSSMAP",
+                "_METALLICGLOSSMAP"
+            ]
+        },
+        {
+            "path": "Assets/russian_buildings/scenes/betontexture.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        },
+        {
+            "path": "Assets/Materials/SphereMaterial.mat",
+            "shader": "Universal Render Pipeline/Lit",
+            "keywords": []
+        }
+    ]
+}

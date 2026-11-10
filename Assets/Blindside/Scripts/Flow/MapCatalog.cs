@@ -34,6 +34,22 @@ namespace Blindside.Flow
             public bool rescue;
             [Tooltip("The rescue operation: where the second captive (SILENCE) is held. Empty: the indoor cell farthest from the hostage cell.")]
             public Vector2Int[] rescueHostages;
+            [Tooltip("Quest kind: 0 メイン (the story, in mainOrder) / 1 サブ (repeatable).")]
+            public int questKind = 1;
+            [Tooltip("A sub quest's time: 0 any / 1 by day / 2 by night (夜戦).")]
+            public int questTime;
+            [Tooltip("A main quest's place in the story (the built-in house is 1).")]
+            public int mainOrder = 2;
+            [Tooltip("A main quest: due this many days after the one before it is won.")]
+            public int daysAfterPrevious = 15;
+            [Tooltip("The operation's code word: the intro title Resources/Intro/IntroOperationTitle_{code}.png (empty: OPERATION BLINDSIDE).")]
+            public string operationCode;
+            [Tooltip("The operation's name in the briefing: 作戦「…」.")]
+            public string operationNameJa;
+            [Tooltip("The briefing's WEATHER / LOCATION lines and its clock (HH:mm; empty: now).")]
+            public string briefWeather, briefLocation, briefClock;
+            [Tooltip("Night (moonlight, dark sky, the helicopter's searchlight) and rain (falling rain, wet surfaces) — MissionAtmosphere.")]
+            public bool night, rain;
         }
 
         /// <summary>The entry's operation settings onto map data built from its JSON (the rescue operation).</summary>
@@ -41,6 +57,9 @@ namespace Blindside.Flow
         {
             if (e == null || d == null) return d;
             if (e.rescue) { d.rescueIntro = true; d.rescueHostages = e.rescueHostages; }
+            d.operationCode = e.operationCode; d.operationNameJa = e.operationNameJa;
+            d.briefWeather = e.briefWeather; d.briefLocation = e.briefLocation; d.briefClock = e.briefClock;
+            d.night = e.night; d.rain = e.rain;
             return d;
         }
 

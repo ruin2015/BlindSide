@@ -37,7 +37,7 @@ namespace Blindside.Hub
 
         void BuildScene()
         {
-            var lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var lit = Blindside.Rendering.ToonShader.Lit ?? Shader.Find("Standard");
             // the table: a dark top, the blueprint sheet on it
             var top = GameObject.CreatePrimitive(PrimitiveType.Cube);
             top.name = "DecoTable"; Kill(top.GetComponent<Collider>());

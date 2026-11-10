@@ -251,6 +251,7 @@ namespace Blindside.Abilities
         public event System.Action<IAbilityUnit, WallPanel> OnMirrorPlaced;
         public event System.Action<IAbilityUnit, SurveillanceCamera> OnCameraPlaced;
         public event System.Action<IAbilityUnit, List<IAbilityUnit>> OnHeartbeat;                          // GHOST, the enemies sensed
+        public event System.Action<IAbilityUnit, float, float, float> OnBlast;                               // IGNIS's co-op thermite blast: unit, x, y, radius
         public event System.Action<IAbilityUnit, List<SurveillanceCamera>, List<ElectricField>> OnHoloScan;  // SILENCE, what it knocked out
 
         internal void RaiseBreachSwing(IAbilityUnit u, WallPanel p) => OnBreachSwing?.Invoke(u, p);
@@ -265,6 +266,7 @@ namespace Blindside.Abilities
         internal void RaiseMirrorPlaced(IAbilityUnit u, WallPanel p) => OnMirrorPlaced?.Invoke(u, p);
         internal void RaiseCameraPlaced(IAbilityUnit u, SurveillanceCamera c) => OnCameraPlaced?.Invoke(u, c);
         internal void RaiseHeartbeat(IAbilityUnit u, List<IAbilityUnit> found) => OnHeartbeat?.Invoke(u, found);
+        internal void RaiseBlast(IAbilityUnit u, float x, float y, float r) => OnBlast?.Invoke(u, x, y, r);
         internal void RaiseHoloScan(IAbilityUnit u, List<SurveillanceCamera> cams, List<ElectricField> fields) => OnHoloScan?.Invoke(u, cams, fields);
     }
 }
