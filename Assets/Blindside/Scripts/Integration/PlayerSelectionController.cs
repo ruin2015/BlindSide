@@ -295,7 +295,7 @@ namespace Blindside.Integration
         {
             if (!PlayerCanAct()) return;
             var my = new List<SimUnit>();
-            foreach (var u in units) if (u.Alive && u.Team == side && !u.Ended) my.Add(u);
+            foreach (var u in units) if (u.Alive && u.Team == side && !u.Ended && !u.Captive) my.Add(u);
             if (my.Count == 0) return;
             int i = my.IndexOf(uiUnit);
             SelectUnit(my[(i + 1) % my.Count]);
@@ -432,6 +432,7 @@ namespace Blindside.Integration
         public void RosterClick(SimUnit u)
         {
             if (u == null || !u.Alive || TutorialGate.Holding) return;
+            if (u.Captive) { var cc = BattlefieldCamera.Instance; if (cc != null) cc.PanTo(u.X, u.Y, 400f); ShowUnitPanel(u, false); return; }   // (held: where)
             if (turns != null && turns.Phase == MatchPhase.Deploy && !PlayerCanAct()) return;   // rope drop in progress: input is locked
             var cam = BattlefieldCamera.Instance;
             if (PlayerCanAct() && !u.Ended)
@@ -516,6 +517,7 @@ namespace Blindside.Integration
                 Vector2.Distance(new Vector2(u.X, u.Y), new Vector2(hostage.X, hostage.Y)) <= 1.6f)
                 L.Add(new Command { id = "escort", kr = "人質確保", en = "SECURE", ic = "♥", ok = SegFree(u.X, u.Y, hostage.X, hostage.Y) });
             AddItemCommand(u, L, prep);   // the HQ item (破片手榴弾) — .Grenade.cs
+            AddRescueCommand(u, L);       // the rescue operation: 救出 next to a captive — .Rescue.cs
             L.Add(new Command { id = "wait", kr = "待機", en = "END", ic = "■", ok = true });
             // the tutorial offers only the command it is teaching
             if (TutorialGate.Active)
@@ -569,7 +571,8 @@ namespace Blindside.Integration
             if (c == "wait") { EnterFacing(u, true); return; }
             if (c == "escort") { DoEscort(u); return; }                          // 人質確保 (.Escort.cs)
             if (c == "reinforce") { StartReinforce(u); return; }
-            if (c == "item") { HideMenu(); StartThrow(u); return; }               // 破片手榴弾 (.Grenade.cs)                  // 壁強化 (.Reinforce.cs)
+            if (c == "item") { HideMenu(); StartThrow(u); return; }               // 破片手榴弾 (.Grenade.cs)
+            if (c == "rescue") { DoRescue(u); return; }                          // 救出 (.Rescue.cs)                  // 壁強化 (.Reinforce.cs)
             if (c == "skill" && StartAbility(u)) return;                         // all ten abilities (.Ability.cs / .SupportAbility.cs)
             if (c == "gadget" && u.Team == OperatorTeam.Defense) { HideMenu(); OpenCamPanel(u); return; }   // openCamPanel(u) (.Cameras.cs)
             if (c == "gadget" && droneOps != null) { StartDrone(u); return; }                                // deploy / steer the drone (.Drone.cs)

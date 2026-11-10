@@ -28,18 +28,46 @@ namespace Blindside.Hub
         // ---- squad --------------------------------------------------------------------------------------------------------------
         static readonly List<OperatorData> squad = new List<OperatorData>(5);
 
-        /// <summary>The attack squad in roster order (operators missing from the registry are left out). The list is shared.</summary>
+        static readonly List<OperatorData> baseSquad = new List<OperatorData>(5);
+        static SaveData squadSave;
+        static int squadUnlocked = -1;
+
+        /// <summary>The attack squad in roster order: the first five, then the operators the save has freed (the rescue operation)
+        /// — operators missing from the registry are left out. The list is shared (rebuilt when the save or its freed list changes).</summary>
         public static List<OperatorData> Squad
         {
             get
             {
-                if (squad.Count == 0)
+                var d = SaveSystem.Current;
+                int n = d != null && d.unlockedOperators != null ? d.unlockedOperators.Count : 0;
+                if (squad.Count == 0 || d != squadSave || n != squadUnlocked)
+                {
+                    squad.Clear();
+                    squad.AddRange(BaseSquad);
+                    if (n > 0)
+                        foreach (var k in d.unlockedOperators)
+                        {
+                            var o = BuildAssetRegistry.Operator(k);
+                            if (o != null && !squad.Contains(o)) squad.Add(o);
+                        }
+                    squadSave = d; squadUnlocked = n;
+                }
+                return squad;
+            }
+        }
+
+        /// <summary>The first five (MatchBootstrap.AttackerKeys): their first guns are the starters (never sold).</summary>
+        public static List<OperatorData> BaseSquad
+        {
+            get
+            {
+                if (baseSquad.Count == 0)
                     foreach (var k in Blindside.Integration.MatchBootstrap.AttackerKeys)
                     {
                         var o = BuildAssetRegistry.Operator(k);
-                        if (o != null) squad.Add(o);
+                        if (o != null) baseSquad.Add(o);
                     }
-                return squad;
+                return baseSquad;
             }
         }
 
@@ -56,7 +84,7 @@ namespace Blindside.Hub
         public static bool IsStarter(WeaponData w)
         {
             if (w == null) return false;
-            foreach (var o in Squad) { var g = GunsOf(o); if (g.Length > 0 && g[0] == w) return true; }
+            foreach (var o in BaseSquad) { var g = GunsOf(o); if (g.Length > 0 && g[0] == w) return true; }
             return false;
         }
 
@@ -78,7 +106,7 @@ namespace Blindside.Hub
             get
             {
                 if (forSale.Count == 0)
-                    foreach (var o in Squad)
+                    foreach (var o in BaseSquad)
                         foreach (var w in GunsOf(o))
                             if (w != null && !IsStarter(w) && !forSale.Contains(w)) forSale.Add(w);
                 return forSale;

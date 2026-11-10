@@ -30,6 +30,8 @@ namespace Blindside.Flow
         public bool skipIntro;
 
         TitleSelectScreen title;
+        /// <summary>Set (1) by the editor's Preview Rescue Intro: the next battle scene start plays its map with the rescue intro.</summary>
+        public const string DebugRescueIntroKey = "blindside.debug.rescueIntro";
 
         void Awake()
         {
@@ -56,6 +58,13 @@ namespace Blindside.Flow
                 case SceneRole.Battle:
                     var req = SceneFlow.TakePending() ?? new LaunchRequest { team = playerTeam, skipIntro = skipIntro };
                     var map = req.map ?? OwnMap();
+                    // debug (editor): Blindside > Debug > Preview Rescue Intro plays this map with the rescue intro once
+                    if (Application.isEditor && map != null && PlayerPrefs.GetInt(DebugRescueIntroKey, 0) == 1)
+                    {
+                        PlayerPrefs.DeleteKey(DebugRescueIntroKey);
+                        map = map.Clone(); map.rescueIntro = true;
+                        req.skipIntro = false; req.team = OperatorTeam.Attack;
+                    }
                     if (map == null || !title.Launch(req.team, map, null, req.skipIntro))
                     {
                         Debug.LogError("[SceneEntry] the battle could not start — back to the title");
@@ -77,7 +86,7 @@ namespace Blindside.Flow
         {
             if (mapJson == null) return MapLibrary.LoadDefault();
             if (!MapFile.TryParse(mapJson.text, out var file, out var why)) { Debug.LogError($"[SceneEntry] {mapJson.name}: {why}"); return null; }
-            try { return file.ToModel().BuildGameData(); }
+            try { return MapCatalog.Apply(MapCatalog.Find(mapId), file.ToModel().BuildGameData()); }   // (the rescue operation's settings)
             catch (System.Exception ex) { Debug.LogError($"[SceneEntry] {mapJson.name}: {ex.Message}"); return null; }
         }
     }

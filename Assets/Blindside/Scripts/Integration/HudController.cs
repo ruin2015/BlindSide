@@ -181,12 +181,12 @@ namespace Blindside.Integration
                 if (card == null) continue;
                 if (phase == MatchPhase.Deploy)
                 {
-                    card.SetDeploy(u.HP, u.MaxHP, u.Placed ? "降下完了" : "ヘリ搭乗中", selected == u);
+                    card.SetDeploy(u.HP, u.MaxHP, u.Captive ? "拘束中" : u.Placed ? "降下完了" : "ヘリ搭乗中", selected == u);
                     continue;
                 }
                 // my = G.phase===u.team || (G.phase==='prep' && u.team==='def')
                 bool my = PhaseTeam(phase) == u.Team || (phase == MatchPhase.Prep && u.Team == OperatorTeam.Defense);
-                string st = !u.Alive ? "" : u.Ended && my ? "行動終了" : my ? $"移動 {M1(u.MoveLeft)}m" : u.Shield ? "シールド" : u.Ghost ? "妨害" : "";
+                string st = !u.Alive ? "" : u.Captive ? "拘束中" : u.Ended && my ? "行動終了" : my ? $"移動 {M1(u.MoveLeft)}m" : u.Shield ? "シールド" : u.Ghost ? "妨害" : "";
                 card.SetState(u.HP, u.MaxHP, st, u.Ended, selected == u, u.Alive && u.Ended && my, !u.Alive, true);
             }
 
@@ -197,11 +197,11 @@ namespace Blindside.Integration
                 if (card == null) continue;
                 if (phase == MatchPhase.Deploy)
                 {
-                    card.SetState(u.HP, u.MaxHP, u.Placed ? "降下完了" : "ヘリ搭乗中", selected == u, false, card.Dead);
+                    card.SetState(u.HP, u.MaxHP, u.Captive ? "拘束中" : u.Placed ? "降下完了" : "ヘリ搭乗中", selected == u, false, card.Dead);
                     continue;
                 }
                 bool my = PhaseTeam(phase) == u.Team || (phase == MatchPhase.Prep && u.Team == OperatorTeam.Defense);
-                string st = !u.Alive ? "" : my ? $"移動 {M1(u.MoveLeft)}m" : u.Shield ? "シールド" : u.Ghost ? "妨害" : "";
+                string st = !u.Alive ? "" : u.Captive ? "拘束中" : my ? $"移動 {M1(u.MoveLeft)}m" : u.Shield ? "シールド" : u.Ghost ? "妨害" : "";
                 card.SetState(u.HP, u.MaxHP, st, selected == u, u.Alive && u.Ended && my, !u.Alive);
             }
 
@@ -243,6 +243,7 @@ namespace Blindside.Integration
                     ? $"① 人質を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② または防衛チームを全員制圧"
                     : $"① {TurnManager.MaxRound}ラウンド終了まで人質を死守\n② または攻撃チームを全員制圧";
                 if (TutorialGate.Active) body = "① クラッシャーの指示に従って訓練を進める\n② 移動・射撃・視界・ドローン・壁の破壊を習得";
+                if (MatchBootstrap.RescueMatch && side == OperatorTeam.Attack) body = "① 拘束されたGHOST・SILENCEを救出 (救出すると分隊に合流)\n② 防衛チームを全員制圧";
                 if (objectivePhaseLine && phase == MatchPhase.Prep) body += $"\n<color=#A37200><b>残り強化 {(selection != null ? selection.reinforceLeft : 10)}/10</b></color>";
                 if (objectivePhaseLine && phase == MatchPhase.Deploy) body += "\n<color=#A37200><b>建物の外の好きな位置に隊員を配置</b></color>";
 

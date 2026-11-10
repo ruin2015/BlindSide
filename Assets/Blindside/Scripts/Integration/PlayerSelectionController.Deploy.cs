@@ -51,7 +51,7 @@ namespace Blindside.Integration
             UnitsChanged?.Invoke();
             RevealWallIntel();   // reinforced / electrified walls shown for the drop (.DeployIntel.cs)
             foreach (var u in units)
-                if (u.Team == side && u.Alive) { EnterDeploy(u); return; }
+                if (u.Team == side && u.Alive && !u.Captive) { EnterDeploy(u); return; }
         }
 
         // ================================================================
@@ -208,7 +208,7 @@ namespace Blindside.Integration
             undropUnit = u;
             if (turns == null || turns.Over) yield break;
             foreach (var o in units)
-                if (o.Team == side && o.Alive && !o.Placed) { EnterDeploy(o); yield break; }
+                if (o.Team == side && o.Alive && !o.Placed && !o.Captive) { EnterDeploy(o); yield break; }
             Deselect();
             SetHint("配置を確認したら[作戦開始]を押してください", "配置した隊員をクリックすると、再度降下させられます",
                     (UndropId, $"{KrOf(u)}の降下取り消し", false));
@@ -278,7 +278,7 @@ namespace Blindside.Integration
             busy = true; ClearUI(); UnitsChanged?.Invoke();
             // Anyone still aboard drops, quickly, on the first default point that is free.
             var rest = new List<SimUnit>();
-            foreach (var a in units) if (a.Team == OperatorTeam.Attack && a.Alive && !a.Placed) rest.Add(a);
+            foreach (var a in units) if (a.Team == OperatorTeam.Attack && a.Alive && !a.Placed && !a.Captive) rest.Add(a);   // (the captives stay held)
             foreach (var a in rest)
             {
                 var drops = MapLibrary.Current.anchors.attackerDrops;

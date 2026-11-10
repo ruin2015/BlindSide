@@ -115,6 +115,8 @@ namespace Blindside.Save
         public List<WeaponProgress> weapons = new List<WeaponProgress>();
         /// <summary>Weapons bought at the HQ's shop (WeaponData.key). Every operator's first gun is owned without being listed.</summary>
         public List<string> ownedWeapons = new List<string>();
+        /// <summary>Operators who joined the squad beyond the first five (the rescue operation won: GHOST, SILENCE).</summary>
+        public List<string> unlockedOperators = new List<string>();
         /// <summary>Gadgets in stock (bought at the shop / the 医務室).</summary>
         public List<ItemCount> gadgets = new List<ItemCount>();
         /// <summary>v4 / v5: attachments bought once for the squad. Read once by Normalize (each becomes one in attachmentStock), then empty.</summary>
@@ -290,6 +292,8 @@ namespace Blindside.Save
             ownedAttachments = new List<string>();
             foreach (var o in operators) o.attachments = new string[0];
             if (ownedWeapons == null) ownedWeapons = new List<string>();
+            if (unlockedOperators == null) unlockedOperators = new List<string>();
+            unlockedOperators.RemoveAll(string.IsNullOrEmpty);
             ownedWeapons.RemoveAll(string.IsNullOrEmpty);
             if (gadgets == null) gadgets = new List<ItemCount>();
             gadgets.RemoveAll(g => g == null || string.IsNullOrEmpty(g.key));

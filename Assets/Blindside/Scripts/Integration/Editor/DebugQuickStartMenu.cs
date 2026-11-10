@@ -30,5 +30,22 @@ namespace Blindside.UITools.EditorTools
 
         [MenuItem(ClearPath, true)]
         static bool ValidateClear() { return Application.isPlaying; }
+
+        // Blindside > Debug > Preview Rescue Intro: (edit mode) the battle scene played with the rescue intro (GHOST / SILENCE captured)
+        // on the default house — the intro to look at before the second map exists
+        const string RescuePath = "Blindside/Debug/Preview Rescue Intro";
+
+        [MenuItem(RescuePath)]
+        public static void PreviewRescueIntro()
+        {
+            if (!UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            PlayerPrefs.SetInt(Blindside.Flow.SceneEntry.DebugRescueIntroKey, 1);
+            PlayerPrefs.Save();
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Blindside/Scenes/Battle.unity");
+            EditorApplication.EnterPlaymode();
+        }
+
+        [MenuItem(RescuePath, true)]
+        static bool ValidateRescue() { return !Application.isPlaying; }
     }
 }

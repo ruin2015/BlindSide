@@ -507,14 +507,17 @@ namespace Blindside.UI
             // straight to the PREPARATION banner.
             // (the Timeline intro only on a map that has the house — MapData.useHouseIntro; any other map gets the short SimpleIntro).
             var mapData = MapLibrary.Current;
-            if (!skipIntro && introDirector != null && team != OperatorTeam.Defense && mapData.useHouseIntro)
+            bool houseIntro = mapData.useHouseIntro || mapData.rescueIntro;
+            if (!skipIntro && introDirector != null && team != OperatorTeam.Defense && houseIntro)
             {
+                Blindside.Cinematic.IntroCameraRig.RescueStyle = mapData.rescueIntro || Blindside.Cinematic.IntroCameraRig.ForceRescueOnce;
+                Blindside.Cinematic.IntroCameraRig.ForceRescueOnce = false;
                 introDirector.stopped += OnIntroStopped;
                 introDirector.time = 0;
                 introDirector.Play();
                 Blindside.Cinematic.IntroSkip.Begin(introDirector);   // hold ESC to skip it
             }
-            else if (!skipIntro && team != OperatorTeam.Defense && !mapData.useHouseIntro)
+            else if (!skipIntro && team != OperatorTeam.Defense && !houseIntro)
             {
                 Blindside.Cinematic.SimpleIntro.Play(StartMatch);
             }

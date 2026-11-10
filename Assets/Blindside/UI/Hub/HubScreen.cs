@@ -400,7 +400,7 @@ namespace Blindside.Hub
         {
             if (e == null || e.mapJson == null) return Blindside.Map.MapLibrary.LoadDefault();
             if (!Blindside.MapEditor.MapFile.TryParse(e.mapJson.text, out var file, out var why)) { Debug.LogError("[Hub] " + e.id + ": " + why); return Blindside.Map.MapLibrary.LoadDefault(); }
-            try { return file.ToModel().BuildGameData(); }
+            try { return Blindside.Flow.MapCatalog.Apply(e, file.ToModel().BuildGameData()); }   // (the rescue operation's settings)
             catch (System.Exception ex) { Debug.LogError("[Hub] " + e.id + ": " + ex.Message); return Blindside.Map.MapLibrary.LoadDefault(); }
         }
 

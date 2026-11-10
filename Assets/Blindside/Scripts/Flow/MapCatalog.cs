@@ -29,6 +29,19 @@ namespace Blindside.Flow
             public string sceneName;
             [Tooltip("The editor save it was exported from (persistentDataPath/Maps/{this}.json) — exporting that file again updates this entry.")]
             public string sourceStem;
+            [Tooltip("The rescue operation: GHOST and SILENCE are held here (the map's hostage cell and the cells below) instead of the " +
+                     "civilian, the squad goes in three strong, the rescue intro plays, and a captive freed joins the squad.")]
+            public bool rescue;
+            [Tooltip("The rescue operation: where the second captive (SILENCE) is held. Empty: the indoor cell farthest from the hostage cell.")]
+            public Vector2Int[] rescueHostages;
+        }
+
+        /// <summary>The entry's operation settings onto map data built from its JSON (the rescue operation).</summary>
+        public static Blindside.Map.MapData Apply(Entry e, Blindside.Map.MapData d)
+        {
+            if (e == null || d == null) return d;
+            if (e.rescue) { d.rescueIntro = true; d.rescueHostages = e.rescueHostages; }
+            return d;
         }
 
         public List<Entry> entries = new List<Entry>();

@@ -18,8 +18,10 @@ using Blindside.Cinematic;
 
 namespace Blindside.Integration
 {
-    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers
+    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers, ICaptive
     {
+        /// <summary>Held by the enemy (the rescue operation): not on the map (Placed false), no turn, until an attacker frees it.</summary>
+        public bool Captive { get; set; }
         // growth (Progress.ProgressBonus: the player's operators in a real match); neutral for everyone else
         public float DamageScale { get; set; } = 1f;
         public float AccuracyBonus { get; set; }
@@ -149,6 +151,11 @@ namespace Blindside.Integration
     {
         /// <summary>The attack side's operators in the order they are fielded (OPS.atk) — also the title's squad list order.</summary>
         public static readonly string[] AttackerKeys = { "CRUSHER", "FLARE", "IGNIS", "SERUM", "BASTION" };
+        /// <summary>The rescue operation: who is held (in the map's captive-cell order) and how many go in to get them.</summary>
+        public static readonly string[] RescueKeys = { "GHOST", "SILENCE" };
+        public const int RescueSquadSize = 3;
+        /// <summary>The running match is the rescue operation.</summary>
+        public static bool RescueMatch { get; private set; }
 
         public GameplayUIBridge uiBridge;
         public bool runOnStart = true;
@@ -255,7 +262,7 @@ namespace Blindside.Integration
                 u.View.SetCombatReady(u.Alive && Time.unscaledTime < u.RevealT);
                 // syncUnits: `show=u.alive&&u.placed!==false&&…` — the player's own not-yet-dropped units aren't in
                 // the scene (the enemy side is hidden by VisibilityController via the same Placed flag).
-                if (playerTeam == OperatorTeam.Attack && u.Team == OperatorTeam.Attack && u.Alive) u.View.SetVisible(u.Placed || u.Airborne);
+                if (playerTeam == OperatorTeam.Attack && u.Team == OperatorTeam.Attack && u.Alive) u.View.SetVisible(u.Placed || u.Airborne || u.Captive);   // (a captive: where it is held)
             }
             if (activeHostage != null)
             {
@@ -371,6 +378,9 @@ namespace Blindside.Integration
             hostageView = null;
 
             var mapData = MapLibrary.Current;
+            // the rescue operation (MapData.rescueIntro): the player's attack only — GHOST and SILENCE held instead of the civilian
+            bool rescueMatch = mapData.rescueIntro && playerTeam == OperatorTeam.Attack && !tutorialMode;
+            RescueMatch = rescueMatch;
             var map = MapGrid.CreateDefault();
             MapFloorSync.Apply(mapData);   // the floor planes follow the map's size
             var vision = new VisionSystem(map);
@@ -394,8 +404,20 @@ namespace Blindside.Integration
                 units.Add(flare); units.Add(crusher);
             }
             else
-            for (int i = 0; i < atkSpawn.Length; i++)
+            for (int i = 0; i < (rescueMatch ? Mathf.Min(RescueSquadSize, atkSpawn.Length) : atkSpawn.Length); i++)
                 units.Add(MakeUnit($"atk{i + 1}", OperatorTeam.Attack, atkSpawn[i].x, atkSpawn[i].y, weaponAr));
+            // the rescue operation: the captives, held where the map says (the civilian hostage's place is theirs)
+            var captives = new List<SimUnit>();
+            if (rescueMatch)
+            {
+                var cells = mapData.CaptiveCells(RescueKeys.Length);
+                for (int i = 0; i < RescueKeys.Length && i < cells.Count; i++)
+                {
+                    var c = MakeUnit($"atk{RescueSquadSize + i + 1}", OperatorTeam.Attack, cells[i].x, cells[i].y, weaponAr, Mathf.PI / 2f);
+                    c.Captive = true;
+                    captives.Add(c); units.Add(c);
+                }
+            }
 
             // Defense team: DEF_POST from the same source file — each operator's (x,y,facing), now in the map data.
             // NOTE: ARGUS's post (13,16) replaces the doorway tile (13,14) the source itself doesn't use
@@ -411,14 +433,15 @@ namespace Blindside.Integration
             // OPS records: attackers take OPS.atk in order (spawnAttackers: `OPS.atk.forEach((o,i)=>...
             // spots[i])`), defenders are already keyed by name. UIDs follow startGame()'s creation
             // order — OPS.def first (1-5), then spawnAttackers (6-10).
-            var atkKeys = AttackerKeys;
+            var atkKeys = AttackerKeys;   // (the rescue operation: the first RescueSquadSize of them; the captives are named below)
             int uid = 0, atkIdx = 0;
             if (!tutorialMode)
             {
                 foreach (var u in units)
                     if (u.Team == OperatorTeam.Defense) { u.Op = LoadOperator(u.Id); u.Uid = ++uid; }
                 foreach (var u in units)
-                    if (u.Team == OperatorTeam.Attack) { u.Op = LoadOperator(atkKeys[atkIdx++]); u.Uid = ++uid; }
+                    if (u.Team == OperatorTeam.Attack && !u.Captive) { u.Op = LoadOperator(atkKeys[atkIdx++]); u.Uid = ++uid; }
+                for (int i = 0; i < captives.Count; i++) { captives[i].Op = LoadOperator(RescueKeys[i]); captives[i].Uid = ++uid; }
             }
             // mkUnit(team,op,...): `Object.assign({},op,{... hp:op.hp, maxHp:op.hp ...})` — hp, mv and
             // weapon all come from the operator record (MakeUnit's 100/3/AR|PST are only fallbacks
@@ -459,11 +482,15 @@ namespace Blindside.Integration
             }
             var turnUnits = units.ConvertAll(u => (ITurnUnit)u);
             var hostageCell = mapData.hostage;
-            var hostage = new SimHostage { X = hostageCell.x, Y = hostageCell.y };
+            // (the rescue operation has no civilian: every hostage consumer takes null — the AI and the defense fall back to MapData.hostage)
+            var hostage = rescueMatch ? null : new SimHostage { X = hostageCell.x, Y = hostageCell.y };
             activeHostage = hostage;
-            hostageView = SpawnHostageView(hostage, prefab);
-            hostage.View = hostageView;
-            if (tutorialMode && hostageView != null) hostageView.SetVisible(false);   // (the tutorial map walls the hostage cell in; nobody is to see it)
+            if (hostage != null)
+            {
+                hostageView = SpawnHostageView(hostage, prefab);
+                hostage.View = hostageView;
+                if (tutorialMode && hostageView != null) hostageView.SetVisible(false);   // (the tutorial map walls the hostage cell in; nobody is to see it)
+            }
 
             // Let at least one real frame render with all 11 at their spawn poses before any AI/turn
             // logic (which used to run to completion inside the same synchronous call) touches them.

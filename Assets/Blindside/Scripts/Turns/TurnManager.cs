@@ -33,6 +33,9 @@ namespace Blindside.Turns
     /// not-yet-built MovementSystem). A concrete unit class implements IVisionAgent alongside this
     /// interface so the cast succeeds at runtime.
     /// </summary>
+    /// <summary>A unit still held by the enemy (the rescue operation): off the map, no turn of its own, not counted for a wipe.</summary>
+    public interface ICaptive { bool Captive { get; } }
+
     public interface ITurnUnit : IAbilityUnit
     {
         bool Acted { get; set; }
@@ -122,6 +125,7 @@ namespace Blindside.Turns
                 foreach (var u in units)
                 {
                     if (!u.Alive || u.Team != team.Value) continue;
+                    if (u is ICaptive cap && cap.Captive) { u.MoveLeft = 0f; u.Acted = true; u.Ended = true; continue; }   // (held: no turn)
                     u.MoveLeft = MoveRange(u);
                     u.Acted = false;
                     u.AbilityUsed = false;
@@ -178,7 +182,7 @@ namespace Blindside.Turns
             bool atkAlive = false, defAlive = false;
             foreach (var u in units)
             {
-                if (!u.Alive) continue;
+                if (!u.Alive || (u is ICaptive cap && cap.Captive)) continue;   // (a captive doesn't keep the attack in the fight)
                 if (u.Team == OperatorTeam.Attack) atkAlive = true; else defAlive = true;
             }
 

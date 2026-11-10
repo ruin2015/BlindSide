@@ -71,6 +71,10 @@ namespace Blindside.Cinematic
         //   RopeStart – RopeEnd the rope goes down onto the roof, the operators slide down it; held until the Timeline ends →
         //                    the deployment screen
         // The spoken lines (IntroSubtitle) run over the three parts: Lines.
+        // The rescue intro (RescueStyle: MapData.rescueIntro) is the same flight, but its hologram is the operation's briefing on two of
+        // the squad taken in the last operation: the camera comes round the whole hologram slowly instead of closing in on one hostage,
+        // the two captives' places are driven in one after the other (each in its operator's colour, M.I.A + codename), and each
+        // one's profile card comes up tied to its marker (IntroMiaCards). Its own lines (RescueLines).
         const float HeliStart = 3f, HoloStart = 7f, CutAt = 13.8f, ArriveAt = 17.8f, RopeStart = 18.1f, RopeEnd = 19.5f;
         // the helicopter's progress along its approach: the wide shot's ease-out (as if it arrived WideSpan after HeliStart)
         // until the hologram, slow while it is off screen, then easing into the hover over the low-angle shot
@@ -86,6 +90,26 @@ namespace Blindside.Cinematic
             (HoloStart + .9f, 4.9f, "テロリストは5人、民間人は1名。\nここが現在、人質が拘束されている位置だ。"),
             (CutAt + .5f, 5.2f, "敵を全員倒すか、\n目標地点まで人質を護送しろ。"),
         };
+        // ---- the rescue intro ----
+        /// <summary>The next intro is the rescue one (set by whoever starts it: TitleSelectScreen from MapData.rescueIntro, the debug menu).</summary>
+        public static bool RescueStyle;
+        /// <summary>Debug: the next house intro plays as the rescue one (Blindside > Debug > Preview Rescue Intro).</summary>
+        public static bool ForceRescueOnce;
+        /// <summary>The captives the rescue intro shows (OperatorData keys), in marker order.</summary>
+        public static readonly string[] RescueKeys = { "GHOST", "SILENCE" };
+        // when each captive's marker is driven in (s after the hologram begins); its card follows on impact
+        const float RescueSlam0 = 2.3f, RescueSlamGap = 1.45f;
+        // the camera round the hologram: RescueRadius out, RescueHeight up, turning RescueTurn degrees over the shot
+        const float RescueRadius = 34f, RescueHeight = 25f, RescueTurn = 55f, RescueBlend = 1.6f, RescueFov = 40f;
+        static readonly (float at, float seconds, string text)[] RescueLines =
+        {
+            (.8f, 5.6f, "今回は救出作戦だ。\n気を引き締めろ。"),
+            (HoloStart + .9f, 5.6f, "前回の作戦で、GHOSTとSILENCEが敵に捕らえられた。\n二人はここに拘束されている。"),
+            (CutAt + .5f, 5.2f, "二人を救出しろ。\n救出すれば、そのまま戦力に加わる。"),
+        };
+        (float at, float seconds, string text)[] lines = Lines;
+        bool rescue;
+        IntroMiaCards miaCards;
         Blindside.Tutorial.TutorialRadio radio;
         float radioCloseAt = -1f;
         readonly IntroHologram holo = new IntroHologram();
@@ -365,6 +389,8 @@ namespace Blindside.Cinematic
 
         void OnIntroPlayed(PlayableDirector d)
         {
+            rescue = RescueStyle;
+            lines = rescue ? RescueLines : Lines;
             lowCut = false; rollNow = 0f;
             nextLine = 0; holoBegun = holoEnded = briefShown = false;
             EnsureIntroUi();
@@ -437,6 +463,7 @@ namespace Blindside.Cinematic
             ClearRappellers();
             holo.End(); holoEnded = true;
             if (holoScreen != null) holoScreen.Hide();
+            if (miaCards != null) miaCards.Clear();
             if (subtitle != null) subtitle.Stop();
             if (radio != null) { radio.Close(); radioCloseAt = -1f; }
             if (briefing != null) briefing.Stop();
@@ -493,35 +520,115 @@ namespace Blindside.Cinematic
                 holoBegun = true;
                 var env = introHouse != null ? introHouse.transform.Find("Environment") : null;
                 var hostageCell = Blindside.Map.MapLibrary.Current.hostage;
+                var targets = rescue ? RescueTargets() : null;
                 if (holo.Begin(mapRoot, env != null ? env.Find("Buildings") : null, env != null ? env.Find("Streets") : null,
-                               GridSpace.GridToWorld(hostageCell.x, hostageCell.y), Camera.main) && holoScreen != null)
+                               GridSpace.GridToWorld(hostageCell.x, hostageCell.y), Camera.main, targets) && holoScreen != null)
                     holoScreen.Play(holo.Texture);
+                if (rescue && miaCards != null && holo.Built)
+                {
+                    miaCards.Clear();
+                    // which side of the screen each marker will be on when its card comes up (the camera's pose then): left of
+                    // the other marker → its card on the left, so the leader lines don't cross
+                    int n = Mathf.Min(holo.MarkerCount, RescueKeys.Length);
+                    var side = new float[n];
+                    for (int i = 0; i < n; i++)
+                    {
+                        RescuePose(HoloStart + holo.MarkerImpact(i), out var cp, out var lk, out _);
+                        var right = Vector3.Cross(Vector3.up, (lk - cp).normalized);
+                        side[i] = Vector3.Dot(holo.MarkerPoint(i) - cp, right);
+                    }
+                    for (int i = 0; i < n; i++)
+                    {
+                        bool onRight = n > 1 ? side[i] >= side[1 - i] : side[i] > 0f;
+                        miaCards.Add(BuildAssetRegistry.Operator(RescueKeys[i]), holo.MarkerImpact(i), onRight);
+                    }
+                }
             }
             if (holoBegun && !holoEnded)
             {
-                if (t >= CutAt) { holoEnded = true; holo.End(); if (holoScreen != null) holoScreen.Hide(); }
-                else holo.Tick(t - HoloStart, Camera.main);
+                if (t >= CutAt) { holoEnded = true; holo.End(); if (holoScreen != null) holoScreen.Hide(); if (miaCards != null) miaCards.Clear(); }
+                else
+                {
+                    holo.Tick(t - HoloStart, Camera.main);
+                    if (rescue && miaCards != null && holo.Built)
+                    {
+                        if (t >= CutAt - .3f) miaCards.Hide(t - HoloStart);
+                        miaCards.Tick(t - HoloStart, Camera.main, holo.MarkerPoint);
+                    }
+                }
             }
             if (!briefShown && t >= BriefAt && briefing != null)
             {
                 briefShown = true;
                 briefing.Play(IntroBriefing.DefaultValues(System.DateTime.Now), BriefUntil - BriefAt);
             }
-            while (radio != null && nextLine < Lines.Length && t >= Lines[nextLine].at)
+            while (radio != null && nextLine < lines.Length && t >= lines[nextLine].at)
             {
                 radio.SetSpeaker(false);
-                radio.Say(Lines[nextLine].text, false);
-                radioCloseAt = Lines[nextLine].at + Lines[nextLine].seconds;
+                radio.Say(lines[nextLine].text, false);
+                radioCloseAt = lines[nextLine].at + lines[nextLine].seconds;
                 nextLine++;
             }
-            if (radio != null && radioCloseAt > 0f && t >= radioCloseAt && nextLine >= Lines.Length) { radio.Close(); radioCloseAt = -1f; }
+            if (radio != null && radioCloseAt > 0f && t >= radioCloseAt && nextLine >= lines.Length) { radio.Close(); radioCloseAt = -1f; }
+        }
+
+        /// <summary>The rescue intro's markers: the map's hostage cell for the first captive, and for the second the map's other
+        /// hostage cell when it has one — else the indoor floor cell farthest from the first (a stand-in until the map gives it).</summary>
+        System.Collections.Generic.List<IntroHologram.Target> RescueTargets()
+        {
+            var map = Blindside.Map.MapLibrary.Current;
+            var cells = new System.Collections.Generic.List<Vector2Int> { map.hostage };
+            if (map.rescueHostages != null) foreach (var c in map.rescueHostages) if (c != map.hostage && cells.Count < RescueKeys.Length) cells.Add(c);
+            if (cells.Count < RescueKeys.Length && map.terrain != null)
+            {
+                Vector2Int best = map.hostage; float bd = -1f;
+                for (int y = 0; y < map.height; y++)
+                    for (int x = 0; x < map.width; x++)
+                    {
+                        int k = y * map.width + x;
+                        if (map.terrain[k] != Blindside.Map.MapTerrain.In || (map.crates != null && map.crates[k])) continue;
+                        float d = (x - map.hostage.x) * (x - map.hostage.x) + (y - map.hostage.y) * (y - map.hostage.y);
+                        if (d > bd) { bd = d; best = new Vector2Int(x, y); }
+                    }
+                cells.Add(best);
+            }
+            var list = new System.Collections.Generic.List<IntroHologram.Target>();
+            for (int i = 0; i < cells.Count && i < RescueKeys.Length; i++)
+            {
+                var op = BuildAssetRegistry.Operator(RescueKeys[i]);
+                list.Add(new IntroHologram.Target
+                {
+                    pos = GridSpace.GridToWorld(cells[i].x, cells[i].y),
+                    color = op != null ? op.color : Color.white,
+                    label = "M.I.A <size=60%>" + (op != null ? op.DisplayName : RescueKeys[i]) + "</size>",
+                    slamAt = RescueSlam0 + i * RescueSlamGap,
+                });
+            }
+            return list;
+        }
+
+        /// <summary>The rescue hologram shot: from the wide framing into a slow turn round the whole hologram (RescueRadius out,
+        /// RescueHeight up), RescueTurn degrees over the shot, looking at the house's middle.</summary>
+        void RescuePose(float t, out Vector3 pos, out Vector3 look, out float fov)
+        {
+            float t0 = HoloStart + HoloMoveIn;
+            var wide = WideCamPos(t0);
+            var centre = GridSpace.GridToWorld(HX, HZ, 0f);
+            var flat = new Vector3(wide.x - centre.x, 0f, wide.z - centre.z).normalized;
+            float turn = RescueTurn * Mathf.Clamp01((t - t0) / (CutAt - t0));
+            var orbit = centre + Quaternion.Euler(0f, turn, 0f) * flat * RescueRadius + Vector3.up * RescueHeight;
+            float b = Mathf.Clamp01((t - t0) / RescueBlend);
+            float e = b * b * b * (b * (b * 6f - 15f) + 10f);   // smootherstep
+            pos = Vector3.Lerp(wide, orbit, e);
+            look = Vector3.Lerp(GridSpace.GridToWorld(HX, HZ, 1.2f), centre, e);
+            fov = Mathf.Lerp(WideFov, RescueFov, e);
         }
 
         /// <summary>The subtitle and the hologram's screen, built once under the intro's canvas (the letterbox's): the hologram view
         /// just behind the letterbox, the subtitle on top.</summary>
         void EnsureIntroUi()
         {
-            if (radio != null && holoScreen != null && briefing != null) return;
+            if (radio != null && holoScreen != null && briefing != null && miaCards != null) return;
             var lb = FindFirstObjectByType<LetterboxBars>(FindObjectsInactive.Include);
             var canvas = lb != null ? lb.GetComponentInParent<Canvas>(true) : null;
             if (canvas == null) return;
@@ -529,6 +636,7 @@ namespace Blindside.Cinematic
             while (lbTop.parent != null && lbTop.parent != canvas.transform) lbTop = lbTop.parent;
             if (holoScreen == null) holoScreen = IntroHoloScreen.Build(canvas.transform, lbTop.GetSiblingIndex());
             if (briefing == null) briefing = IntroBriefing.Build(canvas.transform);
+            if (miaCards == null) miaCards = IntroMiaCards.Build(canvas.transform);
             if (radio == null)
             {
                 radio = Blindside.Tutorial.TutorialRadio.Build(transform);
@@ -589,8 +697,9 @@ namespace Blindside.Cinematic
             var houseTop = GridSpace.GridToWorld(HX, HZ, 1.2f);
             if (t >= HoloStart + HoloMoveIn && t < CutAt && holo.Built)
             {
-                // the hologram: closing in on the hostage
-                HoloPose(t, out camPos, out look, out fov);
+                // the hologram: closing in on the hostage (the rescue: coming round the whole of it)
+                if (rescue) RescuePose(t, out camPos, out look, out fov);
+                else HoloPose(t, out camPos, out look, out fov);
                 shakeRoll = 0f;
             }
             else if (t < CutAt)

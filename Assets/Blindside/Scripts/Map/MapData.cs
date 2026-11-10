@@ -84,6 +84,11 @@ namespace Blindside.Map
         public int version = 1;
         public int width, height;
         public bool useHouseIntro;
+        /// <summary>The rescue intro: the house intro's flight, its hologram showing the captured operators (IntroCameraRig.RescueStyle).
+        /// Implies the house intro.</summary>
+        public bool rescueIntro;
+        /// <summary>Where the captured operators are held (the rescue intro's markers; `hostage` is the first). Empty: only `hostage`.</summary>
+        public Vector2Int[] rescueHostages;
 
         public MapTerrain[] terrain;         // width*height, y*width+x
         public bool[] crates;                // width*height — a crate stands on this cell's floor
@@ -99,6 +104,30 @@ namespace Blindside.Map
 
         /// <summary>An independent deep copy (through JSON, like a save and load would make).</summary>
         public MapData Clone() => JsonUtility.FromJson<MapData>(JsonUtility.ToJson(this));
+
+        /// <summary>The rescue map's `count` captive cells: `hostage` first, then rescueHostages; short of that, the indoor floor cell
+        /// farthest from the first (a stand-in until the map gives one).</summary>
+        public System.Collections.Generic.List<Vector2Int> CaptiveCells(int count)
+        {
+            var cells = new System.Collections.Generic.List<Vector2Int> { hostage };
+            if (rescueHostages != null) foreach (var c in rescueHostages) if (c != hostage && !cells.Contains(c) && cells.Count < count) cells.Add(c);
+            while (cells.Count < count && terrain != null)
+            {
+                Vector2Int best = hostage; float bd = -1f;
+                for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
+                    {
+                        int k = y * width + x;
+                        if (terrain[k] != MapTerrain.In || (crates != null && crates[k]) || cells.Contains(new Vector2Int(x, y))) continue;
+                        float d = float.MaxValue;
+                        foreach (var c in cells) d = Mathf.Min(d, (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y));
+                        if (d > bd) { bd = d; best = new Vector2Int(x, y); }
+                    }
+                if (bd < 0f) break;
+                cells.Add(best);
+            }
+            return cells;
+        }
 
         /// <summary>An empty map: all outdoor floor, no walls or crates, the four corner exfil zones and placeholder positions for the
         /// hostage, the defenders and the drop points (all in the middle / top row) that the editor's object step will replace.

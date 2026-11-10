@@ -64,6 +64,18 @@ namespace Blindside.Integration
             bool real = !tutorialMode && !PlaySession.IsTest;
             Record?.Close();
             Blindside.Progress.AwardReport report = real ? Blindside.Progress.MatchAward.Grant(Record, side, win, Live) : null;
+            // the rescue operation won: GHOST and SILENCE join the squad for good (their guns with them); written with the rest below
+            if (real && win && RescueMatch && Blindside.Save.SaveSystem.Current != null)
+            {
+                var d = Blindside.Save.SaveSystem.Current;
+                foreach (var k in RescueKeys)
+                {
+                    if (!d.unlockedOperators.Contains(k)) d.unlockedOperators.Add(k);
+                    var op = LoadOperator(k);
+                    if (op != null) foreach (var g in Blindside.Hub.HubCatalog.GunsOf(op)) if (g != null && !d.OwnsWeapon(g.key)) d.ownedWeapons.Add(g.key);
+                }
+                HudLog.Add("GHOST と SILENCE が分隊に合流しました", HudLogType.Ally);
+            }
             if (real) Blindside.Save.AutoSave.MatchEnded(win);
 
             // a won operation: the radio, 作戦成功, then the operation result (the squad's experience, the MVP, the reward, the rank)
