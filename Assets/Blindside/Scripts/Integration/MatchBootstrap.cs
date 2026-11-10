@@ -188,6 +188,7 @@ namespace Blindside.Integration
         readonly List<IUnitView> hostageViews = new List<IUnitView>();
         readonly List<HostageAnimator> hostageFigures = new List<HostageAnimator>();
         MapGadgetRuntime mapGadgets;
+        IncendiaryFire incendiary;   // IGNIS's co-op rank 8 (焼夷爆薬)
         /// <summary>The running match's editor-placed mines and sensors (dev tools / tests).</summary>
         public MapGadgetRuntime ActiveMapGadgets => mapGadgets;
         BreachAbilityPresenter breachPresenter;
@@ -751,6 +752,7 @@ namespace Blindside.Integration
             }
             // FLARE's co-op perks in a real match (Progress.CoopPerks; the units' ranks came with ProgressBonus)
             if (playerTeam.HasValue && !tutorialMode) BindCoop(playerTeam.Value, units, combat, vision, abilities, abilityCtx, turns, marks);
+            else if (incendiary != null) incendiary.Unbind();
 
             // experience as it is earned (the player's side in a real match): given after every staged exchange, shown on the stage
             Live = null;
@@ -948,6 +950,23 @@ namespace Blindside.Integration
                     into.Add(u);
                 }
             };
+            // IGNIS's charge hurting an enemy (the rank-3 blast, the rank-8 fire): popup, log, the kill is IGNIS's
+            void Hurt(SimUnit e, IAbilityUnit by, int dmg, string tag, string what)
+            {
+                if (e == null || !e.Alive) return;
+                e.HP = Mathf.Max(0, e.HP - dmg);
+                WorldPopup.Show(e.X, e.Y, "-" + dmg + " " + tag, new Color32(0xff, 0x7a, 0x2a, 0xff));
+                HudLog.Add($"{(by is SimUnit su ? su.Kr : by.Id)}: {what} → {e.Kr} {dmg} ダメージ", HudLog.TeamType(by.Team));
+                if (e.HP > 0) return;
+                e.View?.PlayDeath();
+                combat.ReportKill(e, by);   // (MatchBootstrap's OnKill marks it dead and counts it)
+                HudLog.Add($"{e.Kr}が倒された", e.Team == HudLog.Side ? HudLogType.Foe : HudLogType.Ally);
+            }
+            if (incendiary == null) incendiary = GetComponent<IncendiaryFire>();
+            if (incendiary == null) incendiary = gameObject.AddComponent<IncendiaryFire>();
+            incendiary.Bind(units, turns);
+            incendiary.Burn = (e, by, dmg) => Hurt(e, by, dmg, "BURN", "焼夷爆薬の炎");
+            if (selection.Movement != null) selection.Movement.OnStep += incendiary.Step;
             abilities.OnBlast += (u, x, y, r) =>
             {
                 CombatFx.Boom(GridSpace.GridToWorld(x, y, .6f), new Color32(0xff, 0x7a, 0x2a, 0xff), 18);
@@ -955,10 +974,13 @@ namespace Blindside.Integration
                 {
                     if (!e.Alive || e.Team == u.Team || e.Captive) continue;
                     if ((e.X - x) * (e.X - x) + (e.Y - y) * (e.Y - y) > r * r) continue;
-                    e.HP = Mathf.Max(0, e.HP - CoopBlastDamage);
-                    WorldPopup.Show(e.X, e.Y, "-" + CoopBlastDamage + " BLAST", new Color32(0xff, 0x7a, 0x2a, 0xff));
-                    HudLog.Add($"{(u is SimUnit su ? su.Kr : u.Id)}: 爆風 → {e.Kr} {CoopBlastDamage} ダメージ", HudLog.TeamType(u.Team));
-                    if (e.HP <= 0) { e.View?.PlayDeath(); combat.ReportKill(e, u); HudLog.Add($"{e.Kr}が倒された", e.Team == HudLog.Side ? HudLogType.Foe : HudLogType.Ally); }
+                    Hurt(e, u, CoopBlastDamage, "BLAST", "爆風");
+                }
+                // 焼夷爆薬 (rank 8): the ground by the wall keeps burning for the enemy's next two turns
+                if (Blindside.Combat.CoopRules.Has(u, "IGNIS", Blindside.Combat.CoopRules.Unique8))
+                {
+                    incendiary.Ignite(u, x, y);
+                    HudLog.Add($"{(u is SimUnit su ? su.Kr : u.Id)}: 焼夷爆薬 — 壁の周りが {IncendiaryFire.Turns}ターン燃え続ける", HudLog.TeamType(u.Team));
                 }
             };
             abilities.OnHeartbeat += (u, found) =>

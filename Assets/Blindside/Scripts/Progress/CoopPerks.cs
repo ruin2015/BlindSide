@@ -59,7 +59,7 @@ namespace Blindside.Progress
                 new CoopPerk { rank = 5, name = "経験値共有 III", text = "出撃しなくても経験値をすべて得る", live = true },
                 new CoopPerk { rank = 6, name = "二丁持ち", text = "銃を2丁装備し、射撃時に持ち替えられる", live = true },
                 new CoopPerk { rank = 7, name = "ガジェット枠 III", text = "装備できるガジェットが3個に", live = true },
-                new CoopPerk { rank = 8, name = u8.name, text = u8.text, live = key != "IGNIS" },
+                new CoopPerk { rank = 8, name = u8.name, text = u8.text, live = true },
             };
         }
 
@@ -81,7 +81,7 @@ namespace Blindside.Progress
                     case "CRUSHER": return ("止められない力", "能力を2回分使い、強化壁も破壊できる");
                     case "SERUM": return ("ナノボット支援", "どこにいても味方を指定して回復できる");
                     case "BASTION": return ("ハイブリッド", "防御中も攻撃できる");
-                    case "IGNIS": return ("能力強化", "（準備中）");
+                    case "IGNIS": return ("焼夷爆薬", "起爆後、壁の周りが2ターン燃え続け、炎の中にいる・踏み込んだ敵に毎ターン15ダメージ");
                     case "SILENCE": return ("完全掌握", "ガジェットを無力化せず破壊し、開始時に敵のガジェットをすべて探知");
                     case "GHOST": return ("鼓動を聴く者", "開始時に敵の心拍をすべて探知。探知した敵は1ターン「弱点露出」（クリティカル率・ダメージ2倍）");
                 }
