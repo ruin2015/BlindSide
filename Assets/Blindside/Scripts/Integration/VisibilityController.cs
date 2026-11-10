@@ -106,7 +106,7 @@ namespace Blindside.Integration
         {
             if (Gadgets == null) return;
             if (side == OperatorTeam.Defense)
-                foreach (var c in Gadgets.Cameras) { if (c.alive) TeamVisionBuilder.AddCircleCells(vision, map, c.x, c.y, 3.2f, side, tv); }
+                foreach (var c in Gadgets.Cameras) { if (c.Working) TeamVisionBuilder.AddCircleCells(vision, map, c.x, c.y, 3.2f, side, tv); }
             else if (Gadgets.Drones != null)
                 foreach (var d in Gadgets.Drones.Drones) { if (d.alive) TeamVisionBuilder.AddCircleCells(vision, map, d.x, d.y, 2.5f, side, tv); }
         }
@@ -116,7 +116,7 @@ namespace Blindside.Integration
         {
             if (Gadgets == null) return 0;
             int h = 17;
-            foreach (var c in Gadgets.Cameras) h = h * 31 + (c.alive ? 1 : 2);
+            foreach (var c in Gadgets.Cameras) h = h * 31 + (c.Working ? 1 : c.alive ? 4 : 2);
             if (Gadgets.Drones != null)
                 foreach (var d in Gadgets.Drones.Drones) h = h * 31 + (d.alive ? Mathf.RoundToInt(d.x * 10f) * 997 + Mathf.RoundToInt(d.y * 10f) : 3);
             return h;

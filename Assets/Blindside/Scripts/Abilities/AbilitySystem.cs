@@ -77,10 +77,16 @@ namespace Blindside.Abilities
     public class GasCloud { public float x, y, r; public float ttl; }
 
     /// <summary>A single active shock-wire field. Port of an entry in G.electrics.</summary>
-    public class ElectricField { public float x, y, r; public bool discovered; }
+    public class ElectricField { public float x, y, r; public bool discovered; public int disabledLeft; }   // disabledLeft > 0: knocked out (SILENCE)
 
     /// <summary>A placed or fixed surveillance camera. Port of an entry in G.cams.</summary>
-    public class SurveillanceCamera { public float x, y; public bool alive = true; public bool discovered; public bool placed = true; }   // placed:false = the map's fixed cams
+    public class SurveillanceCamera
+    {
+        public float x, y; public bool alive = true; public bool discovered; public bool placed = true;   // placed:false = the map's fixed cams
+        /// <summary>Phases it stays knocked out (SILENCE's ホロスキャン): it sees nothing while > 0.</summary>
+        public int disabledLeft;
+        public bool Working => alive && disabledLeft <= 0;
+    }
 
     /// <summary>
     /// Everything an IAbility needs besides the acting unit and target: the map/vision systems it
@@ -123,6 +129,7 @@ namespace Blindside.Abilities
             new HammerAbility(), new LauncherAbility(), new ThermiteAbility(),
             new StimAbility(), new ShieldAbility(), new GhostAbility(),
             new ShockAbility(), new GasAbility(), new MirrorAbility(), new CameraAbility(),
+            new HeartbeatAbility(), new HoloScanAbility(),   // GHOST / SILENCE (ReconAbilities.cs)
         });
 
         // ---- geometry helpers shared by GetSpec implementations (ported from 01_core_data_map_vision.js) ----
@@ -243,6 +250,8 @@ namespace Blindside.Abilities
         public event System.Action<IAbilityUnit, IAbilityUnit, int, bool> OnGasDamage;         // gas source, victim, damage, killed
         public event System.Action<IAbilityUnit, WallPanel> OnMirrorPlaced;
         public event System.Action<IAbilityUnit, SurveillanceCamera> OnCameraPlaced;
+        public event System.Action<IAbilityUnit, List<IAbilityUnit>> OnHeartbeat;                          // GHOST, the enemies sensed
+        public event System.Action<IAbilityUnit, List<SurveillanceCamera>, List<ElectricField>> OnHoloScan;  // SILENCE, what it knocked out
 
         internal void RaiseBreachSwing(IAbilityUnit u, WallPanel p) => OnBreachSwing?.Invoke(u, p);
         internal void RaiseBreachComplete(IAbilityUnit u, WallPanel p, TileType s, bool wasReinforced) => OnBreachComplete?.Invoke(u, p, s, wasReinforced);
@@ -255,5 +264,7 @@ namespace Blindside.Abilities
         internal void RaiseGasDamage(IAbilityUnit u, IAbilityUnit victim, int dmg, bool killed) => OnGasDamage?.Invoke(u, victim, dmg, killed);
         internal void RaiseMirrorPlaced(IAbilityUnit u, WallPanel p) => OnMirrorPlaced?.Invoke(u, p);
         internal void RaiseCameraPlaced(IAbilityUnit u, SurveillanceCamera c) => OnCameraPlaced?.Invoke(u, c);
+        internal void RaiseHeartbeat(IAbilityUnit u, List<IAbilityUnit> found) => OnHeartbeat?.Invoke(u, found);
+        internal void RaiseHoloScan(IAbilityUnit u, List<SurveillanceCamera> cams, List<ElectricField> fields) => OnHoloScan?.Invoke(u, cams, fields);
     }
 }

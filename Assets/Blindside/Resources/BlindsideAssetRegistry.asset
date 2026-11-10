@@ -17,10 +17,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5c05f4140bd30ba49bed35659eccd398, type: 2}
   - {fileID: 11400000, guid: d99545b0ddfb2eb43becbcc00d657989, type: 2}
   - {fileID: 11400000, guid: 7d2001add14484445ae2df1f88369c44, type: 2}
+  - {fileID: 11400000, guid: 2d5c307c5d2126049b9c0f200a3609c4, type: 2}
   - {fileID: 11400000, guid: 3d07495d9ffeb3641b52a0f7897c9815, type: 2}
   - {fileID: 11400000, guid: e5aaec82e043764439aa4259128cca10, type: 2}
   - {fileID: 11400000, guid: 8371b39ad1a708d44953c1f8b5d8e02c, type: 2}
   - {fileID: 11400000, guid: 13d27ca78f1e67b4995fc0c1b03798f7, type: 2}
+  - {fileID: 11400000, guid: 17582921a50082f45a4bc3def5aa895c, type: 2}
   - {fileID: 11400000, guid: d3a3be2be59d2234cb9ab0c9d2b5f7db, type: 2}
   - {fileID: 11400000, guid: aaaf30949f79ff944a1b53275413d795, type: 2}
   weapons:

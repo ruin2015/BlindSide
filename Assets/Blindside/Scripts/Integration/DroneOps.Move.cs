@@ -91,7 +91,7 @@ namespace Blindside.Integration
                     yield return Tween(d, nx, ny, show ? st * 200f : 5f);
 
                     ElectricField el = null;
-                    foreach (var e in ctx.Electrics) if (Hypot(e.x - nx, e.y - ny) <= e.r) { el = e; break; }
+                    foreach (var e in ctx.Electrics) if (e.disabledLeft <= 0 && Hypot(e.x - nx, e.y - ny) <= e.r) { el = e; break; }   // (a knocked-out field lets it pass)
                     if (el != null)
                     {
                         d.alive = false;

@@ -164,6 +164,7 @@ namespace Blindside.Integration
         SupportAbilityPresenter supportPresenter;
         ElectricFieldView electricView;
         GadgetAbilityPresenter gadgetPresenter;
+        ReconAbilityPresenter reconPresenter;   // GHOST / SILENCE
         GadgetViews gadgetViews;
         ReinforcedWallViews reinforcedViews;
         DroneViews droneViews;
@@ -318,6 +319,7 @@ namespace Blindside.Integration
             breachPresenter?.Unbind();
             supportPresenter?.Unbind();
             gadgetPresenter?.Unbind();
+            reconPresenter?.Unbind(); reconPresenter = null;
             electricView?.Unbind();
             gadgetViews?.Unbind();
             droneViews?.Unbind();
@@ -572,13 +574,15 @@ namespace Blindside.Integration
                 }
                 else
                     foreach (var c in abilityCtx.Cameras)
-                        if (c.alive && Mathf.Sqrt((c.x - px) * (c.x - px) + (c.y - py) * (c.y - py)) <= 3.2f && vision.LineOfSight(c.x, c.y, px, py, OperatorTeam.Defense)) return true;
+                        if (c.Working && Mathf.Sqrt((c.x - px) * (c.x - px) + (c.y - py) * (c.y - py)) <= 3.2f && vision.LineOfSight(c.x, c.y, px, py, OperatorTeam.Defense)) return true;   // (knocked out by SILENCE: blind)
                 return false;
             };
             visibility.Gadgets = abilityCtx;
             // gas / ghost / mirror / cam: fx · sfx · log, gas damage + its per-phase tick; and their world views.
             gadgetPresenter?.Unbind();
             gadgetPresenter = new GadgetAbilityPresenter(abilities, abilityCtx, turns, units, hostage);
+            reconPresenter?.Unbind();
+            reconPresenter = new ReconAbilityPresenter(abilities, abilityCtx, turns, marks, playerTeam);
             if (gadgetViews == null) gadgetViews = GetComponent<GadgetViews>();
             if (gadgetViews == null) gadgetViews = gameObject.AddComponent<GadgetViews>();
             gadgetViews.Bind(abilityCtx, units);

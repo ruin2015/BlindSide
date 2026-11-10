@@ -22,12 +22,18 @@ MonoBehaviour:
   - key: FLARE
     body: {fileID: 21300000, guid: 1ec1968c2c82ce44990afb7a2191f443, type: 3}
     face: {fileID: 21300000, guid: d810796e70eb0be4781fff4418a2cd88, type: 3}
+  - key: GHOST
+    body: {fileID: 21300000, guid: 2955f18cb36bbdf49823a4a0f5bb65f8, type: 3}
+    face: {fileID: 21300000, guid: fff912ed66ea6254581768598e70af3c, type: 3}
   - key: IGNIS
     body: {fileID: 21300000, guid: 6bb657b669f5b6048af7ac6d5f7cd76a, type: 3}
     face: {fileID: 21300000, guid: 12e1b0c833ed4a3479e8e8fcaae0d45b, type: 3}
   - key: SERUM
     body: {fileID: 21300000, guid: af900bc8e2ce0e344929542b5b63c5eb, type: 3}
     face: {fileID: 21300000, guid: 8a63ba775f61c40459b1e5a8b79cf093, type: 3}
+  - key: SILENCE
+    body: {fileID: 21300000, guid: 12754839c1344744b97d2617bddbfa53, type: 3}
+    face: {fileID: 21300000, guid: dd8156bf8505b3045a9bd38ee79ee2d3, type: 3}
   - key: TERRORIST
     body: {fileID: 21300000, guid: 6cd7d37c57cb0ff44abf424e9017859f, type: 3}
     face: {fileID: 21300000, guid: b36a6e40621d6c244a316b8da5e71142, type: 3}

@@ -38,7 +38,8 @@ namespace Blindside.Integration
 
         // Every non-breach ability: stim (ally) · shield/ghost (instant) · shock/gas/cam (point) · mirror (panel, .Ability.cs).
         static bool IsSupportAbility(string key) =>
-            key == "stim" || key == "shield" || key == "shock" || key == "gas" || key == "ghost" || key == "mirror" || key == "cam";
+            key == "stim" || key == "shield" || key == "shock" || key == "gas" || key == "ghost" || key == "mirror" || key == "cam"
+            || key == "heartbeat" || key == "holo";   // GHOST / SILENCE (instant)
 
         /// <summary>doCommand's 'skill' branch for kinds other than 'panel' (the caller already set mode/spec).</summary>
         bool StartSupportAbility(SimUnit u, AbilitySpec sp)
