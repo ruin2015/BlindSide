@@ -67,6 +67,7 @@ namespace Blindside.MapEditor
 
         // object colours (the defenders use the editor's blue, like the attack side's team colour)
         public static readonly Color HostageColor = new Color(1f, .6f, .1f), DefenderColor = new Color32(0x1f, 0x96, 0xe8, 0xff), CameraColor = new Color(.95f, .32f, .6f);
+        public static readonly Color TerroristColor = new Color32(0xd6, 0x3b, 0x3b, 0xff), CaptiveColor = new Color32(0x9b, 0x3c, 0xf2, 0xff);
         static readonly Color DropTint = new Color(.35f, .78f, 1f, .42f), CamFovTint = new Color(1f, .4f, .65f, .33f), CamFovLine = new Color(1f, .4f, .65f, .95f);
         static readonly Color MarkerRim = new Color(.06f, .07f, .09f, .95f);
 
@@ -253,9 +254,16 @@ namespace Blindside.MapEditor
             var o = model.Objects;
             for (int i = 0; i < o.exfils.Count; i++) AddExfil(i, o.exfils[i]);
             if (o.hostage.HasValue) AddMarker(objectsRoot, "Hostage", o.hostage.Value, HostageColor, "H", null);
+            for (int i = 0; i < o.extraHostages.Count; i++) AddMarker(objectsRoot, "Hostage_" + (i + 2), o.extraHostages[i], HostageColor, "H", null);
             for (int s = 0; s < ObjectState.DefenderSlots; s++)
                 if (o.defPlaced[s]) AddMarker(objectsRoot, "Defender_" + (s + 1), o.defCell[s], DefenderColor, (s + 1).ToString(), o.defFacing[s]);
             for (int i = 0; i < o.cameras.Count; i++) AddMarker(objectsRoot, "Camera_" + (i + 1), o.cameras[i], CameraColor, "C", null);
+            for (int i = 0; i < o.terrorists.Count; i++) AddMarker(objectsRoot, "Terrorist_" + (i + 1), o.terrorists[i].cell, TerroristColor, "T", o.terrorists[i].facing);
+            for (int i = 0; i < o.captives.Count; i++)
+            {
+                var op = Blindside.Data.BuildAssetRegistry.Operator(o.captives[i].operatorKey);
+                AddMarker(objectsRoot, "Captive_" + (i + 1), o.captives[i].cell, op != null ? op.color : CaptiveColor, "P", null);
+            }
             RebuildOverlays();
         }
 
@@ -398,9 +406,14 @@ namespace Blindside.MapEditor
             Vector2 c; Vector2 size = Vector2.one * 1.2f;
             switch (r.kind)
             {
-                case ObjKind.Hostage: if (!o.hostage.HasValue) { selectionObj.SetActive(false); return; } c = new Vector2(o.hostage.Value.x, o.hostage.Value.y); break;
+                case ObjKind.Hostage:
+                    if (r.index >= 1 && r.index - 1 < o.extraHostages.Count) { c = new Vector2(o.extraHostages[r.index - 1].x, o.extraHostages[r.index - 1].y); break; }
+                    if (r.index >= 1 || !o.hostage.HasValue) { selectionObj.SetActive(false); return; }
+                    c = new Vector2(o.hostage.Value.x, o.hostage.Value.y); break;
                 case ObjKind.Defender: if (r.index < 0 || r.index >= ObjectState.DefenderSlots || !o.defPlaced[r.index]) { selectionObj.SetActive(false); return; } c = new Vector2(o.defCell[r.index].x, o.defCell[r.index].y); break;
                 case ObjKind.Camera: if (r.index < 0 || r.index >= o.cameras.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.cameras[r.index].x, o.cameras[r.index].y); break;
+                case ObjKind.Terrorist: if (r.index < 0 || r.index >= o.terrorists.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.terrorists[r.index].cell.x, o.terrorists[r.index].cell.y); break;
+                case ObjKind.Captive: if (r.index < 0 || r.index >= o.captives.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.captives[r.index].cell.x, o.captives[r.index].cell.y); break;
                 case ObjKind.Exfil: if (r.index < 0 || r.index >= o.exfils.Count) { selectionObj.SetActive(false); return; } c = o.exfils[r.index].Center; size = new Vector2(o.exfils[r.index].Width + .2f, o.exfils[r.index].Height + .2f); break;
                 default: selectionObj.SetActive(false); return;
             }
@@ -414,7 +427,9 @@ namespace Blindside.MapEditor
         {
             if (defenderPreview != null) { defenderPreview.SetActive(false); Object.Destroy(defenderPreview); defenderPreview = null; }
             if (!cell.HasValue) return;
-            defenderPreview = AddMarker(overlays, "DefenderPreview", cell.Value, DefenderColor, (slot + 1).ToString(), facing);
+            defenderPreview = slot < 0
+                ? AddMarker(overlays, "TerroristPreview", cell.Value, TerroristColor, "T", facing)   // (slot −1: a generic terrorist)
+                : AddMarker(overlays, "DefenderPreview", cell.Value, DefenderColor, (slot + 1).ToString(), facing);
         }
 
         // ---- overlays: the drop zone and the cameras' sight ------------------------------------------------------------------

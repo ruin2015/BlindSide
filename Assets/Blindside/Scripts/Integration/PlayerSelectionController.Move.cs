@@ -53,7 +53,7 @@ namespace Blindside.Integration
 
         void BindMovement(GameplayUIBridge b)
         {
-            movement = new MovementSystem(map, units, hostage)
+            movement = new MovementSystem(map, units, hostage, hostages.ConvertAll(h => (ITurnHostage)h))
             {
                 PlayerSide = hasSide ? side : (OperatorTeam?)null,
                 Log = Log,

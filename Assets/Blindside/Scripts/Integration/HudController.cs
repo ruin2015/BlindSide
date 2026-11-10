@@ -242,8 +242,16 @@ namespace Blindside.Integration
                 string body = side == OperatorTeam.Attack
                     ? $"① 人質を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② または防衛チームを全員制圧"
                     : $"① {TurnManager.MaxRound}ラウンド終了まで人質を死守\n② または攻撃チームを全員制圧";
+                if (side == OperatorTeam.Attack && MatchBootstrap.WinRule == Blindside.Map.MapData.WinWipe)
+                    body = "① 防衛チームを全員制圧\n② 人質を死なせない";
+                else if (side == OperatorTeam.Attack && MatchBootstrap.WinRule == Blindside.Map.MapData.WinExtract)
+                    body = $"① 人質{(MatchBootstrap.HostageCount > 1 ? MatchBootstrap.HostageCount + "人全員" : "")}を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② 人質を死なせない (制圧だけでは勝利になりません)";
+                else if (side == OperatorTeam.Attack && MatchBootstrap.HostageCount > 1)
+                    body = $"① 人質{MatchBootstrap.HostageCount}人全員を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② または防衛チームを全員制圧";
+                else if (side == OperatorTeam.Defense && MatchBootstrap.WinRule == Blindside.Map.MapData.WinExtract)
+                    body = $"① {TurnManager.MaxRound}ラウンド終了まで人質を死守\n② または攻撃チームを全員制圧\n(防衛チームが全滅しても試合は続く)";
                 if (TutorialGate.Active) body = "① クラッシャーの指示に従って訓練を進める\n② 移動・射撃・視界・ドローン・壁の破壊を習得";
-                if (MatchBootstrap.RescueMatch && side == OperatorTeam.Attack) body = "① 拘束されたGHOST・SILENCEを救出 (救出すると分隊に合流)\n② 防衛チームを全員制圧";
+                if (MatchBootstrap.RescueMatch && side == OperatorTeam.Attack) body = "① 拘束された" + string.Join("・", MatchBootstrap.RescueKeys) + "を救出 (救出すると分隊に合流)\n② 防衛チームを全員制圧";
                 if (objectivePhaseLine && phase == MatchPhase.Prep) body += $"\n<color=#A37200><b>残り強化 {(selection != null ? selection.reinforceLeft : 10)}/10</b></color>";
                 if (objectivePhaseLine && phase == MatchPhase.Deploy) body += "\n<color=#A37200><b>建物の外の好きな位置に隊員を配置</b></color>";
 

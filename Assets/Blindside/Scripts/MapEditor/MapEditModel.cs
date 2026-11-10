@@ -26,7 +26,7 @@ namespace Blindside.MapEditor
     public enum EditTool
     {
         Erase = 0, OutFloor = 1, InFloor = 2, SolidWall = 3, BreakableWall = 4, ReinforcedWall = 5, Crate = 6,
-        Hostage = 7, Defender = 8, Camera = 9, Exfil = 10, Select = 11,
+        Hostage = 7, Defender = 8, Camera = 9, Exfil = 10, Select = 11, Terrorist = 12, Captive = 13,
     }
 
     public struct CellChange
@@ -113,6 +113,8 @@ namespace Blindside.MapEditor
             }
             string why;
             if (o.hostage.HasValue && (why = Place("人質", o.hostage.Value, true)) != null) return why;
+            for (int i = 0; i < o.extraHostages.Count; i++)
+                if ((why = Place($"人質{i + 2}", o.extraHostages[i], true)) != null) return why;
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
                 if (o.defPlaced[i] && (why = Place($"防衛開始位置{i + 1}番", o.defCell[i], true)) != null) return why;
             for (int i = 0; i < o.cameras.Count; i++)
@@ -137,15 +139,25 @@ namespace Blindside.MapEditor
         public MapData BuildGameData()
         {
             var o = Objects;
-            if (!o.hostage.HasValue || o.DefenderCount < ObjectState.DefenderSlots || o.exfils.Count == 0)
-                throw new InvalidOperationException("the map is incomplete (hostage, 5 defender starts and an exfil zone are required)");
+            if ((!o.hostage.HasValue && o.captives.Count == 0) || o.DefenderCount < ObjectState.DefenderSlots || o.exfils.Count == 0)
+                throw new InvalidOperationException("the map is incomplete (a hostage or a captive, 5 defender starts and an exfil zone are required)");
             var d = Data.Clone();
             d.name = Data.name; d.version = 1; d.useHouseIntro = false;
-            d.hostage = o.hostage.Value;
+            // no civilian: `hostage` is still where the defense centres itself — the first captive
+            d.noHostage = !o.hostage.HasValue;
+            d.hostage = o.hostage ?? o.captives[0].cell;
+            d.captives = new MapCaptive[o.captives.Count];
+            for (int i = 0; i < o.captives.Count; i++) d.captives[i] = new MapCaptive { cell = o.captives[i].cell, operatorKey = o.captives[i].operatorKey };
+            d.rescueIntro = o.captives.Count > 0;   // (the rescue intro and rules)
+            d.extraHostages = o.hostage.HasValue ? o.extraHostages.ToArray() : new Vector2Int[0];
+            d.winRule = o.winRule;
             d.defenderStarts = new MapDefenderStart[ObjectState.DefenderSlots];
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
                 d.defenderStarts[i] = new MapDefenderStart { operatorKey = MapData.DefenderKeys[i], cell = o.defCell[i], facing = o.defFacing[i] };
             d.cameras = o.cameras.ToArray();
+            d.terrorists = new MapTerrorist[o.terrorists.Count];
+            for (int i = 0; i < o.terrorists.Count; i++)
+                d.terrorists[i] = new MapTerrorist { cell = o.terrorists[i].cell, facing = o.terrorists[i].facing, weapon = o.terrorists[i].weapon };
             d.exfils = new MapExfil[o.exfils.Count];
             for (int i = 0; i < o.exfils.Count; i++)
             {
@@ -201,7 +213,11 @@ namespace Blindside.MapEditor
         static ObjectState ObjectsOf(MapData d)
         {
             var o = new ObjectState();
-            if (d.InBounds(d.hostage.x, d.hostage.y)) o.hostage = d.hostage;
+            if (!d.noHostage && d.InBounds(d.hostage.x, d.hostage.y)) o.hostage = d.hostage;
+            o.winRule = d.winRule;
+            if (o.hostage.HasValue && d.extraHostages != null)
+                foreach (var c in d.extraHostages) if (d.InBounds(c.x, c.y) && c != d.hostage && !o.extraHostages.Contains(c)) o.extraHostages.Add(c);
+            if (d.captives != null) foreach (var c in d.captives) if (c != null) o.captives.Add(new CaptiveSpot { cell = c.cell, operatorKey = c.operatorKey });
             if (d.defenderStarts != null)
                 for (int i = 0; i < ObjectState.DefenderSlots && i < d.defenderStarts.Length; i++)
                 {
@@ -211,6 +227,7 @@ namespace Blindside.MapEditor
                 }
             if (d.cameras != null) o.cameras.AddRange(d.cameras);
             if (d.exfils != null) foreach (var e in d.exfils) o.exfils.Add(new ExfilRect { x0 = e.x0, y0 = e.y0, x1 = e.x1, y1 = e.y1 });
+            if (d.terrorists != null) foreach (var t in d.terrorists) if (t != null) o.terrorists.Add(new TerroristSpot { cell = t.cell, facing = t.facing, weapon = t.weapon });
             return o;
         }
 
@@ -421,10 +438,16 @@ namespace Blindside.MapEditor
             var o = Objects;
             var h = new ObjRef(ObjKind.Hostage, 0);
             if (o.hostage.HasValue && o.hostage.Value == c && !Ignored(h, ignore)) return h;
+            for (int i = 0; i < o.extraHostages.Count; i++)
+                if (o.extraHostages[i] == c && !Ignored(new ObjRef(ObjKind.Hostage, i + 1), ignore)) return new ObjRef(ObjKind.Hostage, i + 1);
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
                 if (o.defPlaced[i] && o.defCell[i] == c && !Ignored(new ObjRef(ObjKind.Defender, i), ignore)) return new ObjRef(ObjKind.Defender, i);
             for (int i = 0; i < o.cameras.Count; i++)
                 if (o.cameras[i] == c && !Ignored(new ObjRef(ObjKind.Camera, i), ignore)) return new ObjRef(ObjKind.Camera, i);
+            for (int i = 0; i < o.terrorists.Count; i++)
+                if (o.terrorists[i].cell == c && !Ignored(new ObjRef(ObjKind.Terrorist, i), ignore)) return new ObjRef(ObjKind.Terrorist, i);
+            for (int i = 0; i < o.captives.Count; i++)
+                if (o.captives[i].cell == c && !Ignored(new ObjRef(ObjKind.Captive, i), ignore)) return new ObjRef(ObjKind.Captive, i);
             for (int i = 0; i < o.exfils.Count; i++)
                 if (o.exfils[i].Contains(c.x, c.y) && !Ignored(new ObjRef(ObjKind.Exfil, i), ignore)) return new ObjRef(ObjKind.Exfil, i);
             return default;
@@ -441,7 +464,8 @@ namespace Blindside.MapEditor
         {
             var why = CheckFloor(c, "人質は屋内の床にのみ置けます");
             if (why != null) return why;
-            return ObjectAt(c, new ObjRef(ObjKind.Hostage, 0)).IsNone ? null : MsgOccupied;
+            if (!ObjectAt(c).IsNone) return MsgOccupied;
+            return Objects.HostageCount >= MapData.MaxHostages ? $"人質は最大{MapData.MaxHostages}人まで置けます" : null;
         }
 
         public string CheckDefender(Vector2Int c)
@@ -449,6 +473,93 @@ namespace Blindside.MapEditor
             var why = CheckFloor(c, "防衛開始位置は屋内の床にのみ置けます");
             if (why != null) return why;
             return ObjectAt(c, new ObjRef(ObjKind.Defender, DefenderTargetSlot())).IsNone ? null : MsgOccupied;
+        }
+
+        /// <summary>Who may be held captive: the attack operators in the registry beyond the first five (GHOST, SILENCE…).</summary>
+        public static List<string> CaptiveKeys()
+        {
+            var keys = new List<string>();
+            var reg = Blindside.Data.BuildAssetRegistry.Instance;
+            if (reg == null) return keys;
+            foreach (var op in reg.operators)
+                if (op != null && op.team == Blindside.Data.OperatorTeam.Attack && Array.IndexOf(Blindside.Integration.MatchBootstrap.AttackerKeys, op.key) < 0
+                    && !keys.Contains(op.key)) keys.Add(op.key);
+            return keys;
+        }
+
+        public string CheckCaptive(Vector2Int c)
+        {
+            var why = CheckFloor(c, "捕虜は屋内の床にのみ置けます");
+            if (why != null) return why;
+            if (!ObjectAt(c).IsNone) return MsgOccupied;
+            if (CaptiveKeys().Count == 0) return "捕虜にできる隊員がいません";
+            return Objects.captives.Count >= CaptiveKeys().Count ? $"捕虜は最大{CaptiveKeys().Count}人まで置けます (隊員ごとに1人)" : null;
+        }
+
+        /// <summary>Holds the next operator not yet held (CaptiveKeys) on `c`. Returns the reason it was refused, or null.</summary>
+        public string PlaceCaptive(Vector2Int c)
+        {
+            var why = CheckCaptive(c);
+            if (why != null) return why;
+            string key = null;
+            foreach (var k in CaptiveKeys()) if (!Objects.captives.Exists(x => x.operatorKey == k)) { key = k; break; }
+            if (key == null) return "捕虜にできる隊員が残っていません";
+            Commit(o => o.captives.Add(new CaptiveSpot { cell = c, operatorKey = key }));
+            return null;
+        }
+
+        /// <summary>Captive `i` becomes the next operator not held by another (round). Returns its key, or null.</summary>
+        public string CycleCaptiveOperator(int i)
+        {
+            if (i < 0 || i >= Objects.captives.Count) return null;
+            var keys = CaptiveKeys();
+            if (keys.Count == 0) return null;
+            string next = null;
+            Commit(o =>
+            {
+                var cap = o.captives[i];
+                int k = keys.IndexOf(cap.operatorKey);
+                for (int step = 1; step <= keys.Count; step++)
+                {
+                    string cand = keys[(k + step + keys.Count) % keys.Count];
+                    bool taken = false;
+                    for (int j = 0; j < o.captives.Count; j++) if (j != i && o.captives[j].operatorKey == cand) taken = true;
+                    if (!taken) { cap.operatorKey = cand; break; }
+                }
+                o.captives[i] = cap; next = cap.operatorKey;
+            });
+            return next;
+        }
+
+        public string CheckTerrorist(Vector2Int c)
+        {
+            var why = CheckFloor(c, "テロリストは屋内の床にのみ置けます");
+            if (why != null) return why;
+            if (!ObjectAt(c).IsNone) return MsgOccupied;
+            return Objects.terrorists.Count >= MapData.MaxTerrorists ? $"テロリストは最大{MapData.MaxTerrorists}人まで置けます" : null;
+        }
+
+        /// <summary>Adds a generic terrorist on `c` facing `facing` with `weapon`. Returns the reason it was refused, or null.</summary>
+        public string PlaceTerrorist(Vector2Int c, float facing, string weapon)
+        {
+            var why = CheckTerrorist(c);
+            if (why == null) Commit(o => o.terrorists.Add(new TerroristSpot { cell = c, facing = facing, weapon = string.IsNullOrEmpty(weapon) ? MapData.TerroristWeapons[0] : weapon }));
+            return why;
+        }
+
+        /// <summary>The next gun (MapData.TerroristWeapons, round) for terrorist `i`. Returns its key, or null.</summary>
+        public string CycleTerroristWeapon(int i)
+        {
+            if (i < 0 || i >= Objects.terrorists.Count) return null;
+            string next = null;
+            Commit(o =>
+            {
+                var t = o.terrorists[i];
+                int k = System.Array.IndexOf(MapData.TerroristWeapons, t.weapon);
+                t.weapon = MapData.TerroristWeapons[(k + 1 + MapData.TerroristWeapons.Length) % MapData.TerroristWeapons.Length];
+                o.terrorists[i] = t; next = t.weapon;
+            });
+            return next;
         }
 
         public string CheckCamera(Vector2Int c)
@@ -489,13 +600,23 @@ namespace Blindside.MapEditor
             Publish(step);
         }
 
-        /// <summary>Puts the hostage on `c` (moving it if there is one). Returns the reason it was refused, or null.</summary>
+        /// <summary>Adds a civilian hostage on `c` (the first, or one more). Returns the reason it was refused, or null.</summary>
         public string PlaceHostage(Vector2Int c)
         {
             var why = CheckHostage(c);
-            if (why == null) Commit(o => o.hostage = c);
+            if (why == null) Commit(o => { if (!o.hostage.HasValue) o.hostage = c; else o.extraHostages.Add(c); });
             return why;
         }
+
+        /// <summary>The next win rule (either → wipe → extract → either), as one undo step.</summary>
+        public int CycleWinRule()
+        {
+            Commit(o => o.winRule = (o.winRule + 1) % 3);
+            return Objects.winRule;
+        }
+
+        /// <summary>The ObjRef index of the hostage last added (0: the first, i: extraHostages[i - 1]).</summary>
+        public int LastHostageIndex => Objects.extraHostages.Count;
 
         /// <summary>Puts the next defender start on `c` facing `facing` (radians): the first free slot 1→5, else the last one moves.
         /// `slot` is the slot used. Returns the reason it was refused, or null.</summary>
@@ -531,10 +652,21 @@ namespace Blindside.MapEditor
             {
                 switch (r.kind)
                 {
-                    case ObjKind.Hostage: found = o.hostage.HasValue; o.hostage = null; break;
+                    case ObjKind.Hostage:
+                        if (r.index <= 0)
+                        {
+                            // the first goes: the next (if any) becomes the first
+                            found = o.hostage.HasValue;
+                            o.hostage = null;
+                            if (o.extraHostages.Count > 0) { o.hostage = o.extraHostages[0]; o.extraHostages.RemoveAt(0); }
+                        }
+                        else { found = r.index - 1 < o.extraHostages.Count; if (found) o.extraHostages.RemoveAt(r.index - 1); }
+                        break;
                     case ObjKind.Defender: found = r.index >= 0 && r.index < ObjectState.DefenderSlots && o.defPlaced[r.index]; if (found) o.defPlaced[r.index] = false; break;
                     case ObjKind.Camera: found = r.index >= 0 && r.index < o.cameras.Count; if (found) o.cameras.RemoveAt(r.index); break;
                     case ObjKind.Exfil: found = r.index >= 0 && r.index < o.exfils.Count; if (found) o.exfils.RemoveAt(r.index); break;
+                    case ObjKind.Terrorist: found = r.index >= 0 && r.index < o.terrorists.Count; if (found) o.terrorists.RemoveAt(r.index); break;
+                    case ObjKind.Captive: found = r.index >= 0 && r.index < o.captives.Count; if (found) o.captives.RemoveAt(r.index); break;
                 }
             });
             return found;
@@ -549,10 +681,17 @@ namespace Blindside.MapEditor
             var o = Objects; bool any = false;
             bool Free(Vector2Int c) => InBounds(c.x, c.y) && !MapData.IsWall(TerrainAt(c.x, c.y)) && !CrateAt(c.x, c.y);
             bool Indoor(Vector2Int c) => Free(c) && TerrainAt(c.x, c.y) == MapTerrain.In;
-            if (o.hostage.HasValue && !Indoor(o.hostage.Value)) { o.hostage = null; any = true; }
+            any |= o.extraHostages.RemoveAll(c => !Indoor(c)) > 0;
+            if (o.hostage.HasValue && !Indoor(o.hostage.Value))
+            {
+                o.hostage = null; any = true;
+                if (o.extraHostages.Count > 0) { o.hostage = o.extraHostages[0]; o.extraHostages.RemoveAt(0); }
+            }
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
                 if (o.defPlaced[i] && !Indoor(o.defCell[i])) { o.defPlaced[i] = false; any = true; }
             any |= o.cameras.RemoveAll(c => !Free(c)) > 0;
+            any |= o.terrorists.RemoveAll(t => !Indoor(t.cell)) > 0;
+            any |= o.captives.RemoveAll(t => !Indoor(t.cell)) > 0;
             any |= o.exfils.RemoveAll(e =>
             {
                 if (!InBounds(e.x0, e.y0) || !InBounds(e.x1, e.y1)) return true;

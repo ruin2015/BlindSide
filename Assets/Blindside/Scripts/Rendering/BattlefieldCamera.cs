@@ -49,6 +49,9 @@ namespace Blindside.Rendering
     {
         public const float Fov = 38f, Near = .1f, Far = 300f, Tilt = .32f;
         public const float MinH = 9f, MaxH = 42f, StartH = 27f;
+        /// <summary>How far out the camera may zoom on the current map: MaxH, or more on a big map (up to its longer side × .9).</summary>
+        public static float MaxHFor(int width, int height) => Mathf.Max(MaxH, Mathf.Max(width, height) * .9f);
+        static float ZoomMax { get { var m = Blindside.Map.MapLibrary.Current; return m != null ? MaxHFor(m.width, m.height) : MaxH; } }
 
         public static BattlefieldCamera Instance { get; private set; }
 
@@ -129,7 +132,7 @@ namespace Blindside.Rendering
                 float sy = mouse.scroll.ReadValue().y;
                 // one notch: ±10% of the height, scaled by the ズーム感度 option (×0.5–2)
                 float z = .1f * Blindside.Settings.GameSettings.ZoomSpeed;
-                if (sy != 0f) h = Mathf.Clamp(h * (sy < 0f ? 1f + z : 1f - z), MinH, MaxH);
+                if (sy != 0f) h = Mathf.Clamp(h * (sy < 0f ? 1f + z : 1f - z), MinH, ZoomMax);
             }
 
             var kb = Keyboard.current;

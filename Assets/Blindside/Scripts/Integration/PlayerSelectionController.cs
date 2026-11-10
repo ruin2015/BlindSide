@@ -68,6 +68,30 @@ namespace Blindside.Integration
         TurnManager turns;
         IReadOnlyList<SimUnit> units;
         SimHostage hostage;
+        /// <summary>Every civilian hostage (set by MatchBootstrap before Bind; null — just `hostage`).</summary>
+        public IReadOnlyList<SimHostage> HostageList;
+        readonly List<SimHostage> hostages = new List<SimHostage>();
+
+        /// <summary>The hostage `u` escorts, or null.</summary>
+        SimHostage EscortedBy(SimUnit u)
+        {
+            for (int i = 0; i < hostages.Count; i++) if (hostages[i].Alive && !hostages[i].Extracted && ReferenceEquals(hostages[i].Escort, u)) return hostages[i];
+            return null;
+        }
+
+        /// <summary>The nearest free hostage within SECURE reach of `u` (none while `u` already escorts one).</summary>
+        SimHostage FreeHostageNear(SimUnit u)
+        {
+            if (u == null || EscortedBy(u) != null) return null;
+            SimHostage best = null; float bd = 1.6f;
+            foreach (var h in hostages)
+            {
+                if (!h.Alive || h.Extracted || h.Escort != null) continue;
+                float d = Vector2.Distance(new Vector2(u.X, u.Y), new Vector2(h.X, h.Y));
+                if (d <= bd) { bd = d; best = h; }
+            }
+            return best;
+        }
         MapGrid map;
         OperatorTeam side;
         bool hasSide;
@@ -129,6 +153,8 @@ namespace Blindside.Integration
                          Blindside.Vision.VisionSystem vision = null, Blindside.Vision.MarkBoard marks = null, System.Func<Blindside.Combat.ICombatUnit, bool> shownToPlayer = null)
         {
             this.turns = turns; this.units = units; this.hostage = hostage; this.map = map; this.combat = combat;
+            hostages.Clear();
+            if (HostageList != null) hostages.AddRange(HostageList); else if (hostage != null) hostages.Add(hostage);
             this.vision = vision; this.marks = marks; this.shownToPlayer = shownToPlayer;
             hasSide = playerTeam.HasValue;
             side = playerTeam ?? OperatorTeam.Attack;
@@ -167,7 +193,7 @@ namespace Blindside.Integration
             ResetCallouts();
             if (combat != null) combat.OnKill -= OnKillCallout;
             GameplayUIBridge.VolleyShown -= OnVolleyCallout;
-            turns = null; units = null; hostage = null; map = null; hasSide = false;
+            turns = null; units = null; hostage = null; map = null; hasSide = false; hostages.Clear(); HostageList = null;
             vision = null; marks = null; shownToPlayer = null;
             movement = null; combat = null; busy = false; modal = false;
             abilities = null; abilityCtx = null; droneOps = null;
@@ -513,9 +539,9 @@ namespace Blindside.Integration
             }
             if (u.Team == OperatorTeam.Defense && prep)
                 L.Add(new Command { id = "reinforce", kr = "壁強化", en = "REINFORCE", ic = "▦", ok = reinforceLeft > 0 && AnyReinforceablePanelNear(u), sub = reinforceLeft + "/10" });
-            if (u.Team == OperatorTeam.Attack && hostage != null && hostage.Alive && hostage.Escort == null &&
-                Vector2.Distance(new Vector2(u.X, u.Y), new Vector2(hostage.X, hostage.Y)) <= 1.6f)
-                L.Add(new Command { id = "escort", kr = "人質確保", en = "SECURE", ic = "♥", ok = SegFree(u.X, u.Y, hostage.X, hostage.Y) });
+            var fh = u.Team == OperatorTeam.Attack ? FreeHostageNear(u) : null;
+            if (fh != null)
+                L.Add(new Command { id = "escort", kr = "人質確保", en = "SECURE", ic = "♥", ok = SegFree(u.X, u.Y, fh.X, fh.Y) });
             AddItemCommand(u, L, prep);   // the HQ item (破片手榴弾) — .Grenade.cs
             AddRescueCommand(u, L);       // the rescue operation: 救出 next to a captive — .Rescue.cs
             L.Add(new Command { id = "wait", kr = "待機", en = "END", ic = "■", ok = true });
@@ -761,7 +787,7 @@ namespace Blindside.Integration
             if (u.Ghost) m.AddTag("電波妨害", Blu, Color.white);
             if (u.Stim) m.AddTag("スティム", Acc, Ink);
             if (u.LockFacing) m.AddTag("視界固定", Acc, Ink);
-            if (hostage != null && ReferenceEquals(hostage.Escort, u)) m.AddTag("人質護送", Acc, Ink);
+            if (EscortedBy(u) != null) m.AddTag("人質護送", Acc, Ink);
             if (u.Ended) m.AddTag("行動終了", Ink, Color.white);
             return m;
         }

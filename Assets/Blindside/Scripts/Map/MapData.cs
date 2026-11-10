@@ -25,6 +25,23 @@ namespace Blindside.Map
         public int x0, y0, x1, y1;   // inclusive bounds
     }
 
+    /// <summary>A captured operator held on the map: where, and who (an attack OperatorData key outside the first five).</summary>
+    [System.Serializable]
+    public class MapCaptive
+    {
+        public Vector2Int cell;
+        public string operatorKey;
+    }
+
+    /// <summary>A generic terrorist placed beyond the five defenders: where, which way, which gun (MapData.TerroristWeapons).</summary>
+    [System.Serializable]
+    public class MapTerrorist
+    {
+        public Vector2Int cell;
+        public float facing;
+        public string weapon = "AR";
+    }
+
     [Serializable]
     public class MapDefenderStart
     {
@@ -95,15 +112,64 @@ namespace Blindside.Map
         public Vector2Int[] cameras;         // fixed surveillance cameras (defense), in this order
         public Vector2Int hostage;
         public MapDefenderStart[] defenderStarts;   // 5, in DefenderKeys order
+        /// <summary>Generic terrorists beyond the five (TerroristKey: no ability), each with its own gun (TerroristWeapons key).</summary>
+        public MapTerrorist[] terrorists;
+        /// <summary>Captured operators held on this map (a rescue: freed, each joins the squad). Placed in the editor.</summary>
+        public MapCaptive[] captives;
+        /// <summary>Civilian hostages beyond the first (`hostage`): every one is to be brought out. Older maps: none.</summary>
+        public Vector2Int[] extraHostages;
+        public const int MaxHostages = 8;
+        /// <summary>How the attack wins: WinEither (older maps) — the defense wiped out or every hostage brought out, whichever first;
+        /// WinWipe — only by wiping out the defense; WinExtract — only by bringing every hostage out.</summary>
+        public int winRule;
+        public const int WinEither = 0, WinWipe = 1, WinExtract = 2;
+
+        public static string WinRuleText(int rule) =>
+            rule == WinWipe ? "敵の全員制圧" : rule == WinExtract ? "人質全員の救出" : "制圧 または 人質救出";
+        /// <summary>No civilian hostage on this map (`hostage` then only marks where the defense centres itself). Older maps: false.</summary>
+        public bool noHostage;
         public MapExfil[] exfils;            // 1..8
         public MapAnchors anchors;
         public MapAuthored authored;         // optional: hand-placed defense preparation / attacker drop zones (see MapAuthored)
 
         public static readonly string[] DefenderKeys = { "VOLT", "MIASMA", "WRAITH", "OBSIDIAN", "ARGUS" };
+        /// <summary>The generic terrorist's OperatorData key, and the guns a placed one may carry (WeaponData asset Weapon_{key}).</summary>
+        public const string TerroristKey = "TERRORIST";
+        public static readonly string[] TerroristWeapons = { "AR", "SMG", "SG", "PST" };
+        public const int MaxTerrorists = 40;
         public const int MaxExfils = 8;
 
         /// <summary>An independent deep copy (through JSON, like a save and load would make).</summary>
         public MapData Clone() => JsonUtility.FromJson<MapData>(JsonUtility.ToJson(this));
+
+        /// <summary>The operators the rescue holds captive, and where: the map's own captives (placed in the editor) when it has any —
+        /// else the original operation's GHOST and SILENCE on CaptiveCells.</summary>
+        public System.Collections.Generic.List<MapCaptive> RescueRoster()
+        {
+            var list = new System.Collections.Generic.List<MapCaptive>();
+            if (captives != null) foreach (var c in captives) if (c != null && !string.IsNullOrEmpty(c.operatorKey)) list.Add(c);
+            if (list.Count > 0) return list;
+            var cells = CaptiveCells(LegacyCaptiveKeys.Length);
+            for (int i = 0; i < LegacyCaptiveKeys.Length && i < cells.Count; i++) list.Add(new MapCaptive { cell = cells[i], operatorKey = LegacyCaptiveKeys[i] });
+            return list;
+        }
+
+        /// <summary>Where the civilian hostages start: `hostage` first, then extraHostages — none on a map without a civilian.</summary>
+        public System.Collections.Generic.List<Vector2Int> CivilianCells()
+        {
+            var list = new System.Collections.Generic.List<Vector2Int>();
+            if (!HasCivilian) return list;
+            list.Add(hostage);
+            if (extraHostages != null) foreach (var c in extraHostages) if (!list.Contains(c) && list.Count < MaxHostages) list.Add(c);
+            return list;
+        }
+
+        /// <summary>Who the original rescue operation (a catalog map without editor captives) holds.</summary>
+        public static readonly string[] LegacyCaptiveKeys = { "GHOST", "SILENCE" };
+
+        /// <summary>The map keeps its civilian hostage: every map but a rescue without one (the catalog's rescue, or an editor map
+        /// whose only hostages are captives).</summary>
+        public bool HasCivilian => !noHostage && !(rescueIntro && (captives == null || captives.Length == 0));
 
         /// <summary>The rescue map's `count` captive cells: `hostage` first, then rescueHostages; short of that, the indoor floor cell
         /// farthest from the first (a stand-in until the map gives one).</summary>

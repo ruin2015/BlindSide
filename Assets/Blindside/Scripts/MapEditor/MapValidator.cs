@@ -57,7 +57,8 @@ namespace Blindside.MapEditor
             foreach (var p in m.Panels) { if (p.reinforced) r.reinforcedPanels++; else r.breakablePanels++; }
 
             // required errors
-            if (!o.hostage.HasValue) r.issues.Add(Err("人質がいません", center));
+            if (!o.hostage.HasValue && o.captives.Count == 0) r.issues.Add(Err("人質も捕虜もいません (どちらか1人以上必要)", center));
+            if (o.winRule == MapData.WinExtract && !o.hostage.HasValue) r.issues.Add(Err("勝利条件「人質全員の救出」には人質が1人以上必要です", center));
             if (o.DefenderCount < RequiredDefenders)
             {
                 int missing = -1;
@@ -68,6 +69,14 @@ namespace Blindside.MapEditor
             if (r.dropCells < MinDropCells) r.issues.Add(Err($"降下可能区域が{r.dropCells}マスです (屋外の空きマスが{MinDropCells}マス以上必要)", center));
 
             // warnings
+            for (int i = 0; i < o.extraHostages.Count; i++)
+            {
+                var h = o.extraHostages[i]; var hf = new Vector2(h.x, h.y);
+                if (r.dropCells > 0 && !AttackerCanReach(d, h))
+                    r.issues.Add(new ValidationIssue { text = $"攻撃不可能: 人質{i + 2}が通常の壁で完全に塞がれている", focus = hf, select = new ObjRef(ObjKind.Hostage, i + 1) });
+                if (o.exfils.Count > 0 && !HostageCanReachExfil(d, o, h))
+                    r.issues.Add(new ValidationIssue { text = $"救出不可能: 人質{i + 2}から救出地点までの経路なし", focus = hf, select = new ObjRef(ObjKind.Hostage, i + 1) });
+            }
             if (o.hostage.HasValue)
             {
                 var h = o.hostage.Value; var hf = new Vector2(h.x, h.y);
@@ -135,9 +144,11 @@ namespace Blindside.MapEditor
         }
 
         /// <summary>The hostage has a path to some cell of some exfil zone.</summary>
-        public static bool HostageCanReachExfil(MapData d, ObjectState o)
+        public static bool HostageCanReachExfil(MapData d, ObjectState o) => HostageCanReachExfil(d, o, o.hostage.Value);
+
+        public static bool HostageCanReachExfil(MapData d, ObjectState o, Vector2Int from)
         {
-            var seen = Flood(d, new[] { o.hostage.Value });
+            var seen = Flood(d, new[] { from });
             foreach (var e in o.exfils)
                 for (int y = e.y0; y <= e.y1; y++)
                     for (int x = e.x0; x <= e.x1; x++)

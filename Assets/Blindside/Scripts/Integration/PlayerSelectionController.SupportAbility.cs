@@ -78,7 +78,9 @@ namespace Blindside.Integration
         {
             foreach (var o in units)
                 if (o.Alive && Mathf.Sqrt((o.X - x) * (o.X - x) + (o.Y - y) * (o.Y - y)) < .7f) return true;
-            return hostage != null && hostage.Alive && Mathf.Sqrt((hostage.X - x) * (hostage.X - x) + (hostage.Y - y) * (hostage.Y - y)) < .7f;
+            foreach (var h in hostages)
+                if (h.Alive && !h.Extracted && Mathf.Sqrt((h.X - x) * (h.X - x) + (h.Y - y) * (h.Y - y)) < .7f) return true;
+            return false;
         }
 
         /// <summary>onClick's ability branch for 'ally' / 'point'.</summary>

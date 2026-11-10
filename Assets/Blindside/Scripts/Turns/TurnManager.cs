@@ -59,6 +59,19 @@ namespace Blindside.Turns
         ITurnUnit Escort { get; }
         void SetEscort(ITurnUnit u);
         OperatorTeam? KilledByTeam { get; }
+        /// <summary>Brought out to an exfil zone (a map with several hostages: off the board from then on, still alive).</summary>
+        bool Extracted { get; }
+        /// <summary>Marks it brought out and lets go of the escort.</summary>
+        void Extract();
+    }
+
+    public static class HostageRules
+    {
+        /// <summary>Still on the board: alive and not yet brought out.</summary>
+        public static bool OnBoard(ITurnHostage h) => h != null && h.Alive && !h.Extracted;
+
+        public static IReadOnlyList<ITurnHostage> ListOf(ITurnHostage single, IReadOnlyList<ITurnHostage> many) =>
+            many ?? (single != null ? new[] { single } : new ITurnHostage[0]);
     }
 
     public class TurnManager
@@ -82,10 +95,21 @@ namespace Blindside.Turns
         public OperatorTeam? PlayerTeam { get; private set; }
         bool playerEndTurnRequested;
 
-        public TurnManager(MapGrid map, IReadOnlyList<ITurnUnit> units, ITurnHostage hostage)
+        readonly IReadOnlyList<ITurnHostage> hostages;
+
+        /// <summary>`hostages`: every civilian on the map (the first is `hostage`); null — just `hostage`.</summary>
+        public TurnManager(MapGrid map, IReadOnlyList<ITurnUnit> units, ITurnHostage hostage, IReadOnlyList<ITurnHostage> hostages = null)
         {
             this.map = map; this.units = units; this.hostage = hostage;
+            this.hostages = HostageRules.ListOf(hostage, hostages);
         }
+
+        /// <summary>The map's win rule (MapData.winRule): the attack wins by wiping out the defense / by bringing every hostage out.</summary>
+        public bool WinByWipe { get; set; } = true;
+        public bool WinByExtract { get; set; } = true;
+
+        /// <summary>A hostage was brought out (more remain, or it was the last and the match is won right after).</summary>
+        public event System.Action<ITurnHostage> OnHostageExtracted;
 
         /// <summary>Fires once per BeginPhase call, after the reset — presentation's cue for showBanner()/updateHUD().</summary>
         public event System.Action<MatchPhase> OnPhaseBegin;
@@ -171,9 +195,11 @@ namespace Blindside.Turns
             if (Over) return true;
             if (HoldResult) return false;
 
-            if (hostage != null && !hostage.Alive)
+            ITurnHostage dead = null;
+            foreach (var h in hostages) if (h != null && !h.Alive) { dead = h; break; }
+            if (dead != null)
             {
-                bool killedByAttack = hostage.KilledByTeam == OperatorTeam.Attack;
+                bool killedByAttack = dead.KilledByTeam == OperatorTeam.Attack;
                 Finish(killedByAttack ? MatchResult.DefenseWins : MatchResult.AttackWins,
                     killedByAttack ? "攻撃チームの射撃により人質が死亡しました。" : "防衛チームの射撃により人質が死亡しました。");
                 return true;
@@ -187,13 +213,26 @@ namespace Blindside.Turns
             }
 
             if (Phase != MatchPhase.Prep && Phase != MatchPhase.Deploy && !atkAlive) { Finish(MatchResult.DefenseWins, "攻撃チームが全員制圧されました。"); return true; }
-            if (!defAlive) { Finish(MatchResult.AttackWins, "防衛チームが全員制圧されました。"); return true; }
+            if (!defAlive && WinByWipe) { Finish(MatchResult.AttackWins, "防衛チームが全員制圧されました。"); return true; }
 
             // TLp(h.escort.x,h.escort.y)==='extract': the escort's grid cell (Math.round) is in one of the extraction zones.
-            if (hostage != null && hostage.Escort != null && hostage.Escort.Alive &&
-                ExfilZone.IsExfilTile(Mathf.FloorToInt(hostage.Escort.X + .5f), Mathf.FloorToInt(hostage.Escort.Y + .5f)))
+            // (several hostages: each one brought out leaves the board; the attack wins once every one is out)
+            bool anyHostage = false, allOut = true;
+            foreach (var h in hostages)
             {
-                Finish(MatchResult.AttackWins, "人質を救出地点まで無事に護送しました。");
+                if (h == null) continue;
+                anyHostage = true;
+                if (!h.Extracted && h.Escort != null && h.Escort.Alive &&
+                    ExfilZone.IsExfilTile(Mathf.FloorToInt(h.Escort.X + .5f), Mathf.FloorToInt(h.Escort.Y + .5f)))
+                {
+                    h.Extract();
+                    OnHostageExtracted?.Invoke(h);
+                }
+                if (!h.Extracted) allOut = false;
+            }
+            if (anyHostage && allOut && WinByExtract)
+            {
+                Finish(MatchResult.AttackWins, hostages.Count > 1 ? "人質全員を救出地点まで無事に護送しました。" : "人質を救出地点まで無事に護送しました。");
                 return true;
             }
 

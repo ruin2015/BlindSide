@@ -70,9 +70,12 @@ namespace Blindside.Movement
         /// Presentation / the tutorial only.</summary>
         public event System.Action<ITurnUnit, ITurnUnit, EncounterKind, bool> EncounterResolved;
 
-        public MovementSystem(MapGrid map, IReadOnlyList<ITurnUnit> units, ITurnHostage hostage)
+        readonly IReadOnlyList<ITurnHostage> hostages;
+
+        public MovementSystem(MapGrid map, IReadOnlyList<ITurnUnit> units, ITurnHostage hostage, IReadOnlyList<ITurnHostage> hostages = null)
         {
             this.map = map; this.units = units; this.hostage = hostage;
+            this.hostages = HostageRules.ListOf(hostage, hostages);
         }
 
         int W => MapGrid.Width;
@@ -137,8 +140,8 @@ namespace Blindside.Movement
         public HashSet<int> BlockedSet(OperatorTeam team)
         {
             var s = new HashSet<int>();
-            var h = hostage;
-            if (h != null && h.Alive && !(h.Escort != null && h.Escort.Team == team)) s.Add(Idx(JsRound(h.X), JsRound(h.Y)));
+            foreach (var h in hostages)
+                if (HostageRules.OnBoard(h) && !(h.Escort != null && h.Escort.Team == team)) s.Add(Idx(JsRound(h.X), JsRound(h.Y)));
             foreach (var e in units)
                 if (e.Alive && e.Team != team && Knows(team, e)) s.Add(Idx(JsRound(e.X), JsRound(e.Y)));
             return s;
@@ -211,8 +214,8 @@ namespace Blindside.Movement
         public List<Vector2> BodyObstacles(OperatorTeam team, Vector2? from)
         {
             var obs = new List<Vector2>();
-            var h = hostage;
-            if (h != null && h.Alive && !(h.Escort != null && h.Escort.Team == team)) obs.Add(new Vector2(h.X, h.Y));
+            foreach (var h in hostages)
+                if (HostageRules.OnBoard(h) && !(h.Escort != null && h.Escort.Team == team)) obs.Add(new Vector2(h.X, h.Y));
             foreach (var e in units)
                 if (e.Alive && e.Team != team && Knows(team, e)) obs.Add(new Vector2(e.X, e.Y));
             if (from.HasValue) obs.RemoveAll(o => Hypot(o.x - from.Value.x, o.y - from.Value.y) <= .3f);
@@ -273,8 +276,11 @@ namespace Blindside.Movement
         /// <summary>spotClear(px,py,self): no other body (hostage, ally, or known enemy) within .6.</summary>
         public bool SpotClear(float px, float py, ITurnUnit self)
         {
-            var h = hostage;
-            if (h != null && h.Alive && !ReferenceEquals(h.Escort, self) && Hypot(h.X - px, h.Y - py) < .6f) return false;
+            for (int i = 0; i < hostages.Count; i++)
+            {
+                var h = hostages[i];
+                if (HostageRules.OnBoard(h) && !ReferenceEquals(h.Escort, self) && Hypot(h.X - px, h.Y - py) < .6f) return false;
+            }
             foreach (var u in units)
             {
                 if (!u.Alive || ReferenceEquals(u, self) || Hypot(u.X - px, u.Y - py) >= .6f) continue;
@@ -290,8 +296,12 @@ namespace Blindside.Movement
         /// <summary>followHostage(u): the escorted hostage trails .85m behind along the escort's path.</summary>
         void FollowHostage(ITurnUnit u)
         {
-            var h = hostage;
-            if (h == null || !h.Alive || !ReferenceEquals(h.Escort, u) || !(h is IEscortableHostage eh)) return;
+            for (int i = 0; i < hostages.Count; i++) FollowHostage(u, hostages[i]);
+        }
+
+        void FollowHostage(ITurnUnit u, ITurnHostage h)
+        {
+            if (!HostageRules.OnBoard(h) || !ReferenceEquals(h.Escort, u) || !(h is IEscortableHostage eh)) return;
             var trail = eh.Trail;
             trail.Add(new Vector2(u.X, u.Y));
             if (trail.Count > 80) trail.RemoveAt(0);
@@ -347,8 +357,12 @@ namespace Blindside.Movement
                     ITurnUnit blk = null;
                     foreach (var e in units)
                         if (e.Alive && e.Team != u.Team && Hypot(e.X - nx, e.Y - ny) < .56f) { blk = e; break; }
-                    var h = hostage;
-                    bool hb = h != null && h.Alive && !ReferenceEquals(h.Escort, u) && Hypot(h.X - nx, h.Y - ny) < .5f;
+                    bool hb = false;
+                    for (int hi = 0; hi < hostages.Count && !hb; hi++)
+                    {
+                        var h = hostages[hi];
+                        hb = HostageRules.OnBoard(h) && !ReferenceEquals(h.Escort, u) && Hypot(h.X - nx, h.Y - ny) < .5f;
+                    }
                     if (blk != null || hb)
                     {
                         // if(blk){ blk.revealT=now()+3000; addMark(u.team,blk.x,blk.y,'drone'); }

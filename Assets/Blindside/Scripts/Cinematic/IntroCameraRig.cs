@@ -96,7 +96,8 @@ namespace Blindside.Cinematic
         /// <summary>Debug: the next house intro plays as the rescue one (Blindside > Debug > Preview Rescue Intro).</summary>
         public static bool ForceRescueOnce;
         /// <summary>The captives the rescue intro shows (OperatorData keys), in marker order.</summary>
-        public static readonly string[] RescueKeys = { "GHOST", "SILENCE" };
+        /// <summary>Who the rescue hologram shows (the map's RescueRoster, read when the hologram is built).</summary>
+        static readonly System.Collections.Generic.List<string> RescueKeys = new System.Collections.Generic.List<string>();
         // when each captive's marker is driven in (s after the hologram begins); its card follows on impact
         const float RescueSlam0 = 2.3f, RescueSlamGap = 1.45f;
         // the camera round the hologram: RescueRadius out, RescueHeight up, turning RescueTurn degrees over the shot
@@ -529,7 +530,7 @@ namespace Blindside.Cinematic
                     miaCards.Clear();
                     // which side of the screen each marker will be on when its card comes up (the camera's pose then): left of
                     // the other marker → its card on the left, so the leader lines don't cross
-                    int n = Mathf.Min(holo.MarkerCount, RescueKeys.Length);
+                    int n = Mathf.Min(holo.MarkerCount, RescueKeys.Count);
                     var side = new float[n];
                     for (int i = 0; i < n; i++)
                     {
@@ -539,7 +540,10 @@ namespace Blindside.Cinematic
                     }
                     for (int i = 0; i < n; i++)
                     {
-                        bool onRight = n > 1 ? side[i] >= side[1 - i] : side[i] > 0f;
+                        // the median of the markers' sides splits them (two: the one more to the right gets the right)
+                        int lefter = 0;
+                        for (int j = 0; j < n; j++) if (side[j] < side[i]) lefter++;
+                        bool onRight = n > 1 ? lefter >= n / 2 : side[i] > 0f;
                         miaCards.Add(BuildAssetRegistry.Operator(RescueKeys[i]), holo.MarkerImpact(i), onRight);
                     }
                 }
@@ -576,24 +580,12 @@ namespace Blindside.Cinematic
         /// hostage cell when it has one — else the indoor floor cell farthest from the first (a stand-in until the map gives it).</summary>
         System.Collections.Generic.List<IntroHologram.Target> RescueTargets()
         {
-            var map = Blindside.Map.MapLibrary.Current;
-            var cells = new System.Collections.Generic.List<Vector2Int> { map.hostage };
-            if (map.rescueHostages != null) foreach (var c in map.rescueHostages) if (c != map.hostage && cells.Count < RescueKeys.Length) cells.Add(c);
-            if (cells.Count < RescueKeys.Length && map.terrain != null)
-            {
-                Vector2Int best = map.hostage; float bd = -1f;
-                for (int y = 0; y < map.height; y++)
-                    for (int x = 0; x < map.width; x++)
-                    {
-                        int k = y * map.width + x;
-                        if (map.terrain[k] != Blindside.Map.MapTerrain.In || (map.crates != null && map.crates[k])) continue;
-                        float d = (x - map.hostage.x) * (x - map.hostage.x) + (y - map.hostage.y) * (y - map.hostage.y);
-                        if (d > bd) { bd = d; best = new Vector2Int(x, y); }
-                    }
-                cells.Add(best);
-            }
+            var roster = Blindside.Map.MapLibrary.Current.RescueRoster();
+            RescueKeys.Clear();
+            var cells = new System.Collections.Generic.List<Vector2Int>();
+            foreach (var c in roster) { RescueKeys.Add(c.operatorKey); cells.Add(c.cell); }
             var list = new System.Collections.Generic.List<IntroHologram.Target>();
-            for (int i = 0; i < cells.Count && i < RescueKeys.Length; i++)
+            for (int i = 0; i < cells.Count; i++)
             {
                 var op = BuildAssetRegistry.Operator(RescueKeys[i]);
                 list.Add(new IntroHologram.Target

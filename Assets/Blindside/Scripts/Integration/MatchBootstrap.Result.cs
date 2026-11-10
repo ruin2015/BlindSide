@@ -74,7 +74,7 @@ namespace Blindside.Integration
                     var op = LoadOperator(k);
                     if (op != null) foreach (var g in Blindside.Hub.HubCatalog.GunsOf(op)) if (g != null && !d.OwnsWeapon(g.key)) d.ownedWeapons.Add(g.key);
                 }
-                HudLog.Add("GHOST と SILENCE が分隊に合流しました", HudLogType.Ally);
+                HudLog.Add(string.Join(" と ", RescueKeys) + " が分隊に合流しました", HudLogType.Ally);
             }
             if (real) Blindside.Save.AutoSave.MatchEnded(win);
 

@@ -37,9 +37,13 @@ namespace Blindside.Integration
         readonly SimHostage hostage;
         readonly IReadOnlyList<SimUnit> units;
 
-        public GadgetAbilityPresenter(AbilitySystem abilities, AbilityContext ctx, TurnManager turns, IReadOnlyList<SimUnit> units, SimHostage hostage)
+        readonly IReadOnlyList<SimHostage> hostages;
+
+        public GadgetAbilityPresenter(AbilitySystem abilities, AbilityContext ctx, TurnManager turns, IReadOnlyList<SimUnit> units, SimHostage hostage,
+                                      IReadOnlyList<SimHostage> hostages = null)
         {
             this.abilities = abilities; this.ctx = ctx; this.turns = turns; this.units = units; this.hostage = hostage;
+            this.hostages = hostages ?? (hostage != null ? new[] { hostage } : new SimHostage[0]);
             abilities.OnGasLaunched += OnGasLaunched;
             abilities.OnGasThrown += OnGasThrown;
             abilities.OnGasDamage += OnGasDamage;
@@ -131,11 +135,12 @@ namespace Blindside.Integration
             t.View?.PlayDeath();
             WorldPopup.Show(t.X, t.Y, "K.I.A", KiaRed);
             CombatFx.Boom(GridSpace.GridToWorld(t.X, t.Y), KiaRed, 12);
-            if (hostage != null && ReferenceEquals(hostage.Escort, t))
-            {
-                hostage.SetEscort(null);
-                HudLog.Add("護送中だった人質はその場で待機します", HudLogType.Warn);
-            }
+            foreach (var h in hostages)
+                if (h != null && ReferenceEquals(h.Escort, t))
+                {
+                    h.SetEscort(null);
+                    HudLog.Add("護送中だった人質はその場で待機します", HudLogType.Warn);
+                }
             HudLog.Add($"{t.Kr}が倒された", t.Team == HudLog.Side ? HudLogType.Foe : HudLogType.Ally);
         }
     }

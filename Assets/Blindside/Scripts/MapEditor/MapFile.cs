@@ -40,6 +40,10 @@ namespace Blindside.MapEditor
         public bool hasHostage;
         public Vector2Int hostage;
         public MapFileDefender[] defenders;
+        public MapTerrorist[] terrorists;   // generic terrorists beyond the five (none in older files)
+        public MapCaptive[] captives;       // captured operators (none in older files)
+        public Vector2Int[] extraHostages;  // civilian hostages after the first (none in older files)
+        public int winRule;                 // MapData.winRule (0 in older files: either)
         public Vector2Int[] cameras;
         public MapExfil[] exfils;
 
@@ -58,6 +62,13 @@ namespace Blindside.MapEditor
             for (int s = 0; s < ObjectState.DefenderSlots; s++)
                 if (o.defPlaced[s]) defs.Add(new MapFileDefender { slot = s, operatorKey = MapData.DefenderKeys[s], cell = o.defCell[s], facing = o.defFacing[s] });
             f.defenders = defs.ToArray();
+            f.extraHostages = o.extraHostages.ToArray();
+            f.winRule = o.winRule;
+            f.captives = new MapCaptive[o.captives.Count];
+            for (int i = 0; i < f.captives.Length; i++) f.captives[i] = new MapCaptive { cell = o.captives[i].cell, operatorKey = o.captives[i].operatorKey };
+            f.terrorists = new MapTerrorist[o.terrorists.Count];
+            for (int i = 0; i < f.terrorists.Length; i++)
+                f.terrorists[i] = new MapTerrorist { cell = o.terrorists[i].cell, facing = o.terrorists[i].facing, weapon = o.terrorists[i].weapon };
             f.exfils = new MapExfil[o.exfils.Count];
             for (int i = 0; i < f.exfils.Length; i++)
                 f.exfils[i] = new MapExfil { name = MapEditModel.ExfilLabel(i), x0 = o.exfils[i].x0, y0 = o.exfils[i].y0, x1 = o.exfils[i].x1, y1 = o.exfils[i].y1 };
@@ -93,6 +104,19 @@ namespace Blindside.MapEditor
                 if (f.crates[i] && f.terrain[i] >= (int)MapTerrain.Solid) { why = $"壁の上に木箱があります ({i % f.width}, {i / f.width})"; return false; }
 
             f.defenders = f.defenders ?? new MapFileDefender[0];
+            f.terrorists = f.terrorists ?? new MapTerrorist[0];
+            f.captives = f.captives ?? new MapCaptive[0];
+            f.extraHostages = f.extraHostages ?? new Vector2Int[0];
+            if (f.winRule < MapData.WinEither || f.winRule > MapData.WinExtract) { why = "勝利条件の値が不正です"; return false; }
+            if (!f.hasHostage && f.extraHostages.Length > 0) { why = "最初の人質がないのに追加の人質があります"; return false; }
+            if (f.extraHostages.Length + 1 > MapData.MaxHostages) { why = $"人質が多すぎます (最大{MapData.MaxHostages}人)"; return false; }
+            foreach (var c in f.captives) if (c == null || string.IsNullOrEmpty(c.operatorKey)) { why = "捕虜の一覧に空の項目があります"; return false; }
+            foreach (var t in f.terrorists)
+            {
+                if (t == null) { why = "テロリストの一覧に空の項目があります"; return false; }
+                if (float.IsNaN(t.facing) || float.IsInfinity(t.facing)) { why = "テロリストの向きの値が正しくありません"; return false; }
+                if (System.Array.IndexOf(MapData.TerroristWeapons, t.weapon) < 0) t.weapon = MapData.TerroristWeapons[0];
+            }
             f.cameras = f.cameras ?? new Vector2Int[0];
             f.exfils = f.exfils ?? new MapExfil[0];
             var seen = new bool[ObjectState.DefenderSlots];
@@ -124,9 +148,13 @@ namespace Blindside.MapEditor
             Array.Copy(crates, data.crates, crates.Length);
             var o = new ObjectState();
             if (hasHostage) o.hostage = hostage;
+            if (hasHostage && extraHostages != null) o.extraHostages.AddRange(extraHostages);
+            o.winRule = winRule;
             foreach (var d in defenders) { o.defPlaced[d.slot] = true; o.defCell[d.slot] = d.cell; o.defFacing[d.slot] = d.facing; }
             o.cameras.AddRange(cameras);
             foreach (var e in exfils) o.exfils.Add(new ExfilRect { x0 = e.x0, y0 = e.y0, x1 = e.x1, y1 = e.y1 });
+            if (terrorists != null) foreach (var t in terrorists) if (t != null) o.terrorists.Add(new TerroristSpot { cell = t.cell, facing = t.facing, weapon = t.weapon });
+            if (captives != null) foreach (var c in captives) if (c != null) o.captives.Add(new CaptiveSpot { cell = c.cell, operatorKey = c.operatorKey });
             return new MapEditModel(data, o);
         }
 
@@ -371,6 +399,9 @@ namespace Blindside.MapEditor
                 for (int y = e.y0; y <= e.y1; y++)
                     for (int x = e.x0; x <= e.x1; x++) px[(f.height - 1 - y) * f.width + x] = Exfil;
             if (f.hasHostage) px[(f.height - 1 - f.hostage.y) * f.width + f.hostage.x] = Hostage;
+            if (f.extraHostages != null)
+                foreach (var h in f.extraHostages)
+                    if (h.x >= 0 && h.y >= 0 && h.x < f.width && h.y < f.height) px[(f.height - 1 - h.y) * f.width + h.x] = Hostage;
             tex.SetPixels32(px);
             tex.Apply();
             return tex;

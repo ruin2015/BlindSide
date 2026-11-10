@@ -29,7 +29,31 @@ namespace Blindside.Turns
         readonly VisionSystem vision;
         readonly CombatSystem combat;
         readonly IReadOnlyList<ITurnUnit> units;
-        readonly ITurnHostage hostage;
+        readonly ITurnHostage hostage0;
+        readonly IReadOnlyList<ITurnHostage> hostages;
+        /// <summary>The hostage the AI is about: the first one on the board that nobody escorts — else the first on the board (one
+        /// hostage: always that one, as before).</summary>
+        ITurnHostage hostage
+        {
+            get
+            {
+                ITurnHostage first = null;
+                for (int i = 0; i < hostages.Count; i++)
+                {
+                    var h = hostages[i];
+                    if (!HostageRules.OnBoard(h)) continue;
+                    if (h.Escort == null) return h;
+                    if (first == null) first = h;
+                }
+                return first ?? hostage0;
+            }
+        }
+
+        ITurnHostage EscortedBy(ITurnUnit u)
+        {
+            for (int i = 0; i < hostages.Count; i++) if (HostageRules.OnBoard(hostages[i]) && hostages[i].Escort == u) return hostages[i];
+            return null;
+        }
 
         /// <summary>
         /// Fires right before a unit takes an aiFire() shot from where it stands (bestTarget). `mutual` is
@@ -59,9 +83,11 @@ namespace Blindside.Turns
         /// <summary>aiPhase's `if(team==='atk') await aiDrone()` (null: skipped).</summary>
         public System.Func<IEnumerator> DeployDrone;
 
-        public EnemyAI(MapGrid map, VisionSystem vision, CombatSystem combat, IReadOnlyList<ITurnUnit> units, ITurnHostage hostage)
+        public EnemyAI(MapGrid map, VisionSystem vision, CombatSystem combat, IReadOnlyList<ITurnUnit> units, ITurnHostage hostage,
+                       IReadOnlyList<ITurnHostage> hostages = null)
         {
-            this.map = map; this.vision = vision; this.combat = combat; this.units = units; this.hostage = hostage;
+            this.map = map; this.vision = vision; this.combat = combat; this.units = units; this.hostage0 = hostage;
+            this.hostages = HostageRules.ListOf(hostage, hostages);
 
             // the defence hears every attacker's shot: where it came from is the latest intel (DefendTurn moves on it)
             combat.OnShotStart += (a, t) => { if (a.Team == OperatorTeam.Attack) NoteIntel(a.X, a.Y); };
@@ -69,11 +95,12 @@ namespace Blindside.Turns
             // Port of kill()'s escort-clear side effect: "護送中だった人質はその場で待機します".
             combat.OnKill += (victim, killer) =>
             {
-                if (hostage != null && hostage.Escort == victim)
-                {
-                    hostage.SetEscort(null);
-                    HudLog.Add("護送中だった人質はその場で待機します", HudLogType.Warn);
-                }
+                foreach (var h in this.hostages)
+                    if (h != null && h.Escort == victim)
+                    {
+                        h.SetEscort(null);
+                        HudLog.Add("護送中だった人質はその場で待機します", HudLogType.Warn);
+                    }
             };
         }
 
@@ -120,10 +147,13 @@ namespace Blindside.Turns
             var t = map.TileAt(x, y);
             bool tilePassable = t == TileType.Floor || t == TileType.Out || t == TileType.Rubble || t == TileType.Extract;
             if (!tilePassable) return true;
-            if (hostage != null && hostage.Alive &&
-                Mathf.RoundToInt(hostage.X) == x && Mathf.RoundToInt(hostage.Y) == y &&
-                !(hostage.Escort != null && hostage.Escort.Team == movingTeam))
-                return true;
+            for (int i = 0; i < hostages.Count; i++)
+            {
+                var h = hostages[i];
+                if (HostageRules.OnBoard(h) && Mathf.RoundToInt(h.X) == x && Mathf.RoundToInt(h.Y) == y &&
+                    !(h.Escort != null && h.Escort.Team == movingTeam))
+                    return true;
+            }
             return false;
         }
 
@@ -147,7 +177,8 @@ namespace Blindside.Turns
         {
             foreach (var o in units)
                 if (o.Alive && o != self && Dist(o.X, o.Y, x, y) < 0.7f) return true;
-            if (hostage != null && hostage.Alive && Dist(hostage.X, hostage.Y, x, y) < 0.7f) return true;
+            for (int i = 0; i < hostages.Count; i++)
+                if (HostageRules.OnBoard(hostages[i]) && Dist(hostages[i].X, hostages[i].Y, x, y) < 0.7f) return true;
             return false;
         }
 
@@ -268,7 +299,11 @@ namespace Blindside.Turns
 
         void TryEscortHostage(ITurnUnit u)
         {
-            if (hostage == null || !hostage.Alive || hostage.Escort != null) return;
+            if (EscortedBy(u) != null) return;   // (one at a time)
+            for (int i = 0; i < hostages.Count; i++)
+            {
+            var hostage = hostages[i];
+            if (!HostageRules.OnBoard(hostage) || hostage.Escort != null) continue;
             // `dist(u,h)<=1.6&&segFree(u,h,false)` — no grabbing the hostage through a wall.
             if (Dist(u.X, u.Y, hostage.X, hostage.Y) <= 1.6f &&
                 (Movement == null || Movement.SegFree(new Vector2(u.X, u.Y), new Vector2(hostage.X, hostage.Y), false)))
@@ -276,6 +311,8 @@ namespace Blindside.Turns
                 hostage.SetEscort(u);
                 // aiAtk: log(`${u.kr}: 人質を確保`, u.team===G.side?'a':'f')
                 HudLog.Add($"{(u is IOperatorNamed n && !string.IsNullOrEmpty(n.Kr) ? n.Kr : u.Id)}: 人質を確保", HudLog.TeamType(u.Team));
+                return;
+            }
             }
         }
 
@@ -604,7 +641,7 @@ namespace Blindside.Turns
             TryEscortHostage(u);
 
             var goals = new List<int>();
-            if (hostage != null && hostage.Alive && hostage.Escort == u)
+            if (EscortedBy(u) != null)
             {
                 for (int y = 0; y < map.Height; y++)
                     for (int x = 0; x < MapGrid.Width; x++)

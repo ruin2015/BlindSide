@@ -37,7 +37,7 @@ namespace Blindside.MapEditor
 {
     public sealed class MapEditorScreen : MonoBehaviour
     {
-        public const int MinSize = 16, MaxSize = 40, DefaultWidth = 26, DefaultHeight = 20;
+        public const int MinSize = 16, MaxSize = 100, DefaultWidth = 26, DefaultHeight = 20;
         internal static readonly Color Paper = UIPalette.Paper, Ink = UIPalette.Ink;
         internal static readonly Color Blue = new Color32(0x1f, 0x96, 0xe8, 0xff);
         internal static readonly Color Foe = new Color32(0xe5, 0x36, 0x4d, 0xff);
@@ -67,6 +67,9 @@ namespace Blindside.MapEditor
         ObjRef selected;
         int shownVersion = -1;
         TMP_Text propTitle, propBody, validationSummary, statsBody;
+        Button propWeapon, winRuleButton;
+        /// <summary>The gun the next terrorist placed carries (the last one picked).</summary>
+        string terroristWeapon = MapData.TerroristWeapons[0];
         RectTransform validationList;
         readonly List<(Image bg, Func<bool> on)> toggles = new List<(Image, Func<bool>)>();
         public ValidationReport Validation { get; private set; }
@@ -256,13 +259,15 @@ namespace Blindside.MapEditor
             var cam = BattlefieldCamera.Activate((data.width - 1) / 2f, (data.height - 1) / 2f);
             if (cam != null)
             {
-                cam.h = Mathf.Clamp(Mathf.Max(data.width, data.height) * 1.05f, 20f, BattlefieldCamera.MaxH);
+                cam.h = Mathf.Clamp(Mathf.Max(data.width, data.height) * 1.05f, 20f, BattlefieldCamera.MaxHFor(data.width, data.height));
                 cam.Limit = new Rect(0, 0, data.width - 1, data.height - 1);
                 cam.Apply();
             }
             nameInput.text = data.name;
             nameInput.interactable = !ro;
             sizeLabel.text = $"{data.width} × {data.height}";
+            RefreshWinRule();
+            if (winRuleButton != null) winRuleButton.interactable = !ro;
             editorRoot.gameObject.SetActive(true);
             SelectTool(ro ? EditTool.Select : Tool);
             UpdateBottom();
@@ -573,7 +578,14 @@ namespace Blindside.MapEditor
             return uiHits.Count > 0;
         }
 
-        static bool IsObjectTool(EditTool t) => t >= EditTool.Hostage && t <= EditTool.Exfil;
+        void RefreshWinRule()
+        {
+            if (winRuleButton == null || Model == null) return;
+            var lbl = winRuleButton.GetComponentInChildren<TMP_Text>();
+            if (lbl != null) lbl.text = "勝利: " + MapData.WinRuleText(Model.Objects.winRule);
+        }
+
+        static bool IsObjectTool(EditTool t) => (t >= EditTool.Hostage && t <= EditTool.Exfil) || t == EditTool.Terrorist || t == EditTool.Captive;
 
         /// <summary>Why the current object tool can't be used on `c` (null: it can).</summary>
         string CheckFor(EditTool t, Vector2Int c)
@@ -583,6 +595,8 @@ namespace Blindside.MapEditor
                 case EditTool.Hostage: return Model.CheckHostage(c);
                 case EditTool.Defender: return Model.CheckDefender(c);
                 case EditTool.Camera: return Model.CheckCamera(c);
+                case EditTool.Terrorist: return Model.CheckTerrorist(c);
+                case EditTool.Captive: return Model.CheckCaptive(c);
                 case EditTool.Exfil: return Model.CheckExfil(c, c);
                 default: return null;
             }
@@ -597,10 +611,13 @@ namespace Blindside.MapEditor
             switch (Tool)
             {
                 case EditTool.Hostage:
-                    if (Placed(Model.PlaceHostage(cell))) SelectObject(new ObjRef(ObjKind.Hostage, 0));
+                    if (Placed(Model.PlaceHostage(cell))) SelectObject(new ObjRef(ObjKind.Hostage, Model.LastHostageIndex));
                     break;
                 case EditTool.Camera:
                     if (Placed(Model.PlaceCamera(cell))) SelectObject(new ObjRef(ObjKind.Camera, Model.Objects.cameras.Count - 1));
+                    break;
+                case EditTool.Captive:
+                    if (Placed(Model.PlaceCaptive(cell))) SelectObject(new ObjRef(ObjKind.Captive, Model.Objects.captives.Count - 1));
                     break;
                 case EditTool.Defender:
                     int slot = Model.DefenderTargetSlot();
@@ -609,6 +626,10 @@ namespace Blindside.MapEditor
                     leftDown = true; strokeStart = strokeEnd = cell;
                     break;
                 case EditTool.Exfil:
+                    leftDown = true; strokeStart = strokeEnd = cell;
+                    break;
+                case EditTool.Terrorist:
+                    defenderFacing = 0f;
                     leftDown = true; strokeStart = strokeEnd = cell;
                     break;
                 case EditTool.Select:
@@ -629,6 +650,18 @@ namespace Blindside.MapEditor
                 var cells = MapEditModel.StrokeCells(Tool, strokeStart, strokeEnd, shift);
                 if (released) { View.ClearPreview(); ApplyStroke(Tool, cells); }
                 else View.SetPreview(cells, MapCellView.TintFor(Tool));
+                return null;
+            }
+            if (Tool == EditTool.Terrorist)
+            {
+                if (BattlefieldCamera.GroundAt(pos, out var gt))
+                {
+                    float dx = gt.fx - strokeStart.x, dy = gt.fy - strokeStart.y;
+                    if (dx * dx + dy * dy > .35f * .35f) { defenderFacing = Mathf.Atan2(dy, dx); }
+                }
+                if (!released) { View.SetDefenderPreview(strokeStart, -1, defenderFacing); return null; }
+                View.SetDefenderPreview(null, 0, 0);
+                if (Placed(Model.PlaceTerrorist(strokeStart, defenderFacing, terroristWeapon))) SelectObject(new ObjRef(ObjKind.Terrorist, Model.Objects.terrorists.Count - 1));
                 return null;
             }
             if (Tool == EditTool.Defender)
@@ -713,9 +746,11 @@ namespace Blindside.MapEditor
         {
             switch (t)
             {
-                case EditTool.Hostage: return "人質: 屋内の床をクリックして配置 (マップに1個、もう一度クリックで移動) · 右クリックで削除 · Ctrl+Z 元に戻す";
+                case EditTool.Hostage: return "人質: 屋内の床をクリックして追加 (最大8人 · 全員を救出地点へ) · 右クリックで削除 · Ctrl+Z 元に戻す";
                 case EditTool.Defender: return "防衛開始位置: クリック = 1→5番の順に配置 (5個そろうと5番を移動) · クリックしてドラッグ = 向く方向 · 右クリックで削除";
                 case EditTool.Camera: return "監視カメラ: 床のマスをクリック (最大8個) · 右クリックで削除";
+                case EditTool.Captive: return "捕虜: 屋内の床をクリック (捕まった隊員 · 救出すると分隊に合流) · 選択して[隊員を変更] · 人質がいなくても捕虜がいればOK · 右クリックで削除";
+                case EditTool.Terrorist: return "テロリスト: 屋内の床をクリック (5人の防衛隊員とは別に何人でも) · ドラッグ = 向く方向 · 選択して[武器を変更] · 右クリックで削除";
                 case EditTool.Exfil: return "救出地点: 屋外の床でドラッグして四角形 (最大8個、A·B·C… のラベル) · 右クリックで削除";
                 case EditTool.Select: return "選択: オブジェクトをクリックでプロパティを表示 · 右クリックで削除 · カメラの下移動は↓方向キー";
                 default: return TerrainHint;
@@ -763,8 +798,14 @@ namespace Blindside.MapEditor
             string title, body;
             switch (selected.kind)
             {
-                case ObjKind.Hostage when o.hostage.HasValue:
-                    title = "人質"; body = $"座標  ({o.hostage.Value.x}, {o.hostage.Value.y})";
+                case ObjKind.Hostage when selected.index >= 1 && selected.index - 1 < o.extraHostages.Count:
+                    {
+                        var hc = o.extraHostages[selected.index - 1];
+                        title = $"人質{selected.index + 1}"; body = $"座標  ({hc.x}, {hc.y})\n人質 {o.HostageCount}人";
+                        break;
+                    }
+                case ObjKind.Hostage when selected.index <= 0 && o.hostage.HasValue:
+                    title = o.extraHostages.Count > 0 ? "人質1" : "人質"; body = $"座標  ({o.hostage.Value.x}, {o.hostage.Value.y})\n人質 {o.HostageCount}人";
                     break;
                 case ObjKind.Defender when selected.index >= 0 && selected.index < ObjectState.DefenderSlots && o.defPlaced[selected.index]:
                     {
@@ -772,6 +813,23 @@ namespace Blindside.MapEditor
                         float deg = Mathf.Repeat(o.defFacing[i] * Mathf.Rad2Deg, 360f);
                         title = $"防衛開始位置{i + 1}番";
                         body = $"隊員  {MapData.DefenderKeys[i]}\n座標  ({c.x}, {c.y})\n向き  {deg:0}° ({Compass(deg)})";
+                        break;
+                    }
+                case ObjKind.Terrorist when selected.index >= 0 && selected.index < o.terrorists.Count:
+                    {
+                        var t = o.terrorists[selected.index];
+                        float deg = Mathf.Repeat(t.facing * Mathf.Rad2Deg, 360f);
+                        var w = BuildAssetRegistry.Weapon("Weapon_" + t.weapon);
+                        title = $"テロリスト{selected.index + 1}";
+                        body = $"座標  ({t.cell.x}, {t.cell.y})  向き  {deg:0}° ({Compass(deg)})\n武器  {(w != null ? w.weaponName : t.weapon)}";
+                        break;
+                    }
+                case ObjKind.Captive when selected.index >= 0 && selected.index < o.captives.Count:
+                    {
+                        var cp = o.captives[selected.index];
+                        var op = BuildAssetRegistry.Operator(cp.operatorKey);
+                        title = $"捕虜{selected.index + 1}";
+                        body = $"座標  ({cp.cell.x}, {cp.cell.y})\n隊員  {(op != null ? op.DisplayName + "  " + op.kr : cp.operatorKey)}";
                         break;
                     }
                 case ObjKind.Camera when selected.index >= 0 && selected.index < o.cameras.Count:
@@ -793,6 +851,14 @@ namespace Blindside.MapEditor
                     break;
             }
             propTitle.text = title; propBody.text = body;
+            RefreshWinRule();
+            if (propWeapon != null)
+            {
+                bool on = selected.kind == ObjKind.Terrorist || selected.kind == ObjKind.Captive;
+                propWeapon.gameObject.SetActive(on);
+                var lbl = propWeapon.GetComponentInChildren<TMP_Text>();
+                if (on && lbl != null) lbl.text = selected.kind == ObjKind.Captive ? "隊員を変更" : "武器を変更";
+            }
         }
 
         // The grid's y axis points down the screen, so 90° faces south.
@@ -869,6 +935,8 @@ namespace Blindside.MapEditor
                 case EditTool.Hostage: return "人質";
                 case EditTool.Defender: return "防衛開始位置";
                 case EditTool.Camera: return "監視カメラ";
+                case EditTool.Terrorist: return "テロリスト";
+                case EditTool.Captive: return "捕虜";
                 case EditTool.Exfil: return "救出地点";
                 case EditTool.Select: return "選択";
                 default: return "木箱";
@@ -999,6 +1067,12 @@ namespace Blindside.MapEditor
             nameInput = NewInput(top.transform, "新規マップ", 230, 40, TMP_InputField.ContentType.Standard, 30);
             nameInput.onEndEdit.AddListener(s => { if (Model != null) Model.Data.name = s; });
             sizeLabel = NewText(top.transform, "26 × 20", 20, FontStyles.Bold, Paper, TextAlignmentOptions.Center); Size(sizeLabel, 90, 40);
+            winRuleButton = NewButton(top.transform, "勝利: 制圧 または 人質救出", 250, 40, InkLight, Paper, 15, () =>
+            {
+                if (Model == null || ModalDialog.Any || !nameInput.interactable) return;
+                Model.CycleWinRule();
+                RefreshWinRule();
+            });
             stateLabel = NewText(top.transform, "", 15, FontStyles.Bold, Color.white, TextAlignmentOptions.Center, UITheme.TextRole.Title); Size(stateLabel, 130, 40);
             var viewTag = NewText(top.transform, "OVERLAY", 12, FontStyles.Bold, Blue, TextAlignmentOptions.Center); viewTag.textWrappingMode = TextWrappingModes.NoWrap; Size(viewTag, 80, 40);
             BuildToggle(top.transform, "降下区域", "drop", () => View != null && View.ShowDrop, () => { if (View != null) View.ShowDrop = !View.ShowDrop; });
@@ -1022,7 +1096,7 @@ namespace Blindside.MapEditor
             foreach (var t in new[] { EditTool.OutFloor, EditTool.InFloor, EditTool.SolidWall, EditTool.BreakableWall, EditTool.ReinforcedWall, EditTool.Crate, EditTool.Erase })
                 BuildPaletteRow(left.transform, t);
             var head2 = NewText(left.transform, "OBJECTS // オブジェクト", 15, FontStyles.Bold, Blue); Size(head2, -1, 30);
-            foreach (var t in new[] { EditTool.Hostage, EditTool.Defender, EditTool.Camera, EditTool.Exfil, EditTool.Select })
+            foreach (var t in new[] { EditTool.Hostage, EditTool.Captive, EditTool.Defender, EditTool.Terrorist, EditTool.Camera, EditTool.Exfil, EditTool.Select })
                 BuildPaletteRow(left.transform, t);
 
             // right panels: properties (top), validation (middle), wall statistics (bottom)
@@ -1037,7 +1111,17 @@ namespace Blindside.MapEditor
             VBox(props.transform, 6, new RectOffset(14, 14, 12, 8));
             NewText(props.transform, "PROPERTIES // プロパティ", 15, FontStyles.Bold, Blue).gameObject.AddComponent<LayoutElement>().preferredHeight = 24;
             propTitle = NewText(props.transform, "", 21, FontStyles.Bold, Ink, role: UITheme.TextRole.Title); Size(propTitle, -1, 30);
-            propBody = NewText(props.transform, "", 16, FontStyles.Normal, new Color(Ink.r, Ink.g, Ink.b, .85f), TextAlignmentOptions.TopLeft, UITheme.TextRole.Body); Size(propBody, -1, 84);
+            propBody = NewText(props.transform, "", 16, FontStyles.Normal, new Color(Ink.r, Ink.g, Ink.b, .85f), TextAlignmentOptions.TopLeft, UITheme.TextRole.Body); Size(propBody, -1, 52);
+            // a selected terrorist: its gun, round the list (the next one placed takes the same)
+            propWeapon = NewButton(props.transform, "武器を変更", 140, 26, Blue, Color.white, 14, () =>
+            {
+                if (selected.kind == ObjKind.Captive) { Model.CycleCaptiveOperator(selected.index); RefreshProperties(); return; }
+                if (selected.kind != ObjKind.Terrorist) return;
+                var w = Model.CycleTerroristWeapon(selected.index);
+                if (w != null) terroristWeapon = w;
+                RefreshProperties();
+            });
+            propWeapon.gameObject.SetActive(false);
 
             var stats = NewImage("Stats", right.transform, new Color32(0xdd, 0xe1, 0xe6, 0xff), false);
             stats.rectTransform.anchorMin = new Vector2(0, 0); stats.rectTransform.anchorMax = new Vector2(1, 0);
@@ -1176,6 +1260,8 @@ namespace Blindside.MapEditor
                 case EditTool.Hostage: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.HostageColor, 7, 7, 7, 7); Letter("H"); break;
                 case EditTool.Defender: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.DefenderColor, 7, 7, 7, 7); Letter("1"); break;
                 case EditTool.Camera: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.CameraColor, 7, 7, 7, 7); Letter("C"); break;
+                case EditTool.Terrorist: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.TerroristColor, 7, 7, 7, 7); Letter("T"); break;
+                case EditTool.Captive: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.CaptiveColor, 7, 7, 7, 7); Letter("P"); break;
                 case EditTool.Exfil: Fill("f", new Color(.9f, .7f, .1f), 2, 2, 2, 2); Fill("g", new Color(.22f, .3f, .22f), 5, 5, 5, 5); Letter("A", new Color32(0xff, 0xd2, 0x1f, 0xff)); break;
                 case EditTool.Select: Fill("f", new Color(.16f, .18f, .21f), 2, 2, 2, 2); Fill("r", new Color(1f, 1f, 1f, .9f), 6, 6, 6, 6); Fill("r2", new Color(.16f, .18f, .21f), 8, 8, 8, 8); Letter("S", Color.white); break;
                 default:
@@ -1208,7 +1294,7 @@ namespace Blindside.MapEditor
             VBox(content, 12, new RectOffset(30, 30, 26, 24));
             var title = NewText(content, "マップエディタ", 34, FontStyles.Bold, Ink); Size(title, -1, 46);
             var sub = NewText(content, "MAP EDITOR // 新規マップ、基本邸宅の複製、保存済みマップのいずれかから開始します。", 15, FontStyles.Normal, new Color(Ink.r, Ink.g, Ink.b, .65f)); Size(sub, -1, 24);
-            var sect = NewText(content, "新規マップ · サイズ (16〜40)", 17, FontStyles.Bold, Blue); Size(sect, -1, 28);
+            var sect = NewText(content, "新規マップ · サイズ (16〜100)", 17, FontStyles.Bold, Blue); Size(sect, -1, 28);
 
             var row = NewRect("SizeRow", content); Size(row, -1, 46);
             HBox(row, 10, new RectOffset(0, 0, 0, 0));

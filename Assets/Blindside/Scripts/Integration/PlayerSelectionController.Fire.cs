@@ -85,7 +85,6 @@ namespace Blindside.Integration
             int W = MapGrid.Width, H = map.Height;
             int s = JsRound(u.Y) * W + JsRound(u.X);
             int walls = 0, last = -1;
-            var h = hostage;
             var gs = droneOps != null ? droneOps.EnemyGadgets(u.Team, true) : null;   // const gs=enemyGadgets(u.team) (+ discovered electric fields)
             for (float d = .3f; d <= maxR; d += .08f)
             {
@@ -94,8 +93,9 @@ namespace Blindside.Integration
                 foreach (var e in units)
                     if (e.Alive && e.Team != u.Team && Hypot(e.X - px, e.Y - py) < .32f)
                         return new FireCastResult { end = new Vector2(e.X, e.Y), walls = walls, unit = e, breachPanel = -1 };
-                if (h != null && h.Alive && Hypot(h.X - px, h.Y - py) < .32f)
-                    return new FireCastResult { end = new Vector2(h.X, h.Y), walls = walls, unit = h, breachPanel = -1 };
+                foreach (var h in hostages)
+                    if (h.Alive && !h.Extracted && Hypot(h.X - px, h.Y - py) < .32f)
+                        return new FireCastResult { end = new Vector2(h.X, h.Y), walls = walls, unit = h, breachPanel = -1 };
                 if (gs != null)
                     foreach (var gg in gs)
                         if (Hypot(gg.X - px, gg.Y - py) < .3f)

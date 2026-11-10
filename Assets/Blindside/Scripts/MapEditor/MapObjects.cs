@@ -7,7 +7,22 @@ using UnityEngine;
 
 namespace Blindside.MapEditor
 {
-    public enum ObjKind { None, Hostage, Defender, Camera, Exfil }
+    public enum ObjKind { None, Hostage, Defender, Camera, Exfil, Terrorist, Captive }
+
+    /// <summary>A captured operator as the editor holds it.</summary>
+    public struct CaptiveSpot
+    {
+        public Vector2Int cell;
+        public string operatorKey;
+    }
+
+    /// <summary>A generic terrorist as the editor holds it.</summary>
+    public struct TerroristSpot
+    {
+        public Vector2Int cell;
+        public float facing;
+        public string weapon;
+    }
 
     /// <summary>One placed object: its kind and the index in its list (Defender: the slot 0..4; Hostage: always 0).</summary>
     public struct ObjRef
@@ -43,11 +58,18 @@ namespace Blindside.MapEditor
         public const int DefenderSlots = 5;
 
         public Vector2Int? hostage;
+        /// <summary>The civilian hostages after the first (ObjRef Hostage index 1.. = extraHostages[index - 1]).</summary>
+        public readonly List<Vector2Int> extraHostages = new List<Vector2Int>();
+        public int HostageCount => (hostage.HasValue ? 1 : 0) + extraHostages.Count;
+        /// <summary>MapData.winRule.</summary>
+        public int winRule;
         public readonly bool[] defPlaced = new bool[DefenderSlots];
         public readonly Vector2Int[] defCell = new Vector2Int[DefenderSlots];
         public readonly float[] defFacing = new float[DefenderSlots];
         public readonly List<Vector2Int> cameras = new List<Vector2Int>();
         public readonly List<ExfilRect> exfils = new List<ExfilRect>();
+        public readonly List<TerroristSpot> terrorists = new List<TerroristSpot>();
+        public readonly List<CaptiveSpot> captives = new List<CaptiveSpot>();
 
         public int DefenderCount { get { int n = 0; foreach (var p in defPlaced) if (p) n++; return n; } }
 
@@ -59,12 +81,25 @@ namespace Blindside.MapEditor
             System.Array.Copy(defFacing, o.defFacing, DefenderSlots);
             o.cameras.AddRange(cameras);
             o.exfils.AddRange(exfils);
+            o.terrorists.AddRange(terrorists);
+            o.captives.AddRange(captives);
+            o.extraHostages.AddRange(extraHostages);
+            o.winRule = winRule;
             return o;
         }
 
         public bool SameAs(ObjectState o)
         {
-            if (hostage != o.hostage || cameras.Count != o.cameras.Count || exfils.Count != o.exfils.Count) return false;
+            if (hostage != o.hostage || cameras.Count != o.cameras.Count || exfils.Count != o.exfils.Count || terrorists.Count != o.terrorists.Count
+                || captives.Count != o.captives.Count || extraHostages.Count != o.extraHostages.Count || winRule != o.winRule) return false;
+            for (int i = 0; i < extraHostages.Count; i++) if (extraHostages[i] != o.extraHostages[i]) return false;
+            for (int i = 0; i < captives.Count; i++)
+                if (captives[i].cell != o.captives[i].cell || captives[i].operatorKey != o.captives[i].operatorKey) return false;
+            for (int i = 0; i < terrorists.Count; i++)
+            {
+                var a = terrorists[i]; var b = o.terrorists[i];
+                if (a.cell != b.cell || a.facing != b.facing || a.weapon != b.weapon) return false;
+            }
             for (int i = 0; i < DefenderSlots; i++)
             {
                 if (defPlaced[i] != o.defPlaced[i]) return false;
