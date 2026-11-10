@@ -57,15 +57,11 @@ namespace Blindside.MapEditor
             foreach (var p in m.Panels) { if (p.reinforced) r.reinforcedPanels++; else r.breakablePanels++; }
 
             // required errors
-            if (!o.hostage.HasValue && o.captives.Count == 0) r.issues.Add(Err("人質も捕虜もいません (どちらか1人以上必要)", center));
+            bool wipeOnly = o.winRule == MapData.WinWipe;
+            if (!o.hostage.HasValue && o.captives.Count == 0 && !wipeOnly) r.issues.Add(Err("人質も捕虜もいません (どちらか1人以上必要 · 勝利条件が敵の全員制圧なら不要)", center));
             if (o.winRule == MapData.WinExtract && !o.hostage.HasValue) r.issues.Add(Err("勝利条件「人質全員の救出」には人質が1人以上必要です", center));
-            if (o.DefenderCount < RequiredDefenders)
-            {
-                int missing = -1;
-                for (int i = 0; i < ObjectState.DefenderSlots; i++) if (!o.defPlaced[i]) { missing = i; break; }
-                r.issues.Add(Err($"防衛開始位置が{o.DefenderCount}/{RequiredDefenders}個です (5個必要 · 次は{missing + 1}番 {MapData.DefenderKeys[missing]})", center));
-            }
-            if (o.exfils.Count == 0) r.issues.Add(Err("救出地点がありません (1個以上必要)", center));
+            if (o.DefenderCount + o.terrorists.Count == 0) r.issues.Add(Err("防衛側が1人もいません (防衛開始位置かテロリストが1人以上必要)", center));
+            if (o.exfils.Count == 0 && !wipeOnly) r.issues.Add(Err("救出地点がありません (1個以上必要 · 勝利条件が敵の全員制圧なら不要)", center));
             if (r.dropCells < MinDropCells) r.issues.Add(Err($"降下可能区域が{r.dropCells}マスです (屋外の空きマスが{MinDropCells}マス以上必要)", center));
 
             // warnings

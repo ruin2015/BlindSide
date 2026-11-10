@@ -26,7 +26,7 @@ namespace Blindside.MapEditor
     public enum EditTool
     {
         Erase = 0, OutFloor = 1, InFloor = 2, SolidWall = 3, BreakableWall = 4, ReinforcedWall = 5, Crate = 6,
-        Hostage = 7, Defender = 8, Camera = 9, Exfil = 10, Select = 11, Terrorist = 12, Captive = 13,
+        Hostage = 7, Defender = 8, Camera = 9, Exfil = 10, Select = 11, Terrorist = 12, Captive = 13, Gadget = 14,
     }
 
     public struct CellChange
@@ -115,6 +115,8 @@ namespace Blindside.MapEditor
             if (o.hostage.HasValue && (why = Place("人質", o.hostage.Value, true)) != null) return why;
             for (int i = 0; i < o.extraHostages.Count; i++)
                 if ((why = Place($"人質{i + 2}", o.extraHostages[i], true)) != null) return why;
+            for (int i = 0; i < o.gadgets.Count; i++)
+                if ((why = Place($"{MapData.GadgetName(o.gadgets[i].kind)}{i + 1}", o.gadgets[i].cell, false)) != null) return why;
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
                 if (o.defPlaced[i] && (why = Place($"防衛開始位置{i + 1}番", o.defCell[i], true)) != null) return why;
             for (int i = 0; i < o.cameras.Count; i++)
@@ -136,24 +138,36 @@ namespace Blindside.MapEditor
         /// <summary>The MapData a match reads, built from this map (terrain, crates and all objects; the editor's own data is not touched).
         /// Only for a map without required errors. Anchors the editor doesn't author are derived: five attacker drop cells picked
         /// among the outdoor cells around the building, and the building's middle; no house intro.</summary>
+        static Vector2Int FirstDefenseCell(ObjectState o)
+        {
+            for (int i = 0; i < ObjectState.DefenderSlots; i++) if (o.defPlaced[i]) return o.defCell[i];
+            return o.terrorists.Count > 0 ? o.terrorists[0].cell : Vector2Int.zero;
+        }
+
         public MapData BuildGameData()
         {
             var o = Objects;
-            if ((!o.hostage.HasValue && o.captives.Count == 0) || o.DefenderCount < ObjectState.DefenderSlots || o.exfils.Count == 0)
-                throw new InvalidOperationException("the map is incomplete (a hostage or a captive, 5 defender starts and an exfil zone are required)");
+            bool wipeOnly = o.winRule == MapData.WinWipe;
+            if ((!o.hostage.HasValue && o.captives.Count == 0 && !wipeOnly) || o.DefenderCount + o.terrorists.Count == 0 || (o.exfils.Count == 0 && !wipeOnly))
+                throw new InvalidOperationException("the map is incomplete (a hostage or a captive, a defender or terrorist and an exfil zone are required)");
             var d = Data.Clone();
             d.name = Data.name; d.version = 1; d.useHouseIntro = false;
             // no civilian: `hostage` is still where the defense centres itself — the first captive
             d.noHostage = !o.hostage.HasValue;
-            d.hostage = o.hostage ?? o.captives[0].cell;
+            // (nobody held — a wipe-out map: the defense centres on its first defender / terrorist)
+            d.hostage = o.hostage ?? (o.captives.Count > 0 ? o.captives[0].cell : FirstDefenseCell(o));
             d.captives = new MapCaptive[o.captives.Count];
             for (int i = 0; i < o.captives.Count; i++) d.captives[i] = new MapCaptive { cell = o.captives[i].cell, operatorKey = o.captives[i].operatorKey };
             d.rescueIntro = o.captives.Count > 0;   // (the rescue intro and rules)
             d.extraHostages = o.hostage.HasValue ? o.extraHostages.ToArray() : new Vector2Int[0];
             d.winRule = o.winRule;
-            d.defenderStarts = new MapDefenderStart[ObjectState.DefenderSlots];
+            // only the defenders placed (a map may field only terrorists)
+            var starts = new List<MapDefenderStart>();
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
-                d.defenderStarts[i] = new MapDefenderStart { operatorKey = MapData.DefenderKeys[i], cell = o.defCell[i], facing = o.defFacing[i] };
+                if (o.defPlaced[i]) starts.Add(new MapDefenderStart { operatorKey = MapData.DefenderKeys[i], cell = o.defCell[i], facing = o.defFacing[i] });
+            d.defenderStarts = starts.ToArray();
+            d.gadgets = new MapGadget[o.gadgets.Count];
+            for (int i = 0; i < o.gadgets.Count; i++) d.gadgets[i] = new MapGadget { cell = o.gadgets[i].cell, kind = o.gadgets[i].kind };
             d.cameras = o.cameras.ToArray();
             d.terrorists = new MapTerrorist[o.terrorists.Count];
             for (int i = 0; i < o.terrorists.Count; i++)
@@ -219,12 +233,16 @@ namespace Blindside.MapEditor
                 foreach (var c in d.extraHostages) if (d.InBounds(c.x, c.y) && c != d.hostage && !o.extraHostages.Contains(c)) o.extraHostages.Add(c);
             if (d.captives != null) foreach (var c in d.captives) if (c != null) o.captives.Add(new CaptiveSpot { cell = c.cell, operatorKey = c.operatorKey });
             if (d.defenderStarts != null)
-                for (int i = 0; i < ObjectState.DefenderSlots && i < d.defenderStarts.Length; i++)
+                for (int k = 0; k < d.defenderStarts.Length; k++)
                 {
-                    var s = d.defenderStarts[i];
+                    var s = d.defenderStarts[k];
                     if (s == null) continue;
+                    int i = Array.IndexOf(MapData.DefenderKeys, s.operatorKey);
+                    if (i < 0) i = k;   // (an unnamed start: its position in the list)
+                    if (i >= ObjectState.DefenderSlots) continue;
                     o.defPlaced[i] = true; o.defCell[i] = s.cell; o.defFacing[i] = s.facing;
                 }
+            if (d.gadgets != null) foreach (var g in d.gadgets) if (g != null) o.gadgets.Add(new GadgetSpot { cell = g.cell, kind = g.kind });
             if (d.cameras != null) o.cameras.AddRange(d.cameras);
             if (d.exfils != null) foreach (var e in d.exfils) o.exfils.Add(new ExfilRect { x0 = e.x0, y0 = e.y0, x1 = e.x1, y1 = e.y1 });
             if (d.terrorists != null) foreach (var t in d.terrorists) if (t != null) o.terrorists.Add(new TerroristSpot { cell = t.cell, facing = t.facing, weapon = t.weapon });
@@ -448,6 +466,8 @@ namespace Blindside.MapEditor
                 if (o.terrorists[i].cell == c && !Ignored(new ObjRef(ObjKind.Terrorist, i), ignore)) return new ObjRef(ObjKind.Terrorist, i);
             for (int i = 0; i < o.captives.Count; i++)
                 if (o.captives[i].cell == c && !Ignored(new ObjRef(ObjKind.Captive, i), ignore)) return new ObjRef(ObjKind.Captive, i);
+            for (int i = 0; i < o.gadgets.Count; i++)
+                if (o.gadgets[i].cell == c && !Ignored(new ObjRef(ObjKind.Gadget, i), ignore)) return new ObjRef(ObjKind.Gadget, i);
             for (int i = 0; i < o.exfils.Count; i++)
                 if (o.exfils[i].Contains(c.x, c.y) && !Ignored(new ObjRef(ObjKind.Exfil, i), ignore)) return new ObjRef(ObjKind.Exfil, i);
             return default;
@@ -527,6 +547,37 @@ namespace Blindside.MapEditor
                     if (!taken) { cap.operatorKey = cand; break; }
                 }
                 o.captives[i] = cap; next = cap.operatorKey;
+            });
+            return next;
+        }
+
+        public string CheckGadget(Vector2Int c)
+        {
+            var why = CheckFloor(c, null);
+            if (why != null) return why;
+            if (!ObjectAt(c).IsNone) return MsgOccupied;
+            return Objects.gadgets.Count >= MapData.MaxGadgets ? $"ガジェットは最大{MapData.MaxGadgets}個まで置けます" : null;
+        }
+
+        /// <summary>Places a `kind` gadget on `c`. Returns the reason it was refused, or null.</summary>
+        public string PlaceGadget(Vector2Int c, string kind)
+        {
+            var why = CheckGadget(c);
+            if (why == null) Commit(o => o.gadgets.Add(new GadgetSpot { cell = c, kind = kind }));
+            return why;
+        }
+
+        /// <summary>Gadget `i` becomes the next kind (round). Returns it, or null.</summary>
+        public string CycleGadgetKind(int i)
+        {
+            if (i < 0 || i >= Objects.gadgets.Count) return null;
+            string next = null;
+            Commit(o =>
+            {
+                var g = o.gadgets[i];
+                int k = Array.IndexOf(MapData.GadgetKinds, g.kind);
+                g.kind = MapData.GadgetKinds[(k + 1) % MapData.GadgetKinds.Length];
+                o.gadgets[i] = g; next = g.kind;
             });
             return next;
         }
@@ -667,6 +718,7 @@ namespace Blindside.MapEditor
                     case ObjKind.Exfil: found = r.index >= 0 && r.index < o.exfils.Count; if (found) o.exfils.RemoveAt(r.index); break;
                     case ObjKind.Terrorist: found = r.index >= 0 && r.index < o.terrorists.Count; if (found) o.terrorists.RemoveAt(r.index); break;
                     case ObjKind.Captive: found = r.index >= 0 && r.index < o.captives.Count; if (found) o.captives.RemoveAt(r.index); break;
+                    case ObjKind.Gadget: found = r.index >= 0 && r.index < o.gadgets.Count; if (found) o.gadgets.RemoveAt(r.index); break;
                 }
             });
             return found;
@@ -692,6 +744,7 @@ namespace Blindside.MapEditor
             any |= o.cameras.RemoveAll(c => !Free(c)) > 0;
             any |= o.terrorists.RemoveAll(t => !Indoor(t.cell)) > 0;
             any |= o.captives.RemoveAll(t => !Indoor(t.cell)) > 0;
+            any |= o.gadgets.RemoveAll(g => CheckFloor(g.cell, null) != null) > 0;
             any |= o.exfils.RemoveAll(e =>
             {
                 if (!InBounds(e.x0, e.y0) || !InBounds(e.x1, e.y1)) return true;

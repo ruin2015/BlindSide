@@ -242,7 +242,9 @@ namespace Blindside.Integration
                 string body = side == OperatorTeam.Attack
                     ? $"① 人質を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② または防衛チームを全員制圧"
                     : $"① {TurnManager.MaxRound}ラウンド終了まで人質を死守\n② または攻撃チームを全員制圧";
-                if (side == OperatorTeam.Attack && MatchBootstrap.WinRule == Blindside.Map.MapData.WinWipe)
+                if (side == OperatorTeam.Attack && MatchBootstrap.HostageCount == 0 && !MatchBootstrap.RescueMatch)
+                    body = "① 防衛チームを全員制圧";
+                else if (side == OperatorTeam.Attack && MatchBootstrap.WinRule == Blindside.Map.MapData.WinWipe)
                     body = "① 防衛チームを全員制圧\n② 人質を死なせない";
                 else if (side == OperatorTeam.Attack && MatchBootstrap.WinRule == Blindside.Map.MapData.WinExtract)
                     body = $"① 人質{(MatchBootstrap.HostageCount > 1 ? MatchBootstrap.HostageCount + "人全員" : "")}を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② 人質を死なせない (制圧だけでは勝利になりません)";

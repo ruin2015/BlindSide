@@ -7,7 +7,14 @@ using UnityEngine;
 
 namespace Blindside.MapEditor
 {
-    public enum ObjKind { None, Hostage, Defender, Camera, Exfil, Terrorist, Captive }
+    public enum ObjKind { None, Hostage, Defender, Camera, Exfil, Terrorist, Captive, Gadget }
+
+    /// <summary>A defense gadget as the editor holds it (MapData.GadgetKinds).</summary>
+    public struct GadgetSpot
+    {
+        public Vector2Int cell;
+        public string kind;
+    }
 
     /// <summary>A captured operator as the editor holds it.</summary>
     public struct CaptiveSpot
@@ -70,6 +77,7 @@ namespace Blindside.MapEditor
         public readonly List<ExfilRect> exfils = new List<ExfilRect>();
         public readonly List<TerroristSpot> terrorists = new List<TerroristSpot>();
         public readonly List<CaptiveSpot> captives = new List<CaptiveSpot>();
+        public readonly List<GadgetSpot> gadgets = new List<GadgetSpot>();
 
         public int DefenderCount { get { int n = 0; foreach (var p in defPlaced) if (p) n++; return n; } }
 
@@ -85,13 +93,17 @@ namespace Blindside.MapEditor
             o.captives.AddRange(captives);
             o.extraHostages.AddRange(extraHostages);
             o.winRule = winRule;
+            o.gadgets.AddRange(gadgets);
             return o;
         }
 
         public bool SameAs(ObjectState o)
         {
             if (hostage != o.hostage || cameras.Count != o.cameras.Count || exfils.Count != o.exfils.Count || terrorists.Count != o.terrorists.Count
-                || captives.Count != o.captives.Count || extraHostages.Count != o.extraHostages.Count || winRule != o.winRule) return false;
+                || captives.Count != o.captives.Count || extraHostages.Count != o.extraHostages.Count || winRule != o.winRule
+                || gadgets.Count != o.gadgets.Count) return false;
+            for (int i = 0; i < gadgets.Count; i++)
+                if (gadgets[i].cell != o.gadgets[i].cell || gadgets[i].kind != o.gadgets[i].kind) return false;
             for (int i = 0; i < extraHostages.Count; i++) if (extraHostages[i] != o.extraHostages[i]) return false;
             for (int i = 0; i < captives.Count; i++)
                 if (captives[i].cell != o.captives[i].cell || captives[i].operatorKey != o.captives[i].operatorKey) return false;

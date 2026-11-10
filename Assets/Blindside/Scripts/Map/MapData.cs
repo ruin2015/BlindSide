@@ -25,6 +25,14 @@ namespace Blindside.Map
         public int x0, y0, x1, y1;   // inclusive bounds
     }
 
+    /// <summary>A defense gadget placed on the map: where, and which (MapData.GadgetKinds).</summary>
+    [System.Serializable]
+    public class MapGadget
+    {
+        public Vector2Int cell;
+        public string kind;
+    }
+
     /// <summary>A captured operator held on the map: where, and who (an attack OperatorData key outside the first five).</summary>
     [System.Serializable]
     public class MapCaptive
@@ -123,6 +131,14 @@ namespace Blindside.Map
         /// WinWipe — only by wiping out the defense; WinExtract — only by bringing every hostage out.</summary>
         public int winRule;
         public const int WinEither = 0, WinWipe = 1, WinExtract = 2;
+
+        /// <summary>The defense's gadgets placed in the editor (on top of the ones the defense AI sets up itself).</summary>
+        public MapGadget[] gadgets;
+        public const string GadgetElectric = "ELECTRIC", GadgetMine = "MINE", GadgetSensor = "SENSOR";
+        public static readonly string[] GadgetKinds = { GadgetElectric, GadgetMine, GadgetSensor };
+        public const int MaxGadgets = 40;
+        public static string GadgetName(string kind) =>
+            kind == GadgetMine ? "地雷" : kind == GadgetSensor ? "動体センサー" : "電気装置";
 
         public static string WinRuleText(int rule) =>
             rule == WinWipe ? "敵の全員制圧" : rule == WinExtract ? "人質全員の救出" : "制圧 または 人質救出";
@@ -305,7 +321,8 @@ namespace Blindside.Map
             for (int i = 0; i < n; i++)
                 if (crates[i] && IsWall(terrain[i])) e.Add($"crate on a wall at ({i % width},{i / width})");
 
-            if (exfils == null || exfils.Length < 1 || exfils.Length > MaxExfils) e.Add($"exfils must have 1..{MaxExfils} zones");
+            int minExfils = winRule == WinWipe ? 0 : 1;
+            if (exfils == null || exfils.Length < minExfils || exfils.Length > MaxExfils) e.Add($"exfils must have {minExfils}..{MaxExfils} zones");
             else
             {
                 var seen = new HashSet<int>();
@@ -327,14 +344,21 @@ namespace Blindside.Map
             // (a camera may stand on any free floor cell, outdoor too — the map editor allows it)
             bool FreeFloor(Vector2Int c) => InBounds(c.x, c.y) && !IsWall(TerrainAt(c.x, c.y)) && !CrateAt(c.x, c.y);
             if (cameras != null) foreach (var c in cameras) if (!FreeFloor(c)) e.Add($"camera {c} is not on a free floor cell");
-            if (defenderStarts == null || defenderStarts.Length != DefenderKeys.Length) e.Add($"defenderStarts must have {DefenderKeys.Length} entries");
+            if (defenderStarts == null || defenderStarts.Length > DefenderKeys.Length) e.Add($"defenderStarts must have 0..{DefenderKeys.Length} entries");
             else
-                for (int i = 0; i < DefenderKeys.Length; i++)
+            {
+                var keys = new HashSet<string>();
+                for (int i = 0; i < defenderStarts.Length; i++)
                 {
                     var d = defenderStarts[i];
-                    if (d.operatorKey != DefenderKeys[i]) e.Add($"defenderStarts[{i}] is {d.operatorKey}, expected {DefenderKeys[i]}");
+                    if (d == null) { e.Add($"defenderStarts[{i}] is empty"); continue; }
+                    if (System.Array.IndexOf(DefenderKeys, d.operatorKey) < 0 || !keys.Add(d.operatorKey)) e.Add($"defenderStarts[{i}] is {d.operatorKey}, not one of the five (or twice)");
                     if (!InBounds(d.cell.x, d.cell.y)) e.Add($"defender {d.operatorKey} start {d.cell} is outside the map");
                 }
+            }
+            if (gadgets != null)
+                foreach (var g in gadgets)
+                    if (g == null || System.Array.IndexOf(GadgetKinds, g.kind) < 0 || !FreeFloor(g.cell)) e.Add($"gadget {(g == null ? "null" : g.kind + " " + g.cell)} is unknown or not on a free floor cell");
             if (anchors == null || anchors.attackerDrops == null || anchors.attackerDrops.Length != 5) e.Add("anchors.attackerDrops must have 5 points");
             if (authored != null)
             {

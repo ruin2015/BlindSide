@@ -177,6 +177,9 @@ namespace Blindside.Integration
         readonly List<SimHostage> activeHostages = new List<SimHostage>();
         readonly List<IUnitView> hostageViews = new List<IUnitView>();
         readonly List<HostageAnimator> hostageFigures = new List<HostageAnimator>();
+        MapGadgetRuntime mapGadgets;
+        /// <summary>The running match's editor-placed mines and sensors (dev tools / tests).</summary>
+        public MapGadgetRuntime ActiveMapGadgets => mapGadgets;
         BreachAbilityPresenter breachPresenter;
         SupportAbilityPresenter supportPresenter;
         ElectricFieldView electricView;
@@ -351,6 +354,7 @@ namespace Blindside.Integration
             foreach (var v in hostageViews) DestroyView(v);
             hostageViews.Clear(); hostageFigures.Clear(); activeHostages.Clear();
             activeHostage = null;
+            if (mapGadgets != null) mapGadgets.Unbind();
             // The intro's helicopter stays hovering if a match was left before the deployment ended; every intro switches it on again itself.
             var heliRigRoot = FindAnyObjectByType<IntroCameraRig>(FindObjectsInactive.Include);
             if (heliRigRoot != null && heliRigRoot.heliTarget != null) heliRigRoot.heliTarget.gameObject.SetActive(false);
@@ -508,7 +512,7 @@ namespace Blindside.Integration
             var hostageCell = mapData.hostage;
             // (the rescue operation has no civilian: every hostage consumer takes null — the AI and the defense fall back to MapData.hostage)
             // (several civilians: MapData.extraHostages — each is to be brought out; the first stays the one the defense centres on)
-            var civCells = mapData.HasCivilian ? mapData.CivilianCells() : rescueMatch ? new List<Vector2Int>() : new List<Vector2Int> { hostageCell };
+            var civCells = mapData.HasCivilian ? mapData.CivilianCells() : (rescueMatch || mapData.noHostage) ? new List<Vector2Int>() : new List<Vector2Int> { hostageCell };
             foreach (var c in civCells) activeHostages.Add(new SimHostage { X = c.x, Y = c.y });
             var hostage = activeHostages.Count > 0 ? activeHostages[0] : null;
             activeHostage = hostage;
@@ -656,6 +660,11 @@ namespace Blindside.Integration
             // gas / ghost / mirror / cam: fx · sfx · log, gas damage + its per-phase tick; and their world views.
             gadgetPresenter?.Unbind();
             gadgetPresenter = new GadgetAbilityPresenter(abilities, abilityCtx, turns, units, hostage, activeHostages);
+            // the map's own gadgets (MapData.gadgets): electric fields, mines, motion sensors
+            if (mapGadgets == null) mapGadgets = GetComponent<MapGadgetRuntime>();
+            if (mapGadgets == null) mapGadgets = gameObject.AddComponent<MapGadgetRuntime>();
+            mapGadgets.Bind(tutorialMode ? null : mapData, map, vision, abilityCtx, turns, marks, ai, gadgetPresenter, playerTeam);
+            if (selection.Movement != null) selection.Movement.OnStep += mapGadgets.Step;
             reconPresenter?.Unbind();
             reconPresenter = new ReconAbilityPresenter(abilities, abilityCtx, turns, marks, playerTeam);
             if (gadgetViews == null) gadgetViews = GetComponent<GadgetViews>();

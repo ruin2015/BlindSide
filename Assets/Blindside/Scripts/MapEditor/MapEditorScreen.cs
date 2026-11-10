@@ -70,6 +70,7 @@ namespace Blindside.MapEditor
         Button propWeapon, winRuleButton;
         /// <summary>The gun the next terrorist placed carries (the last one picked).</summary>
         string terroristWeapon = MapData.TerroristWeapons[0];
+        string gadgetKind = MapData.GadgetElectric;
         RectTransform validationList;
         readonly List<(Image bg, Func<bool> on)> toggles = new List<(Image, Func<bool>)>();
         public ValidationReport Validation { get; private set; }
@@ -585,7 +586,7 @@ namespace Blindside.MapEditor
             if (lbl != null) lbl.text = "勝利: " + MapData.WinRuleText(Model.Objects.winRule);
         }
 
-        static bool IsObjectTool(EditTool t) => (t >= EditTool.Hostage && t <= EditTool.Exfil) || t == EditTool.Terrorist || t == EditTool.Captive;
+        static bool IsObjectTool(EditTool t) => (t >= EditTool.Hostage && t <= EditTool.Exfil) || t == EditTool.Terrorist || t == EditTool.Captive || t == EditTool.Gadget;
 
         /// <summary>Why the current object tool can't be used on `c` (null: it can).</summary>
         string CheckFor(EditTool t, Vector2Int c)
@@ -597,6 +598,7 @@ namespace Blindside.MapEditor
                 case EditTool.Camera: return Model.CheckCamera(c);
                 case EditTool.Terrorist: return Model.CheckTerrorist(c);
                 case EditTool.Captive: return Model.CheckCaptive(c);
+                case EditTool.Gadget: return Model.CheckGadget(c);
                 case EditTool.Exfil: return Model.CheckExfil(c, c);
                 default: return null;
             }
@@ -618,6 +620,9 @@ namespace Blindside.MapEditor
                     break;
                 case EditTool.Captive:
                     if (Placed(Model.PlaceCaptive(cell))) SelectObject(new ObjRef(ObjKind.Captive, Model.Objects.captives.Count - 1));
+                    break;
+                case EditTool.Gadget:
+                    if (Placed(Model.PlaceGadget(cell, gadgetKind))) SelectObject(new ObjRef(ObjKind.Gadget, Model.Objects.gadgets.Count - 1));
                     break;
                 case EditTool.Defender:
                     int slot = Model.DefenderTargetSlot();
@@ -747,7 +752,8 @@ namespace Blindside.MapEditor
             switch (t)
             {
                 case EditTool.Hostage: return "人質: 屋内の床をクリックして追加 (最大8人 · 全員を救出地点へ) · 右クリックで削除 · Ctrl+Z 元に戻す";
-                case EditTool.Defender: return "防衛開始位置: クリック = 1→5番の順に配置 (5個そろうと5番を移動) · クリックしてドラッグ = 向く方向 · 右クリックで削除";
+                case EditTool.Defender: return "防衛開始位置: クリック = 1→5番の順に配置 (0〜5個 · 5個そろうと5番を移動) · クリックしてドラッグ = 向く方向 · 右クリックで削除";
+                case EditTool.Gadget: return "ガジェット: 床をクリック (電気装置 · 地雷 · 動体センサー) · 選択して[種類を変更] · 次に置く種類も同じ · 右クリックで削除";
                 case EditTool.Camera: return "監視カメラ: 床のマスをクリック (最大8個) · 右クリックで削除";
                 case EditTool.Captive: return "捕虜: 屋内の床をクリック (捕まった隊員 · 救出すると分隊に合流) · 選択して[隊員を変更] · 人質がいなくても捕虜がいればOK · 右クリックで削除";
                 case EditTool.Terrorist: return "テロリスト: 屋内の床をクリック (5人の防衛隊員とは別に何人でも) · ドラッグ = 向く方向 · 選択して[武器を変更] · 右クリックで削除";
@@ -824,6 +830,16 @@ namespace Blindside.MapEditor
                         body = $"座標  ({t.cell.x}, {t.cell.y})  向き  {deg:0}° ({Compass(deg)})\n武器  {(w != null ? w.weaponName : t.weapon)}";
                         break;
                     }
+                case ObjKind.Gadget when selected.index >= 0 && selected.index < o.gadgets.Count:
+                    {
+                        var g = o.gadgets[selected.index];
+                        title = $"{MapData.GadgetName(g.kind)}{selected.index + 1}";
+                        string what = g.kind == MapData.GadgetMine ? "踏んだ敵に60ダメージ"
+                                    : g.kind == MapData.GadgetSensor ? "近づいた敵の位置を味方に知らせる"
+                                    : "ドローンを破壊 · 近くの強化壁に電気";
+                        body = $"座標  ({g.cell.x}, {g.cell.y})\n効果  {what}";
+                        break;
+                    }
                 case ObjKind.Captive when selected.index >= 0 && selected.index < o.captives.Count:
                     {
                         var cp = o.captives[selected.index];
@@ -854,10 +870,10 @@ namespace Blindside.MapEditor
             RefreshWinRule();
             if (propWeapon != null)
             {
-                bool on = selected.kind == ObjKind.Terrorist || selected.kind == ObjKind.Captive;
+                bool on = selected.kind == ObjKind.Terrorist || selected.kind == ObjKind.Captive || selected.kind == ObjKind.Gadget;
                 propWeapon.gameObject.SetActive(on);
                 var lbl = propWeapon.GetComponentInChildren<TMP_Text>();
-                if (on && lbl != null) lbl.text = selected.kind == ObjKind.Captive ? "隊員を変更" : "武器を変更";
+                if (on && lbl != null) lbl.text = selected.kind == ObjKind.Captive ? "隊員を変更" : selected.kind == ObjKind.Gadget ? "種類を変更" : "武器を変更";
             }
         }
 
@@ -937,6 +953,7 @@ namespace Blindside.MapEditor
                 case EditTool.Camera: return "監視カメラ";
                 case EditTool.Terrorist: return "テロリスト";
                 case EditTool.Captive: return "捕虜";
+                case EditTool.Gadget: return "ガジェット";
                 case EditTool.Exfil: return "救出地点";
                 case EditTool.Select: return "選択";
                 default: return "木箱";
@@ -1096,7 +1113,7 @@ namespace Blindside.MapEditor
             foreach (var t in new[] { EditTool.OutFloor, EditTool.InFloor, EditTool.SolidWall, EditTool.BreakableWall, EditTool.ReinforcedWall, EditTool.Crate, EditTool.Erase })
                 BuildPaletteRow(left.transform, t);
             var head2 = NewText(left.transform, "OBJECTS // オブジェクト", 15, FontStyles.Bold, Blue); Size(head2, -1, 30);
-            foreach (var t in new[] { EditTool.Hostage, EditTool.Captive, EditTool.Defender, EditTool.Terrorist, EditTool.Camera, EditTool.Exfil, EditTool.Select })
+            foreach (var t in new[] { EditTool.Hostage, EditTool.Captive, EditTool.Defender, EditTool.Terrorist, EditTool.Gadget, EditTool.Camera, EditTool.Exfil, EditTool.Select })
                 BuildPaletteRow(left.transform, t);
 
             // right panels: properties (top), validation (middle), wall statistics (bottom)
@@ -1116,6 +1133,7 @@ namespace Blindside.MapEditor
             propWeapon = NewButton(props.transform, "武器を変更", 140, 26, Blue, Color.white, 14, () =>
             {
                 if (selected.kind == ObjKind.Captive) { Model.CycleCaptiveOperator(selected.index); RefreshProperties(); return; }
+                if (selected.kind == ObjKind.Gadget) { var gk = Model.CycleGadgetKind(selected.index); if (gk != null) gadgetKind = gk; RefreshProperties(); return; }
                 if (selected.kind != ObjKind.Terrorist) return;
                 var w = Model.CycleTerroristWeapon(selected.index);
                 if (w != null) terroristWeapon = w;
@@ -1262,6 +1280,7 @@ namespace Blindside.MapEditor
                 case EditTool.Camera: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.CameraColor, 7, 7, 7, 7); Letter("C"); break;
                 case EditTool.Terrorist: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.TerroristColor, 7, 7, 7, 7); Letter("T"); break;
                 case EditTool.Captive: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.CaptiveColor, 7, 7, 7, 7); Letter("P"); break;
+                case EditTool.Gadget: Fill("f", new Color(.62f, .66f, .74f), 2, 2, 2, 2); Fill("b", MapCellView.ElectricColor, 7, 7, 7, 7); Letter("G"); break;
                 case EditTool.Exfil: Fill("f", new Color(.9f, .7f, .1f), 2, 2, 2, 2); Fill("g", new Color(.22f, .3f, .22f), 5, 5, 5, 5); Letter("A", new Color32(0xff, 0xd2, 0x1f, 0xff)); break;
                 case EditTool.Select: Fill("f", new Color(.16f, .18f, .21f), 2, 2, 2, 2); Fill("r", new Color(1f, 1f, 1f, .9f), 6, 6, 6, 6); Fill("r2", new Color(.16f, .18f, .21f), 8, 8, 8, 8); Letter("S", Color.white); break;
                 default:

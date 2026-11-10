@@ -127,6 +127,17 @@ namespace Blindside.Integration
         /// <summary>kill(u,{team:'def'})'s `G.stats[by.team]++` — every gas death is the defense's kill.</summary>
         public System.Action<SimUnit> OnGasKill;
 
+        /// <summary>A map gadget's damage (MapGadgetRuntime's mine): popup, log, the kill when it is fatal (the defense's), checkWin.</summary>
+        public void HazardDamage(SimUnit u, int dmg, string popup, string log)
+        {
+            if (u == null || !u.Alive) return;
+            u.HP = Mathf.Max(0, u.HP - dmg);
+            WorldPopup.Show(u.X, u.Y, popup, KiaRed);
+            HudLog.Add(log, HudLogType.Warn);
+            if (u.HP <= 0) Kill(u);
+            turns?.CheckWin();
+        }
+
         void Kill(SimUnit t)
         {
             if (t == null) return;

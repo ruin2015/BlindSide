@@ -300,6 +300,7 @@ namespace Blindside.Turns
         void TryEscortHostage(ITurnUnit u)
         {
             if (EscortedBy(u) != null) return;   // (one at a time)
+            if (ExfilZone.All.Count == 0) return;   // (a wipe-out map without exfil zones: nowhere to take a hostage)
             for (int i = 0; i < hostages.Count; i++)
             {
             var hostage = hostages[i];
@@ -400,7 +401,7 @@ namespace Blindside.Turns
         List<Vector2Int> threats;
         int threatsPhase = -1;
 
-        void NoteIntel(float x, float y) { intelPos = new Vector2(x, y); intelPhase = defPhase; }
+        public void NoteIntel(float x, float y) { intelPos = new Vector2(x, y); intelPhase = defPhase; }
         bool HasIntel => defPhase - intelPhase <= IntelTurns;
 
         bool Roamer(ITurnUnit u)

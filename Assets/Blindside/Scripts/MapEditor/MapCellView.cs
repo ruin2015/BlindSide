@@ -68,6 +68,11 @@ namespace Blindside.MapEditor
         // object colours (the defenders use the editor's blue, like the attack side's team colour)
         public static readonly Color HostageColor = new Color(1f, .6f, .1f), DefenderColor = new Color32(0x1f, 0x96, 0xe8, 0xff), CameraColor = new Color(.95f, .32f, .6f);
         public static readonly Color TerroristColor = new Color32(0xd6, 0x3b, 0x3b, 0xff), CaptiveColor = new Color32(0x9b, 0x3c, 0xf2, 0xff);
+        public static readonly Color ElectricColor = new Color32(0xff, 0xd2, 0x1f, 0xff), MineColor = new Color32(0xff, 0x6a, 0x1a, 0xff),
+            SensorColor = new Color32(0x2f, 0xd8, 0x86, 0xff);
+
+        public static Color GadgetColor(string kind) => kind == MapData.GadgetMine ? MineColor : kind == MapData.GadgetSensor ? SensorColor : ElectricColor;
+        public static string GadgetLetter(string kind) => kind == MapData.GadgetMine ? "M" : kind == MapData.GadgetSensor ? "S" : "E";
         static readonly Color DropTint = new Color(.35f, .78f, 1f, .42f), CamFovTint = new Color(1f, .4f, .65f, .33f), CamFovLine = new Color(1f, .4f, .65f, .95f);
         static readonly Color MarkerRim = new Color(.06f, .07f, .09f, .95f);
 
@@ -259,6 +264,8 @@ namespace Blindside.MapEditor
                 if (o.defPlaced[s]) AddMarker(objectsRoot, "Defender_" + (s + 1), o.defCell[s], DefenderColor, (s + 1).ToString(), o.defFacing[s]);
             for (int i = 0; i < o.cameras.Count; i++) AddMarker(objectsRoot, "Camera_" + (i + 1), o.cameras[i], CameraColor, "C", null);
             for (int i = 0; i < o.terrorists.Count; i++) AddMarker(objectsRoot, "Terrorist_" + (i + 1), o.terrorists[i].cell, TerroristColor, "T", o.terrorists[i].facing);
+            for (int i = 0; i < o.gadgets.Count; i++)
+                AddMarker(objectsRoot, "Gadget_" + (i + 1), o.gadgets[i].cell, GadgetColor(o.gadgets[i].kind), GadgetLetter(o.gadgets[i].kind), null);
             for (int i = 0; i < o.captives.Count; i++)
             {
                 var op = Blindside.Data.BuildAssetRegistry.Operator(o.captives[i].operatorKey);
@@ -414,6 +421,7 @@ namespace Blindside.MapEditor
                 case ObjKind.Camera: if (r.index < 0 || r.index >= o.cameras.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.cameras[r.index].x, o.cameras[r.index].y); break;
                 case ObjKind.Terrorist: if (r.index < 0 || r.index >= o.terrorists.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.terrorists[r.index].cell.x, o.terrorists[r.index].cell.y); break;
                 case ObjKind.Captive: if (r.index < 0 || r.index >= o.captives.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.captives[r.index].cell.x, o.captives[r.index].cell.y); break;
+                case ObjKind.Gadget: if (r.index < 0 || r.index >= o.gadgets.Count) { selectionObj.SetActive(false); return; } c = new Vector2(o.gadgets[r.index].cell.x, o.gadgets[r.index].cell.y); break;
                 case ObjKind.Exfil: if (r.index < 0 || r.index >= o.exfils.Count) { selectionObj.SetActive(false); return; } c = o.exfils[r.index].Center; size = new Vector2(o.exfils[r.index].Width + .2f, o.exfils[r.index].Height + .2f); break;
                 default: selectionObj.SetActive(false); return;
             }

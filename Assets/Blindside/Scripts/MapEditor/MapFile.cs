@@ -44,6 +44,7 @@ namespace Blindside.MapEditor
         public MapCaptive[] captives;       // captured operators (none in older files)
         public Vector2Int[] extraHostages;  // civilian hostages after the first (none in older files)
         public int winRule;                 // MapData.winRule (0 in older files: either)
+        public MapGadget[] gadgets;         // the defense's gadgets (none in older files)
         public Vector2Int[] cameras;
         public MapExfil[] exfils;
 
@@ -64,6 +65,8 @@ namespace Blindside.MapEditor
             f.defenders = defs.ToArray();
             f.extraHostages = o.extraHostages.ToArray();
             f.winRule = o.winRule;
+            f.gadgets = new MapGadget[o.gadgets.Count];
+            for (int i = 0; i < f.gadgets.Length; i++) f.gadgets[i] = new MapGadget { cell = o.gadgets[i].cell, kind = o.gadgets[i].kind };
             f.captives = new MapCaptive[o.captives.Count];
             for (int i = 0; i < f.captives.Length; i++) f.captives[i] = new MapCaptive { cell = o.captives[i].cell, operatorKey = o.captives[i].operatorKey };
             f.terrorists = new MapTerrorist[o.terrorists.Count];
@@ -108,6 +111,10 @@ namespace Blindside.MapEditor
             f.captives = f.captives ?? new MapCaptive[0];
             f.extraHostages = f.extraHostages ?? new Vector2Int[0];
             if (f.winRule < MapData.WinEither || f.winRule > MapData.WinExtract) { why = "勝利条件の値が不正です"; return false; }
+            f.gadgets = f.gadgets ?? new MapGadget[0];
+            if (f.gadgets.Length > MapData.MaxGadgets) { why = $"ガジェットが多すぎます (最大{MapData.MaxGadgets}個)"; return false; }
+            foreach (var g in f.gadgets)
+                if (g == null || System.Array.IndexOf(MapData.GadgetKinds, g.kind) < 0) { why = "不明なガジェットがあります"; return false; }
             if (!f.hasHostage && f.extraHostages.Length > 0) { why = "最初の人質がないのに追加の人質があります"; return false; }
             if (f.extraHostages.Length + 1 > MapData.MaxHostages) { why = $"人質が多すぎます (最大{MapData.MaxHostages}人)"; return false; }
             foreach (var c in f.captives) if (c == null || string.IsNullOrEmpty(c.operatorKey)) { why = "捕虜の一覧に空の項目があります"; return false; }
@@ -150,6 +157,7 @@ namespace Blindside.MapEditor
             if (hasHostage) o.hostage = hostage;
             if (hasHostage && extraHostages != null) o.extraHostages.AddRange(extraHostages);
             o.winRule = winRule;
+            if (gadgets != null) foreach (var g in gadgets) if (g != null) o.gadgets.Add(new GadgetSpot { cell = g.cell, kind = g.kind });
             foreach (var d in defenders) { o.defPlaced[d.slot] = true; o.defCell[d.slot] = d.cell; o.defFacing[d.slot] = d.facing; }
             o.cameras.AddRange(cameras);
             foreach (var e in exfils) o.exfils.Add(new ExfilRect { x0 = e.x0, y0 = e.y0, x1 = e.x1, y1 = e.y1 });

@@ -48,7 +48,7 @@ namespace Blindside.Map
         }
 
         /// <summary>"4か所(EXFIL A〜D)" — the wording HUD / title share (EXFIL and the letter joined by a no-break space).</summary>
-        public static string RangeText => All.Count == 1 ? $"1か所(EXFIL {All[0].Name})" : $"{All.Count}か所(EXFIL {All[0].Name}〜{All[All.Count - 1].Name})";
+        public static string RangeText => All.Count == 0 ? "(なし)" : All.Count == 1 ? $"1か所(EXFIL {All[0].Name})" : $"{All.Count}か所(EXFIL {All[0].Name}〜{All[All.Count - 1].Name})";
 
         /// <summary>Is grid cell (x,y) inside any extraction zone? Callers round positions first (the source's TLp uses Math.round).</summary>
         public static bool IsExfilTile(int x, int y)
