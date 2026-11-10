@@ -60,6 +60,8 @@ namespace Blindside.Combat
         ///   `engage` is the human choice (askEngage) or the AI's `hitChance(u,e,{preempt:true})>=30` check.
         /// - Mutual: whichever unit has the higher Speed fires first, with no preempt bonus either way.
         /// - EnemyOnly: the enemy always fires first, with a preemptive shot.
+        /// - SelfOnly / EnemyOnly: that first strike always hits (CombatSystem.NextSureHit); when it kills, the battle stage is skipped
+        ///   (BattleDirector). The return fire rolls as usual.
         /// Every branch goes through CombatSystem.Exchange (port of exchange()), which traces both lines of
         /// fire itself, stops after the first shot if that ended the match, and skips the return volley
         /// when the second unit died, is the hostage, or has no open line back.
@@ -71,6 +73,7 @@ namespace Blindside.Combat
             {
                 case EncounterKind.SelfOnly:
                     if (!engage) yield break; // mover ignores the enemy and keeps moving
+                    combat.NextSureHit = true;   // the first strike, before the fight proper: it always hits
                     yield return combat.Exchange(mover, enemy, preempt: true);
                     break;
 
@@ -88,6 +91,7 @@ namespace Blindside.Combat
                 }
 
                 case EncounterKind.EnemyOnly:
+                    combat.NextSureHit = true;   // the enemy's first strike always hits too
                     yield return combat.Exchange(enemy, mover, preempt: true);
                     break;
             }

@@ -280,7 +280,7 @@ namespace Blindside.Integration
         void Explode(SimUnit thrower, Vector2 at)
         {
             var w = GridSpace.GridToWorld(at.x, at.y, .2f);
-            CombatFx.Boom(w, FragOrange, 34);
+            FxBlast.Explosion(GridSpace.GridToWorld(at.x, at.y, .15f));   // particles: flash, fireball, sparks, debris, dust, smoke
             CombatFx.Ring(GridSpace.GridToWorld(at.x, at.y, .06f), FragOrange, .6f, BlastR);
             SfxNoise.Boom();
             if (BattlefieldCamera.Instance != null) BattlefieldCamera.Instance.Shake(.35f);
@@ -325,7 +325,7 @@ namespace Blindside.Integration
                         if (cx * cx + cy * cy <= WallR * WallR) near = true;
                     }
                     if (!near || !wall) continue;
-                    BreakPanel(p.id, TileType.Hole);
+                    BreakPanel(p.id, TileType.Hole, true);
                     any = true;
                 }
                 if (any && vision != null) vision.MapVersion++;

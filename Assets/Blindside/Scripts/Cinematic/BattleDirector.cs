@@ -193,6 +193,15 @@ namespace Blindside.Cinematic
             // the combat system's hint for this engagement (read once)
             bool mutual = combat != null && combat.NextMutual;
             if (combat != null) combat.NextMutual = false;
+            // an encounter's first strike (a sure hit) that kills: the fight never starts — no battle stage, it plays on the map
+            noStage = false;
+            bool sure = combat != null && combat.ExchangeSureHit;
+            if (combat != null) combat.ExchangeSureHit = false;
+            if (sure && combat.Map != null)
+            {
+                CombatSystem.ForecastExchange(combat.Map, first, second, true, out _, out _, out _, out int secondAfter, true);
+                noStage = secondAfter <= 0;
+            }
             if (engagement == null || Directing || !isActiveAndEnabled) return engagement;
             // AI-vs-AI (no player unit on either side): no staging, no waits.
             if (!IsPlayer(first) && !IsPlayer(second)) return Run(Kind.Instant, first, second, engagement);
@@ -209,6 +218,8 @@ namespace Blindside.Cinematic
         // A mutual encounter: no opening shot on the map — the camera closes in on the player's unit and the whole
         // fight plays on the battle stage.
         bool mutualOpen;
+        // the opening first strike is going to kill: no battle stage for this engagement
+        bool noStage;
 
         /// <summary>True while the battle stage is on screen, false when it goes (GameplayUIBridge: the #combat panel shows
         /// only the two HP bars on the stage).</summary>
@@ -324,7 +335,7 @@ namespace Blindside.Cinematic
                     EnsureVolume();
                     StartWeight(1f, P.enterSeconds);
                     if (bcam != null) { basePose = TwoShot(first, second); bcam.SetOverride(basePose, P.enterSeconds); }
-                    if (bcam != null && P.useBattleStage)
+                    if (bcam != null && P.useBattleStage && !noStage)
                     {
                         try
                         {

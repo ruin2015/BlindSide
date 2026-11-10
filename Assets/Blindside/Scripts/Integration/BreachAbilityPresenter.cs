@@ -22,6 +22,8 @@ namespace Blindside.Integration
         static readonly Color Yellow = new Color32(0xff, 0xd2, 0x1f, 0xff);   // 0xffd21f
         static readonly Color Orange = new Color32(0xff, 0x9d, 0x1c, 0xff);   // 0xff9d1c
         static readonly Color BoomCol = new Color32(0xff, 0xb1, 0x3b, 0xff);  // 0xffb13b
+        /// <summary>The broken wall's dust and chips (plaster / concrete).</summary>
+        public static readonly Color FxWall = new Color(.62f, .57f, .5f);
 
         readonly AbilitySystem abilities;
         readonly MarkBoard marks;
@@ -64,7 +66,9 @@ namespace Blindside.Integration
 
         void OnComplete(IAbilityUnit u, WallPanel p, TileType state, bool wasReinforced)
         {
-            foreach (var c in p.cells) CombatFx.Boom(GridSpace.GridToWorld(c.x, c.y), BoomCol, 16);
+            // particles: dust and chips of the wall; the launcher and the thermite also blow it (flash, sparks, a little fire)
+            bool blast = u.AbilityKey == "launcher" || u.AbilityKey == "thermite";
+            foreach (var c in p.cells) FxBlast.WallBreak(GridSpace.GridToWorld(c.x, c.y, .9f), FxWall, blast);
             SfxNoise.Boom();
             marks?.Add(MarkBoard.Other(u.Team), p.centerX, p.centerY, MarkKind.Breach);
 

@@ -10,7 +10,7 @@ namespace Blindside.Hub
     public class HubPlayer : MonoBehaviour
     {
         [Tooltip("m/s: walking, and running (Shift held while moving).")]
-        public float walkSpeed = 1.7f, runSpeed = 4.2f;
+        public float walkSpeed = 2.2f, runSpeed = 5.2f;   // (the stride keeps up to 1.4× / 1.3× the clips: HubFigure)
         public float turnSpeed = 720f, gravity = 20f;
         [Tooltip("The camera whose yaw the movement follows (empty: Camera.main).")]
         public Transform view;

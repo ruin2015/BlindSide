@@ -257,7 +257,7 @@ namespace Blindside.Combat
         /// (MapGrid/VisionSystem); mirrors the source's early return when the shot is blocked or out
         /// of range. Damage is ×1.4 per shot on a preemptive attack, and ×2 on a headshot crit.
         /// </summary>
-        public IEnumerator Shoot(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt)
+        public IEnumerator Shoot(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, bool sureHit = false)
         {
             if (!attacker.Alive || !target.Alive) yield break;
             // behind a raised shield (BASTION) there is no shooting — not in an encounter, not in return fire
@@ -295,7 +295,7 @@ namespace Blindside.Combat
             var pres = Presenter;
             if (pres != null)
             {
-                pres.Show(attacker, target, chance, dmg, shots, preempt, path.Walls, blocked, blocked ? 0 : hsChance);
+                pres.Show(attacker, target, sureHit ? 100 : chance, dmg, shots, preempt, path.Walls, blocked, blocked ? 0 : hsChance);
                 yield return Sleep(0.7f);
             }
 
@@ -307,7 +307,8 @@ namespace Blindside.Combat
             {
                 if (!target.Alive) break;
                 if (!down) attacker.View?.PlayFire();   // animation only
-                bool hit = Blindside.Core.GameRng.Range(0f, 100f) < (i == 0 ? firstChance : chance);
+                // (a sure hit — an encounter's first strike — still draws its roll: the forecast and the stream stay in step)
+                bool hit = Blindside.Core.GameRng.Range(0f, 100f) < (i == 0 ? firstChance : chance) || sureHit;
                 bool crit = false;
                 int dealt = 0;
                 if (hit)
@@ -385,7 +386,19 @@ namespace Blindside.Combat
         /// Both lines of fire are traced here with traceLine(), like shoot() does in the source.
         /// </summary>
         public IEnumerator Exchange(ICombatUnit first, ICombatUnit second, bool preempt)
-            => Engagement(first, second, ExchangeBody(first, second, preempt));
+        {
+            bool sure = NextSureHit;
+            NextSureHit = false;
+            ExchangeSureHit = sure;
+            return Engagement(first, second, ExchangeBody(first, second, preempt, sure));
+        }
+
+        /// <summary>The next <see cref="Exchange"/>'s opening volley always hits (read once): an encounter's first strike, before the
+        /// fight proper (EncounterResolver: SelfOnly / EnemyOnly). The return fire rolls as usual.</summary>
+        public bool NextSureHit { get; set; }
+        /// <summary>The exchange being started opens with a sure hit (set by Exchange; the director reads and clears it, like NextMutual —
+        /// an engagement that is not an Exchange never sees a stale one).</summary>
+        public bool ExchangeSureHit { get; set; }
 
         /// <summary>Staging hint for the director's next engagement (presentation only, read once by it): a mutual
         /// encounter (both saw each other) — the director goes in on the player's unit instead of showing the opening
@@ -408,12 +421,12 @@ namespace Blindside.Combat
         /// before the exchange starts, the forecast and the fight are the same. Keep it in step with <see cref="Shoot"/> and ExchangeBody.
         /// </summary>
         public static void ForecastExchange(MapGrid map, ICombatUnit first, ICombatUnit second, bool preempt,
-                                            out VolleyOutcome opening, out VolleyOutcome reply, out int firstHp, out int secondHp)
+                                            out VolleyOutcome opening, out VolleyOutcome reply, out int firstHp, out int secondHp, bool sureHit = false)
         {
             var r = Blindside.Core.GameRng.Peek();
             firstHp = first.HP; secondHp = second.HP;
             reply = default;
-            opening = ForecastVolley(first, second, TraceLine(map, first.X, first.Y, second.X, second.Y), preempt, ref secondHp, r);
+            opening = ForecastVolley(first, second, TraceLine(map, first.X, first.Y, second.X, second.Y), preempt, ref secondHp, r, sureHit);
             // ExchangeBody: the return fire when both still stand and the target can shoot back
             if (firstHp > 0 && secondHp > 0 && !second.IsHostage)
             {
@@ -422,7 +435,7 @@ namespace Blindside.Combat
             }
         }
 
-        static VolleyOutcome ForecastVolley(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, ref int targetHp, System.Random r)
+        static VolleyOutcome ForecastVolley(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, ref int targetHp, System.Random r, bool sureHit = false)
         {
             var o = new VolleyOutcome();
             if (attacker.ShieldUp) return o;
@@ -442,7 +455,7 @@ namespace Blindside.Combat
             for (int i = 0; i < o.shots; i++)
             {
                 // (GameRng.Range(0,100) = 0 + NextDouble() * 100, float like the real roll)
-                bool hit = (float)r.NextDouble() * 100f < (i == 0 ? firstChance : o.chance);
+                bool hit = (float)r.NextDouble() * 100f < (i == 0 ? firstChance : o.chance) || sureHit;
                 if (!hit || o.blocked) continue;
                 bool crit = (float)r.NextDouble() * 100f < o.hsChance;
                 int d = crit ? dmg * 2 : dmg;
@@ -450,12 +463,13 @@ namespace Blindside.Combat
                 o.hits++; o.total += d; if (crit) o.crits++;
                 targetHp = Mathf.Max(FloorHP, targetHp - d);
             }
+            if (sureHit) o.chance = 100;
             return o;
         }
 
-        IEnumerator ExchangeBody(ICombatUnit first, ICombatUnit second, bool preempt)
+        IEnumerator ExchangeBody(ICombatUnit first, ICombatUnit second, bool preempt, bool sureHit = false)
         {
-            yield return Shoot(first, second, TraceLine(first, second), preempt);
+            yield return Shoot(first, second, TraceLine(first, second), preempt, sureHit);
             if (IsOver != null && IsOver()) yield break;
             if (first.Alive && second.Alive && !second.IsHostage)
             {

@@ -512,6 +512,7 @@ namespace Blindside.UI
                 introDirector.stopped += OnIntroStopped;
                 introDirector.time = 0;
                 introDirector.Play();
+                Blindside.Cinematic.IntroSkip.Begin(introDirector);   // hold ESC to skip it
             }
             else if (!skipIntro && team != OperatorTeam.Defense && !mapData.useHouseIntro)
             {

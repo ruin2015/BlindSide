@@ -276,7 +276,7 @@ namespace Blindside.Integration
         /// back — the two sides of the engagement panel. The fight that follows draws the same numbers, so it ends the same way.</summary>
         void Forecast(ITurnUnit u, ITurnUnit e, out EngagePreview.Side a, out EngagePreview.Side b)
         {
-            Blindside.Combat.CombatSystem.ForecastExchange(map, u, e, true, out var v1, out var v2, out int uAfter, out int eAfter);
+            Blindside.Combat.CombatSystem.ForecastExchange(map, u, e, true, out var v1, out var v2, out int uAfter, out int eAfter, true);   // (the first strike always hits)
             a = EngageSides.Of(u, side, uAfter);
             b = EngageSides.Of(e, side, eAfter);
             if (v1.fired) EngageSides.Volley(ref a, v1);

@@ -168,11 +168,12 @@ namespace Blindside.Integration
 
         /// <summary>breakPanel(p,st): MapGrid.BreakPanel (stamps the cells, clears reinforced/electrified/mirror,
         /// raises Changed → bumpMap + MapWallSync's refreshPanel) plus boom(c.x,c.y,0xffb13b,16) per cell.</summary>
-        void BreakPanel(int panelId, TileType state)
+        void BreakPanel(int panelId, TileType state, bool blast = false)
         {
             var p = map.Panels[panelId];
             map.BreakPanel(panelId, state);
-            foreach (var cell in p.cells) CombatFx.Boom(GridSpace.GridToWorld(cell.x, cell.y), new Color32(0xff, 0xb1, 0x3b, 0xff), 16);
+            // particles: the wall's dust and chips (a shotgun); `blast` (a grenade) adds the flash, sparks and fire
+            foreach (var cell in p.cells) FxBlast.WallBreak(GridSpace.GridToWorld(cell.x, cell.y, .9f), BreachAbilityPresenter.FxWall, blast);
         }
 
         // ================================================================

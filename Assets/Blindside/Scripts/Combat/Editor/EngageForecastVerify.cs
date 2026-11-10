@@ -126,12 +126,13 @@ namespace Blindside.Combat.Editor
                     if (pick.Next(10) == 0) a.ShieldUp = true;                 // the opener behind its shield: no opening volley
                     if (pick.Next(12) == 0) b.IsHostage = true;
                     bool preempt = pick.Next(3) != 0;
+                    bool sure = preempt && pick.Next(2) == 0;                  // an encounter's first strike (always hits)
                     CombatSystem.FloorHP = pick.Next(6) == 0 ? 1 : 0;          // the tutorial's floor
                     GameRng.Seed(pick.Next());
 
                     // ---- the forecast ----
                     double before = GameRng.Peek().NextDouble();
-                    CombatSystem.ForecastExchange(map, a, b, preempt, out var v1, out var v2, out int aHp, out int bHp);
+                    CombatSystem.ForecastExchange(map, a, b, preempt, out var v1, out var v2, out int aHp, out int bHp, sure);
                     bool untouched = GameRng.Peek().NextDouble() == before;
 
                     // ---- the fight ----
@@ -139,6 +140,7 @@ namespace Blindside.Combat.Editor
                     var res = new List<(ICombatUnit at, ShotResult r)>();
                     cs.OnResolved += (at, tg, r) => res.Add((at, r));
                     cs.OnKill += (tg, by) => { ((Unit)tg).Alive = false; kills++; };
+                    cs.NextSureHit = sure;
                     RunNow(cs.Exchange(a, b, preempt));
 
                     ShotResult? r1 = null, r2 = null;
