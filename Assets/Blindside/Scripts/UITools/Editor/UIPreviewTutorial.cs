@@ -145,9 +145,10 @@ namespace Blindside.UITools.EditorTools
             var p = EngagePreview.Build(canvas.transform, canvas);
             p.enabled = false;
             var a = new EngagePreview.Side { key = "FLARE", en = "FLARE", kr = "フレア", weapon = "M24", color = UIPalette.Hex("#F8594F"), ally = true, hp = 100, maxHp = 100, after = allyDown ? 0 : 64,
-                                             dmg = "98", hit = "78%", hs = "32%", shots = "×1", preempt = true };
-            var b = new EngagePreview.Side { key = "VOLT", en = "UNKNOWN", kr = "テロリスト", weapon = "M870", color = UIPalette.Hex("#EF8202"), ally = false, hp = 120, maxHp = 120, after = allyDown ? 41 : 0 };
-            if (allyDown) { b.dmg = "28"; b.hit = "66%"; b.hs = "12%"; b.shots = "×4"; }
+                                             dmg = "98", hit = "78%", hs = "32%", shots = "×1", preempt = true,
+                                             result = allyDown ? "0/1" : "1/1", crits = allyDown ? 0 : 1, resultTotal = allyDown ? 0 : 196 };
+            var b = new EngagePreview.Side { key = "VOLT", en = "UNKNOWN", kr = "テロリスト", weapon = "M870", color = UIPalette.Hex("#EF8202"), ally = false, hp = 120, maxHp = 120, after = allyDown ? 120 : 0 };
+            if (allyDown) { b.dmg = "28"; b.hit = "66%"; b.hs = "12%"; b.shots = "×4"; b.result = "4/4"; b.crits = 1; b.resultTotal = 140; }
             p.Open(a, b, null, null, false);
             p.Evaluate(EngagePreview.XTo + .2f);
         }
@@ -167,6 +168,23 @@ namespace Blindside.UITools.EditorTools
             if (three) c.Show(TutorialDirector.HWallKinds, TutorialWallCard.Kind.Reinforced, TutorialWallCard.Kind.Solid, TutorialWallCard.Kind.Breakable);
             else c.Show(TutorialDirector.HWallsShot, TutorialWallCard.Kind.Breakable, TutorialWallCard.Kind.Solid);
             c.Evaluate(c.Duration + .1f);
+        }
+
+        public const string GadgetCard = "tutorial_gadget_card";
+
+        /// <summary>FLARE's launcher card, settled (glow mid-pulse), with CRUSHER's line about her ability.</summary>
+        public static void BuildGadgetCard(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("GadgetCard_Stage", UITheme.CanvasKind.Hud, 0);
+            var r = TutorialRadio.Build(canvas.transform, canvas);
+            r.enabled = false;
+            r.Say(TutorialDirector.LBreach5, true);
+            r.Evaluate(6f);
+            var op = UnityEditor.AssetDatabase.LoadAssetAtPath<Blindside.Data.OperatorData>("Assets/Blindside/Data/Operators/Operator_FLARE.asset");
+            var c = TutorialGadgetCard.Build(canvas.transform, op != null ? op.abilityName : null, op != null ? op.charges : 4);
+            c.enabled = false;
+            c.Play();
+            c.Evaluate(TutorialGadgetCard.ScanTo + TutorialGadgetCard.GlowPeriod * .25f);
         }
 
         public const string WallIntel = "deploy_wall_intel";
@@ -190,7 +208,7 @@ namespace Blindside.UITools.EditorTools
             var hud = HudKit.NewRect("MoveHud", canvas.transform); HudKit.Stretch(hud);
             var hint = KitHintBar.Build(hud);
             hint.Set("フレア — 降下する位置をクリックしてください",
-                     "建物の外の明るく表示された区域ならどこでも可 · 他の隊員はクリックまたはTabで選択",
+                     "建物の外の明るく表示された区域ならどこでも可 · 他の隊員はクリックまたはQで選択",
                      new System.Collections.Generic.List<HintButton> { new HintButton("undrop", "クラッシャーの降下取り消し", false), new HintButton("cancel", "ESC 選択解除", false) }, null);
             hint.Evaluate(KitHintBar.EnterTime + .1f);
         }
@@ -209,9 +227,9 @@ namespace Blindside.UITools.EditorTools
             var p = EngagePreview.Build(canvas.transform, canvas);
             p.enabled = false;
             var a = new EngagePreview.Side { key = "CRUSHER", en = "CRUSHER", kr = "クラッシャー", weapon = "AR15", color = TutorialRadio.CrusherColor, ally = true, hp = 120, maxHp = 120, after = 96,
-                                             dmg = "25", hit = "82%", hs = "28%", shots = "×3", preempt = true };
-            var b = new EngagePreview.Side { key = "VOLT", en = "UNKNOWN", kr = "テロリスト", weapon = "M870", color = UIPalette.Hex("#EF8202"), ally = false, hp = 120, maxHp = 120, after = 55,
-                                             dmg = "30", hit = "52%", hs = "6%", shots = "×1" };
+                                             dmg = "25", hit = "82%", hs = "28%", shots = "×3", preempt = true, result = "2/3", crits = 1, resultTotal = 75 };
+            var b = new EngagePreview.Side { key = "VOLT", en = "UNKNOWN", kr = "テロリスト", weapon = "M870", color = UIPalette.Hex("#EF8202"), ally = false, hp = 120, maxHp = 120, after = 45,
+                                             dmg = "30", hit = "52%", hs = "6%", shots = "×1", result = "0/1" };
             p.OpenAim(a, b, false);
             p.Evaluate(EngagePreview.XTo + .2f);
         }

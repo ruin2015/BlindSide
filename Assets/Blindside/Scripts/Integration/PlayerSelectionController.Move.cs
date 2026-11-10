@@ -255,27 +255,6 @@ namespace Blindside.Integration
         [SerializeField] bool forecastEngage = true;
         EngagePreview engagePreview;
 
-        /// <summary>The expected damage of one volley (CombatSystem.Shoot's rolls as expected values): shots × hit% × damage at this
-        /// distance (×1.4 preemptive) × (1 + headshot% — a headshot doubles it); nothing through a raised shield or a closed line.</summary>
-        static float ExpectedVolley(ITurnUnit a, ITurnUnit t, Blindside.Combat.ShotPath path, bool preempt, out int chance, out int hs, out int dmg)
-        {
-            var w = a.Weapon;
-            float dist = Blindside.Combat.CombatSystem.Distance(a, t);
-            chance = Blindside.Combat.CombatSystem.HitChance(a, t, path, preempt);
-            hs = Blindside.Combat.CombatSystem.HeadshotChance(a, t, path, preempt);
-            dmg = Mathf.RoundToInt(Blindside.Combat.CombatModifiers.BaseDamage(a, dist) * (preempt ? 1.4f : 1f));
-            // growth, as CombatSystem.Shoot applies it
-            if (a is Blindside.Combat.ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
-            if (t is Blindside.Combat.ICombatModifiers tm && tm.DamageTakenScale != 1f) dmg = Mathf.Max(1, Mathf.RoundToInt(dmg * tm.DamageTakenScale));
-            if (a.ShieldUp || !Blindside.Combat.CombatSystem.CanShoot(a, t, path) || Blindside.Combat.CombatSystem.ShieldBlocks(t, a)) return 0f;
-            // (the gear's extra rounds; a マズルブレーキ's first round counts with its own chance)
-            int shots = Blindside.Combat.CombatModifiers.ShotsOf(a);
-            var g = Blindside.Combat.CombatModifiers.GearOf(a);
-            float hits = shots * (chance / 100f);
-            if (g != null && g.firstAcc != 0f) hits += (Mathf.Clamp(chance + g.firstAcc, 5f, 95f) - chance) / 100f;
-            return hits * dmg * (1f + hs / 100f);
-        }
-
         IEnumerator AskEngageForecast(ITurnUnit u, ITurnUnit e, System.Action<bool> answer)
         {
             if (engagePreview == null) engagePreview = EngagePreview.Build(transform);
@@ -292,26 +271,16 @@ namespace Blindside.Integration
             answer(r == DialogResult.Yes);
         }
 
-        /// <summary>exchange(u,e,true) as expected values: `u`'s preemptive volley, then `e`'s return fire when it is expected to live
-        /// and can shoot back (CombatSystem.ExchangeBody) — the two sides of the engagement panel.</summary>
+        /// <summary>exchange(u,e,true) exactly as it is going to happen (CombatSystem.ForecastExchange: the same rolls on a copy of the
+        /// game's random stream, headshots included): `u`'s preemptive volley, then `e`'s return fire if it still stands and can shoot
+        /// back — the two sides of the engagement panel. The fight that follows draws the same numbers, so it ends the same way.</summary>
         void Forecast(ITurnUnit u, ITurnUnit e, out EngagePreview.Side a, out EngagePreview.Side b)
         {
-            int floor = Blindside.Combat.CombatSystem.FloorHP;
-            // the first volley (preemptive) …
-            var tr = Blindside.Combat.CombatSystem.TraceLine(map, u.X, u.Y, e.X, e.Y);
-            float e1 = ExpectedVolley(u, e, tr, true, out int c, out int hs, out int dmg);
-            int eAfter = Mathf.Max(floor, Mathf.RoundToInt(e.HP - e1));
-            a = EngageSides.Of(u, side, u.HP);
-            EngageSides.Volley(ref a, c, dmg, Blindside.Combat.CombatModifiers.ShotsOf(u), hs, true);
-            // … and the return fire, when it is expected to live and can shoot back (CombatSystem.ExchangeBody)
-            var tb = Blindside.Combat.CombatSystem.TraceLine(map, e.X, e.Y, u.X, u.Y);
+            Blindside.Combat.CombatSystem.ForecastExchange(map, u, e, true, out var v1, out var v2, out int uAfter, out int eAfter);
+            a = EngageSides.Of(u, side, uAfter);
             b = EngageSides.Of(e, side, eAfter);
-            if (eAfter > 0 && !e.IsHostage && Blindside.Combat.CombatSystem.CanShoot(e, u, tb) && !e.ShieldUp)
-            {
-                float e2 = ExpectedVolley(e, u, tb, false, out int c2, out int hs2, out int dmg2);
-                a.after = Mathf.Max(floor, Mathf.RoundToInt(u.HP - e2));
-                EngageSides.Volley(ref b, c2, dmg2, Blindside.Combat.CombatModifiers.ShotsOf(e), hs2, false);
-            }
+            if (v1.fired) EngageSides.Volley(ref a, v1);
+            if (v2.fired) EngageSides.Volley(ref b, v2);
         }
 
         // ---- FIRE's aim on an enemy: the same forecast beside it (the click fires: no buttons) ----

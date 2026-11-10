@@ -18,14 +18,15 @@ namespace Blindside.UI
 {
     public class EngagePreview : MonoBehaviour, ITimedEffect
     {
-        public const float W = 440f, H = 620f, PanelX = 70f, Pad = 22f, Face = 168f, BarH = 14f, RowH = 42f;
+        public const float W = 440f, H = 662f, PanelX = 70f, Pad = 22f, Face = 168f, BarH = 14f, RowH = 42f;
         public const float InTime = .3f, XFrom = .32f, XTo = .5f, BlinkPeriod = .7f, BtnW = 188f, BtnH = 50f, SlideFrom = 60f;
         public const int SortingOrder = 60;
         public const float LiveRaise = 64f;
         const float ValW = 138f, LabelX = Pad + ValW + 2f, LabelW = W - 2f * (Pad + ValW + 2f);
-        static readonly string[] RowLabels = { "ダメージ", "命中", "ヘッドショット", "射撃回数" };
+        // the last row is the forecast's result: rounds that hit of those fired, the headshots among them on a red chip
+        static readonly string[] RowLabels = { "ダメージ", "命中", "ヘッドショット", "射撃回数", "結果" };
 
-        /// <summary>One side of the exchange as the panel shows it. The four numbers are display strings ("34", "78%", "—").</summary>
+        /// <summary>One side of the exchange as the panel shows it. The numbers are display strings ("34", "78%", "—").</summary>
         public struct Side
         {
             public string key, en, kr, weapon;
@@ -34,16 +35,19 @@ namespace Blindside.UI
             public int hp, maxHp, after;   // HP now and as the exchange is expected to leave it (live: the same)
             public string dmg, hit, hs, shots;
             public bool preempt;           // its volley is the preemptive one (×1.4 chip by the damage)
+            public string result;          // the forecast: "2/3" rounds hit ("BLOCK": the shield takes them), null: no volley
+            public int crits, resultTotal; // headshots among the hits (CRIT ×n chip), and the damage they all make
             public bool Dies => after <= 0;
         }
 
         class Column
         {
             public UIGlitchImage face;
-            public RectTransform xMark, kiaChip, preChip, lossRt, afterRt;
+            public RectTransform xMark, kiaChip, preChip, critChip, lossRt, afterRt;
+            public TMP_Text critLabel;
             public Image fillAfter, fillLoss, plate;
             public TMP_Text en, weapon, hpText;
-            public TMP_Text[] vals = new TMP_Text[4];
+            public TMP_Text[] vals = new TMP_Text[5];
             public bool left;
             public Side side;
         }
@@ -184,7 +188,10 @@ namespace Blindside.UI
             c.vals[1].text = s.hit ?? "—";
             c.vals[2].text = s.hs ?? "—";
             c.vals[3].text = s.shots ?? "—";
+            c.vals[4].text = s.result == null ? "—" : s.resultTotal > 0 ? $"{s.result} <size=60%><color=#9AA0A8>-{s.resultTotal}</color></size>" : s.result;
             c.preChip.gameObject.SetActive(s.preempt);
+            c.critChip.gameObject.SetActive(s.crits > 0);
+            if (s.crits > 0) c.critLabel.text = "CRIT ×" + s.crits;
         }
 
         void Update()
@@ -305,6 +312,9 @@ namespace Blindside.UI
             }
             p.top.preChip = PreChip(panel, Pad + ValW - 50f, ry + 2f);
             p.bottom.preChip = PreChip(panel, W - Pad - 50f, ry + 2f);
+            float resY = ry + 4f * RowH;
+            p.top.critChip = CritChip(panel, Pad + ValW - 70f, resY + 2f, out p.top.critLabel);
+            p.bottom.critChip = CritChip(panel, W - Pad - 70f, resY + 2f, out p.bottom.critLabel);
 
             // bend the whole panel (buttons stay outside it)
             var warp = panel.gameObject.AddComponent<UIPerspective>();
@@ -317,7 +327,7 @@ namespace Blindside.UI
             p.buttons = btns;
             Button(btns, "Attack", "攻撃", "ENTER", UIPalette.Foe, 0f, () => p.onYes?.Invoke());
             Button(btns, "Ignore", "無視して移動", "ESC", UIPalette.Ink2, BtnW + 14f, () => p.onNo?.Invoke());
-            p.note = Text(btns, "攻撃すると、この場で移動を終了します。\n無視すると、描いた経路のまま移動を続けます。\n<color=#6A7078>HPの予測は命中率・ダメージの期待値です</color>", 12f, new Color(.62f, .65f, .7f), UITheme.TextRole.Body, "Note");
+            p.note = Text(btns, "攻撃すると、この場で移動を終了します。\n無視すると、描いた経路のまま移動を続けます。\n<color=#6A7078>予測はクリティカルを含め、実際の交戦結果と同じです</color>", 12f, new Color(.62f, .65f, .7f), UITheme.TextRole.Body, "Note");
             p.note.textWrappingMode = TextWrappingModes.Normal;
             Place(p.note.rectTransform, 0, BtnH + 10f, W, 54);
 
@@ -421,6 +431,16 @@ namespace Blindside.UI
             Img(chip, UIPalette.Accent);
             var t = Text(chip, "×1.4", 11f, UIPalette.Ink, UITheme.TextRole.Display, "Label");
             t.alignment = TextAlignmentOptions.Center; Stretch(t.rectTransform);
+            chip.gameObject.SetActive(false);
+            return chip;
+        }
+
+        static RectTransform CritChip(RectTransform panel, float x, float y, out TMP_Text label)
+        {
+            var chip = NewRect("CritChip", panel); Place(chip, x, y, 68, 16);
+            Img(chip, UIPalette.Foe);
+            label = Text(chip, "CRIT ×1", 11f, Color.white, UITheme.TextRole.Display, "Label");
+            label.alignment = TextAlignmentOptions.Center; Stretch(label.rectTransform);
             chip.gameObject.SetActive(false);
             return chip;
         }

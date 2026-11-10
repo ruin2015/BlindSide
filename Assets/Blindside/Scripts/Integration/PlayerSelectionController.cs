@@ -197,6 +197,8 @@ namespace Blindside.Integration
             // G.modal: the dialog's own capture-phase keydown is the only keyboard input; the
             // full-screen .modal backdrop swallows every pointer press (PointerOverVisibleUI).
             if (modal) { DialogKeys(); return; }
+            // the full battle log (Tab) is open over the battlefield: it takes the keys and its backdrop the clicks
+            if (KitLogHistory.IsOpen) { downActive = false; downPath = false; return; }
 
             var mouse = Mouse.current;
             if (mouse != null)
@@ -230,7 +232,7 @@ namespace Blindside.Integration
                     // something to cancel: ESC is the cancel's; nothing (or not the player's turn): it is left to the game menu (PauseMenu)
                     if (PlayerCanAct() && HasSomethingToCancel) { CancelMode(); Blindside.UI.EscapeGate.Consume(); }
                 }
-                else if (kb.tabKey.wasPressedThisFrame) CycleUnit();
+                else if (kb.qKey.wasPressedThisFrame) CycleUnit();          // (Tab is the full battle log, KitLogHistory)
                 else if (kb.fKey.wasPressedThisFrame && mode == Mode.Facing) HintAction("lock");
                 else if (mode == Mode.Menu && uiUnit != null)
                 {
@@ -288,7 +290,7 @@ namespace Blindside.Integration
             if (!downMoved && downOnWorld && !PointerOverVisibleUI(pos)) OnClick(pos);
         }
 
-        // Tab: cycle through this side's living, not-yet-ended units.
+        // Q: cycle through this side's living, not-yet-ended units.
         void CycleUnit()
         {
             if (!PlayerCanAct()) return;

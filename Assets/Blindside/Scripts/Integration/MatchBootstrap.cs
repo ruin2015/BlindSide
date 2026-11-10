@@ -469,6 +469,7 @@ namespace Blindside.Integration
 
             var ai = new EnemyAI(map, vision, combat, turnUnits, hostage);
             var turns = new TurnManager(map, turnUnits, hostage) { HoldResult = tutorialMode };
+            turns.OnPhaseBegin += _ => HudLog.Round = turns.Round;   // (the full log groups its lines by round)
             // exchange()'s `if(G.over) return` — the first shot's kill() has run checkWin() by then in the source.
             combat.IsOver = () => turns.CheckWin();
 

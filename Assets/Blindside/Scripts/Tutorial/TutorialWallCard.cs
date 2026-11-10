@@ -12,7 +12,9 @@ namespace Blindside.Tutorial
 {
     public class TutorialWallCard : MonoBehaviour, ITimedEffect
     {
-        public const float ColW = 320f, ColGap = 22f, Pad = 30f, HeaderH = 58f, ArtH = 186f, NameH = 36f, RowH = 30f, Rows = 3;
+        // (enlarged by request so the lines read easily: 3 columns = 1252 wide, clear of the objective card on the right)
+        public const float ColW = 380f, ColGap = 24f, Pad = 32f, HeaderH = 74f, ArtH = 200f, NameH = 46f, RowH = 38f, Rows = 3;
+        public const float TagSize = 13f, TitleSize = 24f, NameSize = 26f, SubSize = 14f, SubW = 130f, MarkSize = 22f, LineSize = 18f, MarkW = 30f;
         public const float ColIn = .38f, Stagger = .12f, OutTime = .2f;
 
         public enum Kind { Breakable, Solid, Reinforced }
@@ -126,11 +128,11 @@ namespace Blindside.Tutorial
             line.anchorMin = new Vector2(0f, 1f); line.anchorMax = new Vector2(1f, 1f); line.pivot = new Vector2(.5f, 1f);
             line.sizeDelta = new Vector2(0f, 4f); line.anchoredPosition = Vector2.zero;
             Img(line, UIPalette.Accent);
-            var tag = Text(root, "WALL TYPES // FIELD MANUAL", 12f, UIPalette.Accent, UITheme.TextRole.Display, "Tag");
+            var tag = Text(root, "WALL TYPES // FIELD MANUAL", TagSize, UIPalette.Accent, UITheme.TextRole.Display, "Tag");
             tag.characterSpacing = 6f;
-            Place(tag.rectTransform, Pad, 14, 400, 16);
-            c.title = Text(root, "", 20f, Color.white, UITheme.TextRole.Title, "Title");
-            Place(c.title.rectTransform, Pad, 28, 700, 28);
+            Place(tag.rectTransform, Pad, 14, 460, 18);
+            c.title = Text(root, "", TitleSize, Color.white, UITheme.TextRole.Title, "Title");
+            Place(c.title.rectTransform, Pad, 34, 900, 32);
 
             for (int i = 0; i < 3; i++)
             {
@@ -142,22 +144,22 @@ namespace Blindside.Tutorial
                 var draw = NewRect("Drawing", art); Stretch(draw);
                 c.arts[i] = draw.gameObject.AddComponent<WallIllustration>();
                 c.arts[i].raycastTarget = false;
-                c.names[i] = Text(col, "", 20f, Color.white, UITheme.TextRole.Title, "Name");
-                Place(c.names[i].rectTransform, 0, ArtH + 6f, ColW - 110f, NameH - 6f);
-                c.subs[i] = Text(col, "", 12f, UIPalette.Dim, UITheme.TextRole.Display, "Sub");
+                c.names[i] = Text(col, "", NameSize, Color.white, UITheme.TextRole.Title, "Name");
+                Place(c.names[i].rectTransform, 0, ArtH + 8f, ColW - SubW, NameH - 8f);
+                c.subs[i] = Text(col, "", SubSize, UIPalette.Dim, UITheme.TextRole.Display, "Sub");
                 c.subs[i].alignment = TextAlignmentOptions.TopRight;
-                Place(c.subs[i].rectTransform, ColW - 110f, ArtH + 14f, 110f, 18f);
+                Place(c.subs[i].rectTransform, ColW - SubW, ArtH + 18f, SubW, 20f);
                 var rule = NewRect("DecoRule", col); Place(rule, 0, ArtH + NameH + 2f, ColW, 1f);
                 Img(rule, new Color(1f, 1f, 1f, .14f));
                 for (int r = 0; r < 3; r++)
                 {
                     float y = ArtH + NameH + 8f + r * RowH;
-                    var mark = Text(col, "", 17f, UIPalette.Foe, UITheme.TextRole.Body, "Mark" + r);
+                    var mark = Text(col, "", MarkSize, UIPalette.Foe, UITheme.TextRole.Body, "Mark" + r);
                     mark.alignment = TextAlignmentOptions.Center;
-                    Place(mark.rectTransform, 0, y, 24f, RowH);
-                    var txt = Text(col, "", 14f, new Color(.88f, .9f, .92f), UITheme.TextRole.Body, "Line" + r);
+                    Place(mark.rectTransform, 0, y, MarkW, RowH);
+                    var txt = Text(col, "", LineSize, new Color(.92f, .94f, .96f), UITheme.TextRole.Body, "Line" + r);
                     txt.alignment = TextAlignmentOptions.MidlineLeft;
-                    Place(txt.rectTransform, 30f, y, ColW - 30f, RowH);
+                    Place(txt.rectTransform, MarkW + 6f, y, ColW - MarkW - 6f, RowH);
                     c.rowMark[i, r] = mark; c.rowText[i, r] = txt;
                 }
             }

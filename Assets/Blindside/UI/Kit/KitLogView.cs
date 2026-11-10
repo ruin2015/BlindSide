@@ -1,5 +1,6 @@
-// The HUD's battle log (#log, ui_spec "안내 바 / 로그"): lines 24 high and 400 wide stacked upwards from 76 above the bottom (above the
-// hint bar; it rises with the bar when the bar grows), gap 3, the newest 7 lines. Each line is a parallelogram (slant 12, ink at .86)
+// The HUD's battle log (#log, ui_spec "안내 바 / 로그"): lines 24 high and 300 wide stacked upwards from 20 above the bottom, right of
+// the hint bar (by request: lower and shorter than the source's 400 × 7 above the bar), gap 3, the newest 3 lines; Tab shows all
+// of them (KitLogHistory). Each line is a parallelogram (slant 12, ink at .86)
 // with a coloured slanted marker on the left (ally = blue, foe = foe red, warning = acc, plain = dim) and 12px body text, one line:
 // a text that is too wide first gets letter spacing −0.02em, and if that is not enough it wraps to two lines and the line grows.
 // Motion (all one clock, ITimedEffect.Evaluate(t); Update only advances it with unscaled time and stops when nothing moves):
@@ -15,11 +16,14 @@ namespace Blindside.UI
     [AddComponentMenu("Blindside/UI/Kit Log View")]
     public class KitLogView : MonoBehaviour, ITimedEffect
     {
-        public const float LineH = 24f, Width = 400f, Gap = 3f, Slant = 12f, PadL = 30f, PadR = 20f, PadT = 4f, PadB = 5f;
+        // low on the screen: beside the hint bar (right of it, on the bottom line), only the newest VisibleLines; the whole match's log
+        // is the Tab window (KitLogHistory)
+        public const float LineH = 24f, Width = 280f, Gap = 3f, Slant = 12f, PadL = 30f, PadR = 20f, PadT = 4f, PadB = 5f;
         public const float TextSize = 12f, TextLine = 15f, Spacing = -2f;                       // −0.02em in TMP's 1/100 em
         public const float MarkX = 10f, MarkW = 4f, MarkSkew = 20f;                              // ::before skewX(−20deg)
-        public const float EnterTime = .35f, EnterShift = 30f, BaseBottom = 76f, FromCentre = 135f;
-        const int Spare = 4;
+        public const float EnterTime = .35f, EnterShift = 30f, BaseBottom = 20f, FromCentre = 135f, BesideHint = 8f;   // (280 + 8 leaves a gap before END TURN)
+        public const int VisibleLines = 3;
+        const int Spare = 3;
 
         static readonly Color BgColor = new Color32(14, 16, 20, 219);                            // rgba(14,16,20,.86)
         static readonly Color TextColor = new Color32(0xE2, 0xE7, 0xEC, 0xFF);
@@ -37,7 +41,7 @@ namespace Blindside.UI
         }
 
         Entry[] pool;
-        readonly System.Collections.Generic.List<Entry> live = new System.Collections.Generic.List<Entry>(HudLog.MaxLines + 1);
+        readonly System.Collections.Generic.List<Entry> live = new System.Collections.Generic.List<Entry>(VisibleLines + 1);
         float clock;
         bool animating;
         float lineBase = -1f;
@@ -51,7 +55,7 @@ namespace Blindside.UI
             var rt = (RectTransform)transform;
             rt.anchorMin = rt.anchorMax = new Vector2(.5f, 0f);
             rt.pivot = new Vector2(0f, 0f);
-            rt.anchoredPosition = new Vector2(-FromCentre, BaseBottom + (KitHintBar.Height - KitHintBar.MinHeight));
+            rt.anchoredPosition = new Vector2(-FromCentre + KitHintBar.Width + BesideHint, BaseBottom);
             rt.sizeDelta = new Vector2(Width, rt.sizeDelta.y);
         }
 
@@ -60,7 +64,7 @@ namespace Blindside.UI
         void EnsurePool()
         {
             if (pool != null) return;
-            pool = new Entry[HudLog.MaxLines + Spare];
+            pool = new Entry[VisibleLines + Spare];
             for (int i = 0; i < pool.Length; i++) pool[i] = CreateEntry();
         }
 
@@ -98,12 +102,14 @@ namespace Blindside.UI
         void OnEnable()
         {
             ApplyLayout();
+            if (Application.isPlaying) KitLogHistory.Ensure(transform);       // the Tab window with the whole log
             KitHintBar.HeightChanged += OnHintHeight;
             HudLog.OnAdd += OnAdd;
             HudLog.OnCleared += ClearAll;
             HudLog.OnRemoved += RemoveLine;
             ClearAll();
-            foreach (var (text, type) in HudLog.Recent) AddLine(text, type, true);
+            var recent = HudLog.Recent;
+            for (int i = Mathf.Max(0, recent.Count - VisibleLines); i < recent.Count; i++) AddLine(recent[i].text, recent[i].type, true);
         }
 
         void OnDisable()
@@ -177,7 +183,7 @@ namespace Blindside.UI
             live.Add(e);
 
             Entry leaving = null;
-            if (live.Count > HudLog.MaxLines)
+            if (live.Count > VisibleLines)
             {
                 leaving = live[0];
                 live.RemoveAt(0);

@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-06 16:08
+Screen 1440x810 · 0 issues · generated 2026-11-09 14:54
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -79,6 +79,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_lose | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_mid | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_log_full | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hud_log_history | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | dialog_move | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | phase_banner_t01 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | phase_banner | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -117,6 +118,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | engage_forecast_ally_down | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_wall_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_wall_card_shot | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| tutorial_gadget_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | deploy_wall_intel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_hint_undrop | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | engage_aim | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -130,16 +132,16 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 70종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 72종)
 
 - Brighten ×6
-- Chip ×531
+- Chip ×542
 - ClickRelay ×3
 - CornerBrackets ×27
 - CutCornerGraphic ×243
 - EngagePreview ×3
 - ExpGainPopup ×1
-- HazardStripe ×185
+- HazardStripe ×188
 - HubHover ×56
 - HubListPanel ×5
 - HubLoadoutScreen ×3
@@ -154,53 +156,55 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - IntroHoloScreen ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
-- KitBannerStrip ×37
+- KitBannerStrip ×38
 - KitBrighten ×121
 - KitChoice ×5
 - KitCommandMenu ×13
 - KitGradient ×12
 - KitGrowthPanel ×1
+- KitLogHistory ×1
 - KitMenuLogo ×6
 - KitOptionsPanel ×5
 - KitPointer ×59
-- KitRoster ×34
+- KitRoster ×35
 - KitSaveIndicator ×1
 - KitShadow ×132
 - KitSlider ×6
 - KitStepper ×1
-- KitSweep ×169
+- KitSweep ×170
 - KitSwitch ×4
 - KitTextButton ×63
-- KitTint ×299
+- KitTint ×304
 - KitTitleLeft ×6
-- LintIgnoreClip ×873
+- LintIgnoreClip ×859
 - LintIgnoreOverlap ×319
 - MainMenuScreen ×6
 - OperationResultScreen ×3
 - PauseMenu ×6
 - ResultScreen ×3
-- SegmentedBar ×297
-- SlantedGraphic ×3017
-- SlantedMask ×288
-- TacticalPanel ×1143
+- SegmentedBar ×302
+- SlantedGraphic ×3064
+- SlantedMask ×293
+- TacticalPanel ×1168
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
+- TutorialGadgetCard ×1
 - TutorialGuide ×3
 - TutorialObjective ×2
 - TutorialOperatorCard ×1
-- TutorialRadio ×16
+- TutorialRadio ×17
 - TutorialSiren ×1
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
-- UIContactAlert ×34
-- UIGlitchImage ×310
+- UIContactAlert ×35
+- UIGlitchImage ×315
 - UIGlitchName ×54
-- UIGlitchText ×131
-- UIHeadshotBadge ×34
+- UIGlitchText ×133
+- UIHeadshotBadge ×35
 - UIPerspective ×3
-- UIPerspectiveVertex ×150
-- UIPhaseBanner ×34
-- UIPulse ×34
+- UIPerspectiveVertex ×165
+- UIPhaseBanner ×35
+- UIPulse ×35
 - WallIllustration ×5
 
 ## 미리보기 상태 (Render Previews)
@@ -270,7 +274,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_win | 1440x810 | 結果画面 — 勝利 |
 | result_lose | 1440x810 | 結果画面 — 敗北 |
 | result_mid | 1440x810 | 結果画面 — 登場中 (t=0.3s) |
-| hud_log_full | 1440x810 | HUD — ログ7行 (間隔詰め・2行折返し含む) |
+| hud_log_full | 1440x810 | HUD — ログ3行 (案内バーの右・2行折返し含む) |
+| hud_log_history | 1440x810 | HUD — 戦闘ログ全体 (Tab) |
 | dialog_move | 1440x810 | 移動確認ダイアログ |
 | phase_banner_t01 | 1440x810 | フェーズバナー (t=0.1s 帯が現れる) |
 | phase_banner | 1440x810 | フェーズバナー (t=0.65s) |
@@ -309,6 +314,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | engage_forecast_ally_down | 1440x810 | 先制攻撃 交戦予測 — 味方撃破予測 |
 | tutorial_wall_card | 1440x810 | チュートリアル 壁の種類 (三種類) |
 | tutorial_wall_card_shot | 1440x810 | チュートリアル 壁の種類 (貫通) |
+| tutorial_gadget_card | 1440x810 | チュートリアル フレアのガジェット |
 | deploy_wall_intel | 1440x810 | 配置 — 偵察情報 (強化壁・電気) |
 | hud_hint_undrop | 1440x810 | HUD — 案内バー 降下取り消し (ボタン2つ) |
 | engage_aim | 1440x810 | 交戦予測 — 攻撃の照準中 |

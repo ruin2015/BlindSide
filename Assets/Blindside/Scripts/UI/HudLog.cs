@@ -29,11 +29,20 @@ namespace Blindside.UI
         /// <summary>The last ≤7 lines, oldest first (what #log currently holds).</summary>
         public static IReadOnlyList<(string text, HudLogType type)> Recent => recent;
 
+        /// <summary>Every line of this match, oldest first, up to HistoryMax (the full log — Tab in battle).</summary>
+        public static IReadOnlyList<(string text, HudLogType type, int round)> History => history;
+        public const int HistoryMax = 500;
+        static readonly List<(string text, HudLogType type, int round)> history = new List<(string, HudLogType, int)>();
+        /// <summary>The round the next lines belong to (set by the match; 0 before the first round).</summary>
+        public static int Round;
+
         public static void Add(string text, HudLogType type = HudLogType.Normal)
         {
             Debug.Log($"[Log] {text}");
             recent.Add((text, type));
             while (recent.Count > MaxLines) recent.RemoveAt(0);
+            history.Add((text, type, Round));
+            if (history.Count > HistoryMax) history.RemoveAt(0);
             OnAdd?.Invoke(text, type);
         }
 
@@ -67,6 +76,7 @@ namespace Blindside.UI
         public static void Clear()
         {
             recent.Clear();
+            history.Clear(); Round = 0;
             OnCleared?.Invoke();
         }
 
@@ -74,7 +84,7 @@ namespace Blindside.UI
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
-            recent.Clear(); OnAdd = null; OnCleared = null; OnRemoved = null; PlayerTeam = null;
+            recent.Clear(); history.Clear(); Round = 0; OnAdd = null; OnCleared = null; OnRemoved = null; PlayerTeam = null;
         }
     }
 }

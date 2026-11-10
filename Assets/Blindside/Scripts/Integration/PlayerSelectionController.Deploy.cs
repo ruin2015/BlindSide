@@ -111,11 +111,11 @@ namespace Blindside.Integration
             else if (undropUnit != null && undropUnit.Alive && undropUnit.Placed)
                 // the next one is up, the one just dropped can still be taken back
                 SetHint($"{KrOf(u)} — 降下する位置をクリックしてください",
-                        "建物の外の明るく表示された区域ならどこでも可 · 他の隊員はクリックまたはTabで選択",
+                        "建物の外の明るく表示された区域ならどこでも可 · 他の隊員はクリックまたはQで選択",
                         (UndropId, $"{KrOf(undropUnit)}の降下取り消し", false), ("cancel", "ESC 選択解除", false));
             else
                 SetHint($"{KrOf(u)} — 降下する位置をクリックしてください",
-                        "建物の外の明るく表示された区域ならどこでも可 · 他の隊員はクリックまたはTabで選択",
+                        "建物の外の明るく表示された区域ならどこでも可 · 他の隊員はクリックまたはQで選択",
                         ("cancel", "ESC 選択解除", false));
         }
 

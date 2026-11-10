@@ -32,5 +32,38 @@ namespace Blindside.Core
         public static int Next(int max) => rng.Next(max);
 
         public static double NextDouble() => rng.NextDouble();
+
+        /// <summary>A copy of the stream as it stands: it draws exactly the numbers the real stream will draw next, and drawing from it
+        /// leaves the real stream untouched (the engagement forecast rolls the coming exchange on it).</summary>
+        public static Random Peek() => (Random)DeepCopy(rng, new System.Collections.Generic.Dictionary<object, object>(ReferenceComparer.Instance));
+
+        // System.Random keeps its state in private fields (a seed array and two indices; on some runtimes inside an impl object that
+        // points back at its Random): a member-wise copy with every array and nested object copied too, each object once.
+        static object DeepCopy(object o, System.Collections.Generic.Dictionary<object, object> done)
+        {
+            if (o == null) return null;
+            var t = o.GetType();
+            if (t.IsPrimitive || t.IsEnum || o is string || o is Delegate) return o;
+            if (done.TryGetValue(o, out var seen)) return seen;
+            if (o is Array a) { var ac = a.Clone(); done[o] = ac; return ac; }   // (the seed array holds ints: a shallow copy is a full copy)
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+            var copy = typeof(object).GetMethod("MemberwiseClone", flags).Invoke(o, null);
+            done[o] = copy;
+            for (var ct = t; ct != null && ct != typeof(object); ct = ct.BaseType)
+                foreach (var f in ct.GetFields(flags | System.Reflection.BindingFlags.DeclaredOnly))
+                {
+                    if (f.FieldType.IsPrimitive || f.FieldType.IsEnum || f.FieldType == typeof(string)) continue;
+                    var v = f.GetValue(o);
+                    if (v != null) f.SetValue(copy, DeepCopy(v, done));
+                }
+            return copy;
+        }
+
+        sealed class ReferenceComparer : System.Collections.Generic.IEqualityComparer<object>
+        {
+            public static readonly ReferenceComparer Instance = new ReferenceComparer();
+            public new bool Equals(object x, object y) => ReferenceEquals(x, y);
+            public int GetHashCode(object o) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(o);
+        }
     }
 }

@@ -305,6 +305,8 @@ namespace Blindside.Tutorial
             yield return Say(LBreach4);
             radio.Close();
             yield return HammerDemo();
+            // FLARE's own gadget on the right while he tells her what it does (kept up through LBreach6's line)
+            GadgetCard().Play();
             yield return Say(LBreach5);
             // FLARE goes in through the door, the reinforced stretch in front of her
             radio.Close();
@@ -324,6 +326,14 @@ namespace Blindside.Tutorial
         TutorialWallCard wallCard;
         public const string HWallsShot = "銃弾が貫通する壁と、貫通しない壁";
         public const string HWallKinds = "建物にある三種類の壁";
+
+        TutorialGadgetCard gadgetCard;
+        TutorialGadgetCard GadgetCard()
+        {
+            if (gadgetCard == null)
+                gadgetCard = TutorialGadgetCard.Build(radio.canvas.transform, flare.Op != null ? flare.Op.abilityName : null, flare.Op != null ? flare.Op.charges : 4);
+            return gadgetCard;
+        }
 
         TutorialWallCard WallCard()
         {
@@ -448,6 +458,7 @@ namespace Blindside.Tutorial
             TutorialGate.PanelFilter = id => id == pid;
             var marker = TutorialMarker.Create(TutorialMap.ReinforcedCentre, transform, UIPalette.Accent);
             yield return Say(instruction);
+            if (gadgetCard != null) gadgetCard.Hide();      // her turn to use it: the card makes way for the objective card
             string skillName = "「" + (flare.Op != null ? flare.Op.abilityName : "能力") + "」";
             string skillChip = skillName + "をクリック";
             objective.Set(OLauncher, ("左クリック", "フレアを選択"), (skillName, "能力を選ぶ"), ("左クリック", "強化壁を選ぶ"), ("ESC", "キャンセル"));

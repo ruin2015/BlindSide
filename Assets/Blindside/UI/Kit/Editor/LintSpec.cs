@@ -75,7 +75,8 @@ namespace Blindside.UITools.EditorTools
                     if (!e.gameObject.activeSelf || e.name != "Entry") continue;
                     var t = e.GetComponentInChildren<TMP_Text>();
                     bool one = t == null || t.textInfo == null || t.textInfo.lineCount <= 1;
-                    Add(l, e, new Vector2(h.logWidth, h.logLineHeight), one ? "log line" : "log line (wrapped: width only)", false, !one);
+                    // 300 by request (the log sits low beside the hint bar now; the spec's 400 no longer fits there)
+                    Add(l, e, new Vector2(KitLogView.Width, h.logLineHeight), one ? "log line" : "log line (wrapped: width only)", false, !one);
                 }
             };
 

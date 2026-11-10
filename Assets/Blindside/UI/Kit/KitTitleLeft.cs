@@ -351,7 +351,7 @@ namespace Blindside.UI
             var hl = HudKit.NewRect("Line", help);
             UILayout.Place(hl, 0f, 0f, 3f, HelpH);
             HudKit.AddImage(hl, theme.blue);
-            var ht = HudKit.AddText(help, "<color=#FFFFFF>操作</color> — 左クリック: 選択・コマンド / ドラッグ: 経路 / ホイール: ズーム / ESC・右クリック: キャンセル / Tab: 次の隊員",
+            var ht = HudKit.AddText(help, "<color=#FFFFFF>操作</color> — 左クリック: 選択・コマンド / ドラッグ: 経路 / ホイール: ズーム / ESC・右クリック: キャンセル / Q: 次の隊員",
                 12.5f, HelpC, false, TextAlignmentOptions.TopLeft, "Text", UITheme.TextRole.Body);
             ht.textWrappingMode = TextWrappingModes.NoWrap;
             ht.overflowMode = TextOverflowModes.Overflow;

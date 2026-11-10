@@ -392,6 +392,67 @@ namespace Blindside.Combat
         /// shot on the map.</summary>
         public bool NextMutual { get; set; }
 
+        // ================================================================
+        //  The engagement forecast: the coming exchange rolled ahead on a copy of the game's random stream
+        // ================================================================
+        /// <summary>One volley as it is going to play out.</summary>
+        public struct VolleyOutcome
+        {
+            public bool fired, blocked, preempt;
+            public int chance, hsChance, dmg, shots, hits, crits, total;
+        }
+
+        /// <summary>
+        /// Exactly what <see cref="Exchange"/>(first, second, preempt) is going to do if it starts now: the same rolls in the same order
+        /// on a copy of GameRng (nothing is drawn from the real stream, no unit is changed). As long as nothing else draws from GameRng
+        /// before the exchange starts, the forecast and the fight are the same. Keep it in step with <see cref="Shoot"/> and ExchangeBody.
+        /// </summary>
+        public static void ForecastExchange(MapGrid map, ICombatUnit first, ICombatUnit second, bool preempt,
+                                            out VolleyOutcome opening, out VolleyOutcome reply, out int firstHp, out int secondHp)
+        {
+            var r = Blindside.Core.GameRng.Peek();
+            firstHp = first.HP; secondHp = second.HP;
+            reply = default;
+            opening = ForecastVolley(first, second, TraceLine(map, first.X, first.Y, second.X, second.Y), preempt, ref secondHp, r);
+            // ExchangeBody: the return fire when both still stand and the target can shoot back
+            if (firstHp > 0 && secondHp > 0 && !second.IsHostage)
+            {
+                var back = TraceLine(map, second.X, second.Y, first.X, first.Y);
+                if (CanShoot(second, first, back)) reply = ForecastVolley(second, first, back, false, ref firstHp, r);
+            }
+        }
+
+        static VolleyOutcome ForecastVolley(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, ref int targetHp, System.Random r)
+        {
+            var o = new VolleyOutcome();
+            if (attacker.ShieldUp) return o;
+            WeaponData w = attacker.Weapon;
+            if (w == null || path.Blocked || Distance(attacker, target) > w.range + 4f) return o;
+            o.fired = true; o.preempt = preempt;
+            o.chance = HitChance(attacker, target, path, preempt);
+            o.hsChance = HeadshotChance(attacker, target, path, preempt);
+            var gear = CombatModifiers.GearOf(attacker);
+            o.shots = CombatModifiers.ShotsOf(attacker);
+            int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(o.chance + gear.firstAcc, 5, 95) : o.chance;
+            int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(attacker, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
+            if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+            o.dmg = dmg;
+            float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
+            o.blocked = ShieldBlocks(target, attacker);
+            for (int i = 0; i < o.shots; i++)
+            {
+                // (GameRng.Range(0,100) = 0 + NextDouble() * 100, float like the real roll)
+                bool hit = (float)r.NextDouble() * 100f < (i == 0 ? firstChance : o.chance);
+                if (!hit || o.blocked) continue;
+                bool crit = (float)r.NextDouble() * 100f < o.hsChance;
+                int d = crit ? dmg * 2 : dmg;
+                if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
+                o.hits++; o.total += d; if (crit) o.crits++;
+                targetHp = Mathf.Max(FloorHP, targetHp - d);
+            }
+            return o;
+        }
+
         IEnumerator ExchangeBody(ICombatUnit first, ICombatUnit second, bool preempt)
         {
             yield return Shoot(first, second, TraceLine(first, second), preempt);

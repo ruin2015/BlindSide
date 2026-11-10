@@ -103,7 +103,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = "result_win", label = "結果画面 — 勝利", build = s => BuildResult(s, true, 5f) },
             new State { name = "result_lose", label = "結果画面 — 敗北", build = s => BuildResult(s, false, 5f) },
             new State { name = "result_mid", label = "結果画面 — 登場中 (t=0.3s)", build = s => BuildResult(s, false, .3f) },
-            new State { name = "hud_log_full", label = "HUD — ログ7行 (間隔詰め・2行折返し含む)", build = s => BuildHud(s, HudState.LogFull) },
+            new State { name = "hud_log_full", label = "HUD — ログ3行 (案内バーの右・2行折返し含む)", build = s => BuildHud(s, HudState.LogFull) },
+            new State { name = "hud_log_history", label = "HUD — 戦闘ログ全体 (Tab)", build = s => BuildHud(s, HudState.LogHistory) },
             new State { name = "dialog_move", label = "移動確認ダイアログ", build = s => BuildHud(s, HudState.MoveDialog) },
             new State { name = "phase_banner_t01", label = "フェーズバナー (t=0.1s 帯が現れる)", build = s => BuildHud(s, HudState.Banner1) },
             new State { name = "phase_banner", label = "フェーズバナー (t=0.65s)", build = s => BuildHud(s, HudState.Banner) },
@@ -142,6 +143,7 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewTutorial.ForecastAllyDown, label = "先制攻撃 交戦予測 — 味方撃破予測", build = s => UIPreviewTutorial.BuildForecast(s, true) },
             new State { name = UIPreviewTutorial.WallCard3, label = "チュートリアル 壁の種類 (三種類)", build = s => UIPreviewTutorial.BuildWallCard(s, true) },
             new State { name = UIPreviewTutorial.WallCard2, label = "チュートリアル 壁の種類 (貫通)", build = s => UIPreviewTutorial.BuildWallCard(s, false) },
+            new State { name = UIPreviewTutorial.GadgetCard, label = "チュートリアル フレアのガジェット", build = UIPreviewTutorial.BuildGadgetCard },
             new State { name = UIPreviewTutorial.WallIntel, label = "配置 — 偵察情報 (強化壁・電気)", build = UIPreviewTutorial.BuildWallIntel },
             new State { name = UIPreviewTutorial.HintUndrop, label = "HUD — 案内バー 降下取り消し (ボタン2つ)", build = UIPreviewTutorial.BuildHintUndrop },
             new State { name = UIPreviewTutorial.ForecastAim, label = "交戦予測 — 攻撃の照準中", build = UIPreviewTutorial.BuildForecastAim },
@@ -455,7 +457,30 @@ namespace Blindside.UITools.EditorTools
         // ================================================================
         //  HUD (sample data: the attack squad of the default match, round 1)
         // ================================================================
-        enum HudState { Selected, Unselected, Hit, Ended, MoveDialog, Banner, LongDesc, Moved, Prep, CmdLong, CmdDisabled, HintMove, HintFire, HintLong, LogFull, Banner1, Banner3, Banner4, Contact, Headshot, HeadshotLock, EndNormal, EndHover, EndDisabled }
+        enum HudState { Selected, Unselected, Hit, Ended, MoveDialog, Banner, LongDesc, Moved, Prep, CmdLong, CmdDisabled, HintMove, HintFire, HintLong, LogFull, Banner1, Banner3, Banner4, Contact, Headshot, HeadshotLock, EndNormal, EndHover, EndDisabled, LogHistory }
+
+        // Tab's full battle log over the HUD: three rounds of sample lines (HudLog.History is static — cleared and refilled here)
+        static void BuildLogHistory(Stage s)
+        {
+            Blindside.UI.HudLog.Clear();
+            void L(int round, string text, Blindside.UI.HudLogType type) { Blindside.UI.HudLog.Round = round; Blindside.UI.HudLog.Add(text, type); }
+            L(0, "作戦開始 — 攻撃チームが建物の外に降下", Blindside.UI.HudLogType.Ally);
+            L(0, "クラッシャー 降下完了", Blindside.UI.HudLogType.Ally);
+            L(1, "クラッシャー: 壁を破壊 (2,9)", Blindside.UI.HudLogType.Ally);
+            L(1, "敵の銃声を確認 — 北東の部屋", Blindside.UI.HudLogType.Warn);
+            L(1, "CAM-02: 敵 1名を捕捉", Blindside.UI.HudLogType.Normal);
+            L(1, "アルゴス → フレア: 2/3 命中, 36 ダメージ (ヘッドショット ×1)", Blindside.UI.HudLogType.Foe);
+            L(2, "フレア → アルゴス: 3/3 命中, 54 ダメージ — 撃破", Blindside.UI.HudLogType.Ally);
+            L(2, "壁を強化 — この壁 2/3 強化完了 (残り強化 8)", Blindside.UI.HudLogType.Foe);
+            L(2, "射撃可能な味方がいません (行動力の消費なし · 視界内に隊員が必要)", Blindside.UI.HudLogType.Warn);
+            L(3, "ヴァイパー → クラッシャー: 3/3 命中, 54 ダメージ (ヘッドショット ×2)", Blindside.UI.HudLogType.Foe);
+            var canvas = s.NewCanvas("LogHistory", UITheme.CanvasKind.Hud, 40);
+            var go = new GameObject("LogHistory", typeof(RectTransform));
+            go.transform.SetParent(canvas.transform, false);
+            var h = go.AddComponent<Blindside.UI.KitLogHistory>();
+            h.PoseOpen();
+            Blindside.UI.HudLog.Clear();
+        }
 
         // the operator with the longest ability description (VOLT, a defender), shown in the panel of the LongDesc state
         const string LongestDesc = "VOLT";
@@ -568,6 +593,7 @@ namespace Blindside.UITools.EditorTools
                 log.PreviewLine("ヴァイパー → クラッシャー: 3/3 命中, 54 ダメージ (ヘッドショット ×2)", Blindside.UI.HudLogType.Foe);
                 log.PreviewLine("CAM-02: 敵 1名を捕捉", Blindside.UI.HudLogType.Normal);
             }
+            if (state == HudState.LogHistory) BuildLogHistory(s);
 
             // ---- GameplayUIBridge_Canvas (banner, contact, headshot, END TURN) ----
             var bridgeCanvas = s.NewCanvas("GameplayUIBridge_Canvas", UITheme.CanvasKind.Hud, 0);

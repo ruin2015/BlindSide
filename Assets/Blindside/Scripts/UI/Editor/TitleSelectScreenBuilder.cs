@@ -237,7 +237,7 @@ namespace Blindside.UI.EditorTools
             BuildStatBlock(meta, "HOSTILES", "05");
             BuildStatBlock(meta, "TIME LIMIT", "15R");
 
-            var help = Text(left, "操作 — 左クリック: 隊員の選択・コマンド / 移動は押したままドラッグで経路を描く(クリックで自動経路) / 何もない所のドラッグ・右ドラッグ・WASD: カメラ移動 / ホイール: ズーム / 数字キー: コマンド / ESC・右クリック: キャンセル / Tab: 次の隊員", 12.5f, FontStyles.Normal, TextAlignmentOptions.TopLeft, Dim);
+            var help = Text(left, "操作 — 左クリック: 隊員の選択・コマンド / 移動は押したままドラッグで経路を描く(クリックで自動経路) / 何もない所のドラッグ・右ドラッグ・WASD: カメラ移動 / ホイール: ズーム / 数字キー: コマンド / ESC・右クリック: キャンセル / Q: 次の隊員", 12.5f, FontStyles.Normal, TextAlignmentOptions.TopLeft, Dim);
             help.textWrappingMode = TextWrappingModes.Normal;
             UILayout.LineHeight(help, 1.5f);
             UILayout.Place(help.rectTransform, 15, 676, 645, 40);         // .help{top:676px;width:660px;padding-left:12px + 3px border}

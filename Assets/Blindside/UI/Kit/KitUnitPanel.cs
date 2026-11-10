@@ -7,9 +7,10 @@
 //         Head   68 high, RectMask2D (.hd overflow hidden): DecoHeadBg ink (foe: dark red), DecoStripes (right 96, 56 wide),
 //                Code 11 display (ellipsis), Name 26 display (UIGlitchName), Kana 12.5 body (+ role · team), HpBox (92 wide, slant 18,
 //                HP 28 display + "HP /max" 11)
-//         Grid   5 cells MOVE SPD DMG ACC RNG: ink2, label 11, value 16 (shrinks to 11 when a value is wider than its cell), DecoDot
-//         Ability  y118 h62, DecoBand 4 in the operator colour: AbilityIcon ✦ (display), AbilityName 12.5 (body), Charges, Desc 12 (2 lines,
-//                ellipsis)
+//         HpBar  the panel's width under the header, 14 high, a tick every tenth: ally blue / enemy red fill, the HP a hit took shown
+//                red behind it for a moment, then draining
+//         Grid   5 big cells MOVE SPD DMG ACC RNG: ink2, an icon (BSTactical glyph, the operator colour) + label 12, value 26 (shrinks
+//                to 14 when a value is wider than its cell). (The ability box is gone: the menu and the illustration card name it.)
 //       DecoShadowFace  KitShadow 0 8 20 .4
 //       Face     SlantedMask 104×104 (slant 20) at x14, 30 above the panel: DecoBackdrop, Photo (UIGlitchImage Select), Monogram,
 //                DecoLine 5 in the operator colour at the bottom
@@ -29,12 +30,17 @@ namespace Blindside.UI
         public const float Width = 430f, Height = 190f, Left = 20f, Bottom = 20f;
         public const float HeadH = 68f, TextX = 140f, HpW = 92f, HpSlant = 18f, HpPadR = 8f;
         public const float FaceX = 14f, FaceSize = 104f, FaceRise = 30f, FaceSlant = 20f, FaceLine = 5f;
-        public const float AbX = 14f, AbY = 118f, AbR = 16f, AbB = 10f, AbBand = 4f;
+        // under the header: a segmented HP bar the width of the panel, then the five stats as big cells with an icon each
+        // (the ability box that used to sit here is gone — the command menu and the illustration card name the ability)
+        public const float PadX = 14f, BarY = HeadH + 10f, BarH = 14f, BarSegments = 10f;
+        public const float GridY = BarY + BarH + 8f, GridH = Height - GridY - 12f, GridGap = 4f, ValueSize = 26f, IconSize = 28f;   // (BSTactical's icon glyphs draw at about half their size)
         public const float RevealTime = .5f, RevealAlpha = .4f, Margin = 60f;
         const int MaxTags = 6;
         static readonly string[] StatLabels = { "MOVE", "SPD", "DMG", "ACC", "RNG" };
-        // fixed column ratio (MOVE carries "4.2/7m", SPD / RNG one or two digits): every value fits at 16 without shrinking
-        static readonly float[] StatColumns = { 1.5f, .7f, 1.1f, .8f, .7f };
+        // icons (BSTactical glyphs, display role only): move ➜, speed ✹, damage ✛, accuracy ◎, range ⌖
+        static readonly string[] StatIcons = { "➜", "✹", "✛", "◎", "⌖" };
+        // fixed column ratio (MOVE carries "4.2/7m", DMG "50×1"): every value fits at ValueSize without shrinking
+        static readonly float[] StatColumns = { 1.45f, .85f, 1.1f, .85f, .85f };
 
         [Header("Parts")]
         public RectMask2D reveal;
@@ -50,9 +56,11 @@ namespace Blindside.UI
         public Image faceBack, faceLine;
         public TMP_Text monogram;
         public TMP_Text[] statValues = new TMP_Text[5];
-        public Image[] statDots = new Image[5];
-        public Image abilityBand;
-        public TMP_Text abilityIcon, abilityName, abilityCharges, abilityDesc;
+        public TMP_Text[] statIcons = new TMP_Text[5];
+        public RectTransform hpBarFill, hpBarLoss;
+        public Image hpBarFillImage;
+        float barShown = -1f, barLossFrom, barLossT = 9f;
+        const float BarLossHold = .45f, BarLossTime = .35f;
         public RectTransform tagsRow;
         public Chip[] tags = new Chip[MaxTags];
 
@@ -97,17 +105,21 @@ namespace Blindside.UI
 
             for (int i = 0; i < 5; i++)
             {
-                statDots[i].color = c;
+                statIcons[i].color = c;
                 var v = statValues[i];
-                v.fontSize = 16f;
+                v.fontSize = ValueSize;
                 v.text = m.grid[i];
-                FitWidth(v, 11f);
+                FitWidth(v, 14f);
             }
 
-            abilityBand.color = c;
-            abilityName.text = m.abilityName;
-            abilityCharges.text = m.charges;
-            abilityDesc.text = m.description;
+            // the HP bar: ally blue / enemy red; a change on the same unit leaves the lost part showing a moment, then it drains
+            hpBarFillImage.color = m.foe ? theme.foe : theme.blue;
+            hpMax = Mathf.Max(1, m.maxHp);
+            float frac = Mathf.Clamp01((float)m.hp / hpMax);
+            if (counts && barShown >= 0f && frac < barShown) { barLossFrom = barShown; barLossT = 0f; }
+            else if (!counts) barLossT = 9f;
+            barShown = frac;
+            SetBar(frac, barLossT < BarLossHold + BarLossTime ? barLossFrom : frac);
 
             int n = 0;
             for (int i = 0; i < m.tags.Count && n < MaxTags; i++, n++)
@@ -140,6 +152,7 @@ namespace Blindside.UI
         {
             running = false;
             hpCounting = false; hpKey = null; hpNow = -1;
+            barShown = -1f; barLossT = 9f;
             gameObject.SetActive(false);
         }
 
@@ -202,7 +215,7 @@ namespace Blindside.UI
 
         // HP count: numeric SetText, no string is made
         const float HpCountTime = .35f;
-        string hpKey; int hpNow = -1, hpFrom, hpTo; float hpT; bool hpCounting;
+        string hpKey; int hpNow = -1, hpFrom, hpTo, hpMax = 1; float hpT; bool hpCounting;
 
         void TickHp(float dt)
         {
@@ -213,9 +226,25 @@ namespace Blindside.UI
             if (done) hpCounting = false;
         }
 
+        /// <summary>The bar's fill (`now`, 0..1) and the lost part behind it (up to `trail`).</summary>
+        void SetBar(float now, float trail)
+        {
+            float w = Width - PadX * 2f;
+            hpBarFill.sizeDelta = new Vector2(w * now, BarH);
+            hpBarLoss.sizeDelta = new Vector2(w * Mathf.Max(now, trail), BarH);
+        }
+
+        void TickBar(float dt)
+        {
+            barLossT += dt;
+            float k = Mathf.Clamp01((barLossT - BarLossHold) / BarLossTime);
+            SetBar(barShown, Mathf.Lerp(barLossFrom, barShown, UIEase.Tactical(k)));
+        }
+
         void Update()
         {
             if (hpCounting) TickHp(Time.unscaledDeltaTime);
+            if (barLossT < BarLossHold + BarLossTime + .1f) TickBar(Time.unscaledDeltaTime);
             if (!running) return;
             clock += Time.unscaledDeltaTime;
             Evaluate(clock);
@@ -291,13 +320,30 @@ namespace Blindside.UI
             UILayout.LineHeight(hpMaxText, 1.3f);
             UILayout.Place(hpMaxText.rectTransform, 59f, 0f, HpW - 59f, HeadH);
 
-            // ---- .bd .grid ----
-            const float GridY = HeadH + 6f, GridH = 41f, GridGap = 3f;
-            float gridW = Width - TextX - 16f, colSum = 0f, cellX = 0f;
+            // ---- the HP bar: track, the lost part (red, drains after a hit), the fill, a tick every tenth ----
+            float barW = Width - PadX * 2f;
+            var bar = HudKit.NewRect("HpBar", bodyRt);
+            UILayout.Place(bar, PadX, BarY, barW, BarH);
+            HudKit.AddImage(bar, theme.ink2);
+            hpBarLoss = HudKit.NewRect("HpBarLoss", bar);
+            UILayout.Place(hpBarLoss, 0f, 0f, barW, BarH);
+            HudKit.AddImage(hpBarLoss, theme.foe);
+            hpBarFill = HudKit.NewRect("HpBarFill", bar);
+            UILayout.Place(hpBarFill, 0f, 0f, barW, BarH);
+            hpBarFillImage = HudKit.AddImage(hpBarFill, theme.blue);
+            for (int i = 1; i < (int)BarSegments; i++)
+            {
+                var tick = HudKit.NewRect("DecoTick" + i, bar);
+                UILayout.Place(tick, barW * i / BarSegments - 1f, 0f, 2f, BarH);
+                HudKit.AddImage(tick, theme.paper);
+            }
+
+            // ---- the stats: a cell each, the icon in the operator colour beside the label, the value big below ----
+            float gridW = Width - PadX * 2f, colSum = 0f, cellX = 0f;
             foreach (var r in StatColumns) colSum += r;
             var grid = HudKit.NewRect("Grid", bodyRt);
-            UILayout.Place(grid, TextX, GridY, gridW, GridH);
-            Color labelC = Color.Lerp(theme.ink2, Color.white, .6f);
+            UILayout.Place(grid, PadX, GridY, gridW, GridH);
+            Color labelC = Color.Lerp(theme.ink2, Color.white, .62f);
             for (int i = 0; i < 5; i++)
             {
                 float cellW = (gridW - 4f * GridGap) * StatColumns[i] / colSum;
@@ -305,43 +351,16 @@ namespace Blindside.UI
                 HudKit.AddImage(cell, theme.ink2);
                 UILayout.Place(cell, cellX, 0f, cellW, GridH);
                 cellX += cellW + GridGap;
-                var dot = HudKit.NewRect("DecoDot", cell);
-                UILayout.Place(dot, cellW - 3f - 4f, 3f, 4f, 4f);
-                statDots[i] = HudKit.AddImage(dot, theme.blue);
-                var lab = HudKit.AddText(cell, StatLabels[i], 11f, labelC, true, TextAlignmentOptions.TopLeft, "Label", UITheme.TextRole.Display);
-                lab.characterSpacing = 5f;
-                UILayout.Place(lab.rectTransform, 6f, 3f, cellW - 6f - 8f, 14f);
-                var val = HudKit.AddText(cell, "", 16f, Color.white, true, TextAlignmentOptions.BottomLeft, "Value", UITheme.TextRole.Display);
-                UILayout.Place(val.rectTransform, 6f, 17f, cellW - 6f - 3f, 20f);
+                var icon = HudKit.AddText(cell, StatIcons[i], IconSize, theme.blue, true, TextAlignmentOptions.MidlineLeft, "Icon", UITheme.TextRole.Display);
+                UILayout.Place(icon.rectTransform, 5f, 1f, IconSize, IconSize + 2f);   // (the glyph's line is 29.1 at 28)
+                statIcons[i] = icon;
+                var lab = HudKit.AddText(cell, StatLabels[i], 12f, labelC, true, TextAlignmentOptions.MidlineLeft, "Label", UITheme.TextRole.Display);
+                lab.characterSpacing = 4f;
+                UILayout.Place(lab.rectTransform, 5f + IconSize * .62f + 4f, 2f, cellW - IconSize * .62f - 12f, IconSize);
+                var val = HudKit.AddText(cell, "", ValueSize, Color.white, true, TextAlignmentOptions.BottomLeft, "Value", UITheme.TextRole.Display);
+                UILayout.Place(val.rectTransform, 8f, GridH - 8f - ValueSize - 6f, cellW - 12f, ValueSize + 6f);
                 statValues[i] = val;
             }
-
-            // ---- .ab ----
-            float abW = Width - AbX - AbR, abH = Height - AbY - AbB;
-            var ab = HudKit.NewRect("Ability", bodyRt);
-            HudKit.AddImage(ab, Color.Lerp(theme.paper, Color.black, .05f));
-            UILayout.Place(ab, AbX, AbY, abW, abH);
-            var band = HudKit.NewRect("DecoBand", ab);
-            UILayout.Place(band, 0f, 0f, AbBand, abH);
-            abilityBand = HudKit.AddImage(band, theme.blue);
-            float innerX = AbBand + 10f, innerW = abW - innerX - 10f, chW = 60f;   // ●●●●● at 11px in NotoJP is 55 wide
-            // BSTactical's ✦ is about half the mockup's fallback-font star at the same size (ink 6×7 vs 11×11 at 12.5px): drawn at 19 so
-            // its ink matches, centred on the name line, in ink like the mockup (.an inherits color:var(--ink))
-            abilityIcon = HudKit.AddText(ab, "✦", 19f, theme.ink, true, TextAlignmentOptions.MidlineLeft, "AbilityIcon", UITheme.TextRole.Display);
-            UILayout.Place(abilityIcon.rectTransform, innerX, 3f, 14f, 20f);
-            abilityName = HudKit.AddText(ab, "", 12.5f, theme.ink, true, TextAlignmentOptions.TopLeft, "AbilityName", UITheme.TextRole.Body);
-            abilityName.overflowMode = TextOverflowModes.Ellipsis;
-            UILayout.Place(abilityName.rectTransform, innerX + 14f, 5f, innerW - 14f - chW - 6f, 16f);
-            // ● ○ ∞ are native glyphs of NotoJP-Medium (BSTactical has none of them), so the body role; the dynamic OS symbol font it used
-            // before could lose its asset and leave the text without a font ("Please assign a Font Asset")
-            abilityCharges = HudKit.AddText(ab, "", 11f, theme.dim, true, TextAlignmentOptions.TopRight, "Charges", UITheme.TextRole.Body);
-            UILayout.Place(abilityCharges.rectTransform, innerX + innerW - chW, 5f, chW, 16f);
-            abilityDesc = HudKit.AddText(ab, "", 12f, UIPalette.Hex("#2B3036"), false, TextAlignmentOptions.TopLeft, "Desc", UITheme.TextRole.Body);
-            abilityDesc.textWrappingMode = TextWrappingModes.Normal;
-            abilityDesc.overflowMode = TextOverflowModes.Ellipsis;
-            abilityDesc.gameObject.AddComponent<LintIgnoreClip>().reason = "a long description stops at 2 lines with an ellipsis";
-            UILayout.LineHeight(abilityDesc, 1.4f);
-            UILayout.Place(abilityDesc.rectTransform, innerX, 22f, innerW, 34f);
 
             // ---- .pt (above the panel, over the header) ----
             face = SlantedMask.Create(content, "Face", new Vector2(FaceSize, FaceSize), SlantedGraphic.Size.Custom);

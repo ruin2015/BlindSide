@@ -31,6 +31,16 @@ namespace Blindside.Integration
 
         public static int MaxHp(ICombatUnit u) => u is SimUnit su ? su.MaxHP : u is SimHostage h ? h.MaxHP : 100;
 
+        /// <summary>A forecast volley (CombatSystem.ForecastExchange): its numbers, and how it is going to go — rounds that hit of
+        /// those fired, and the headshots (critical, ×2) among them.</summary>
+        public static void Volley(ref EngagePreview.Side s, CombatSystem.VolleyOutcome v)
+        {
+            Volley(ref s, v.chance, v.dmg, v.shots, v.hsChance, v.preempt);
+            s.result = v.blocked ? "BLOCK" : v.hits + "/" + v.shots;
+            s.crits = v.blocked ? 0 : v.crits;
+            s.resultTotal = v.total;
+        }
+
         /// <summary>The numbers of one volley: damage per round, hit %, headshot %, rounds, and whether it is the preemptive one.</summary>
         public static void Volley(ref EngagePreview.Side s, int chance, int dmg, int shots, int hs, bool preempt)
         {
