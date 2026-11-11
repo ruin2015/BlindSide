@@ -118,6 +118,18 @@ namespace Blindside.UI.EditorTools
         public const string Bench = "hub_bench", BenchPick = "hub_bench_pick", BenchEnter = "hub_bench_enter";
         /// <summary>hub_bench_enter: the loadout's entrance .95 s in — the gun just landed, the first slots coming out of it.</summary>
         public static void BuildBenchEnter(UIPreview.Stage s) => Screen(s).LoadoutScreen.PoseEntrance(1, .95f);
+        /// <summary>hub_armory: ロードアウト — the armoury room with FLARE on the plate, the squad list and the 銃 / ガジェット tiles.</summary>
+        public static void BuildArmory(UIPreview.Stage s) => Screen(s).Armory.Pose(1);
+        /// <summary>hub_armory_op: FLARE chosen — its card and the 銃 / ガジェット tiles.</summary>
+        public static void BuildArmoryOp(UIPreview.Stage s) => Screen(s).Armory.PoseOperator(1);
+        public const string ArmoryOp = "hub_armory_op";
+        public const string Armory = "hub_armory", ArmoryGun = "hub_armory_gun", ArmoryPart = "hub_armory_part";
+        /// <summary>hub_armory_gun: FLARE's 銃 — guns and slots; hub_armory_part: its 光学機器 picker open (the camera on the rail).</summary>
+        public static void BuildArmoryGun(UIPreview.Stage s) => Screen(s).Armory.PoseGun(1, -1);
+        public static void BuildArmoryPart(UIPreview.Stage s) => Screen(s).Armory.PoseGun(1, 1);
+        /// <summary>hub_armory_gadget: FLARE's gadgets, slot 1's picker open (the low shot, FLARE looking back down at it).</summary>
+        public static void BuildArmoryGadget(UIPreview.Stage s) => Screen(s).Armory.PoseGadget(1, 0);
+        public const string ArmoryGadget = "hub_armory_gadget";
 
         // the station screens (settled: everything in, the line typed)
         public const string StationSerum = "hub_station_serum", StationIgnis = "hub_station_ignis", StationBastion = "hub_station_bastion",

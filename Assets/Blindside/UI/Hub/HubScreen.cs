@@ -41,8 +41,12 @@ namespace Blindside.Hub
         HubLoadoutScreen loadout;
         public HubLoadoutScreen LoadoutScreen => loadout;
 
-        /// <summary>IGNIS's ロードアウト: the workbench screen.</summary>
-        public void OpenLoadout(int operatorIndex = 0) => loadout.Open(operatorIndex);
+        HubArmoryScreen armory;
+        /// <summary>IGNIS's ロードアウト: the armoury (each operator's guns and gadgets; its 銃 opens the workbench).</summary>
+        public HubArmoryScreen Armory => armory;
+
+        /// <summary>IGNIS's ロードアウト: the armoury screen.</summary>
+        public void OpenLoadout(int operatorIndex = 0) => armory.Open(operatorIndex);
         HubMenu menu;
         public HubMenu Menu => menu;
         HubCoopScreen coop;
@@ -56,7 +60,7 @@ namespace Blindside.Hub
         public bool Editable => SaveSystem.Current != null || (!Application.isPlaying && previewData != null);
 
         public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
-                               || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen)
+                               || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen) || (armory != null && armory.IsOpen)
                                || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || (coop != null && coop.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
@@ -84,12 +88,13 @@ namespace Blindside.Hub
             s.ignisC = new IgnisContent(s, s.itemsC, s.shopC);
             s.station = HubStationScreen.Build(s.root, s);
             s.shop = HubShopScreen.Build(s.root, s);
+            s.armory = HubArmoryScreen.Build(s.root, s);
             s.loadout = HubLoadoutScreen.Build(s.root, s);
             s.squadC = new SquadInfoContent(s);
             s.coop = HubCoopScreen.Build(s.root, s);
             s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle, () => s.coop.Open());
             s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.coop.IsOpen;
-            s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.shop.IsOpen;
+            s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.armory.IsOpen || s.shop.IsOpen;
             s.shop.Closed = s.station.Reenter;
             s.RefreshTopbar();
             SaveSystem.Saved += s.OnSaved;
@@ -352,7 +357,7 @@ namespace Blindside.Hub
         public HubShopScreen Shop => shop;
 
         /// <summary>IGNIS's アイテム: the items list.</summary>
-        public void OpenItems() => list.Open(itemsC);
+        public void OpenItems(int operatorIndex = 0) => list.Open(itemsC, operatorIndex);
 
         /// <summary>G: an operator's talk.</summary>
         public void OpenTalk(HubNpc n)

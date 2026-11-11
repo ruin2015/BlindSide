@@ -271,7 +271,7 @@ namespace Blindside.Hub
     }
 
     // ---- IGNIS: the choice first --------------------------------------------------------------------------------------------------
-    /// <summary>IGNIS's station: what to do — ロードアウト (the workbench: HubLoadoutScreen), アイテム (LoadoutContent, items only) or
+    /// <summary>IGNIS's station: what to do — ロードアウト (the armoury: HubArmoryScreen — guns, parts and gadgets per operator) or
     /// 装備購入 (the shop) — then that screen.</summary>
     public sealed class IgnisContent : HubContentBase
     {
@@ -283,15 +283,14 @@ namespace Blindside.Hub
         public override void Fill(int tab, List<HubRow> into)
         {
             into.Clear();
-            into.Add(new HubRow { name = "ロードアウト", note = "作業台で武器を選び、部位ごとにパーツを装着する", button = "開く", enabled = true, band = UITheme.Current.blue });
-            into.Add(new HubRow { name = "アイテム", note = "隊員ごとに出撃時のアイテムを選ぶ", button = "開く", enabled = true, band = UITheme.Current.paper2 });
+            into.Add(new HubRow { name = "ロードアウト", note = "隊員ごとに銃・パーツとガジェットを装備する", button = "開く", enabled = true, band = UITheme.Current.blue });
             into.Add(new HubRow { name = "装備購入", note = "武器・アタッチメント・ガジェットを購入する", button = "開く", enabled = true, band = UITheme.Current.acc });
         }
 
         public override string Act(int tab, int row)
         {
             if (row == 0) { screen.List.Close(); screen.OpenLoadout(); }
-            else screen.List.Open(row == 1 ? items : shop);
+            else screen.List.Open(shop);
             return null;
         }
 

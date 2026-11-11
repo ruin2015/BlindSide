@@ -3,8 +3,9 @@
 //   shading  two bands from the main light — a lit side and a shadow side split by a soft step (_ShadowThreshold ± _ShadowSoftness),
 //            the shadow side the albedo tinted (_ShadowColor, a cool violet) rather than darkened toward black; inside the lit side a
 //            gentle second tone toward the terminator (_MidTone). Received shadows join the shadow side. The sky (SH) fills in on top.
-//   highlight a small hard-edged specular spot (size from _Smoothness, strength _SpecStrength) on the lit side
-//   rim      a thin light edge on silhouettes (_RimColor × the light), brighter on the lit side
+//   highlight a small hard-edged specular spot (size from _Smoothness, strength _SpecStrength) on the lit side, in the surface's colour;
+//            none on matte surfaces (smoothness under ~.35: cloth, skin, hair), fading in up to .75
+//   rim      a thin light edge on silhouettes (_RimColor × the light, toward the surface's colour, at .6 of _RimStrength), brighter on the lit side
 //   other lights each adds its own banded light (the helicopter's searchlight, the operators' weapon lights)
 //   outline  an inverted hull (pass "Outline", LightMode SRPDefaultUnlit): the back faces pushed out along the normal in screen space
 //            — the same width in pixels however far the camera is — coloured from the surface's own colour, darkened (_OutlineColor)
@@ -32,6 +33,7 @@ Shader "Blindside/Toon"
         _MidTone ("Mid Tone", Range(0, 1)) = 0.35
         _AmbientStrength ("Ambient", Range(0, 2)) = 0.7
         _SpecStrength ("Highlight Strength", Range(0, 1)) = 0.22
+        _TameShine ("Tame Baked Shine (light grey patches in the texture)", Range(0, 1)) = 0
         _RimColor ("Rim Color", Color) = (1, 0.97, 0.92, 1)
         _RimStrength ("Rim Strength", Range(0, 1)) = 0.3
         _RimWidth ("Rim Width", Range(0, 1)) = 0.28
@@ -81,6 +83,7 @@ Shader "Blindside/Toon"
             half _MidTone;
             half _AmbientStrength;
             half _SpecStrength;
+            half _TameShine;
             half4 _RimColor;
             half _RimStrength;
             half _RimWidth;
@@ -161,12 +164,14 @@ Shader "Blindside/Toon"
                 return smoothstep(_ShadowThreshold - _ShadowSoftness, _ShadowThreshold + _ShadowSoftness, ndl) * atten;
             }
 
+            // matte surfaces (cloth, skin, hair: smoothness under ~.35) take no spot at all — a white spot on dark cloth read as a gloss;
+            // the spot fades in with the smoothness and stays small (power 2^5 at the least)
             half Highlight(float3 N, float3 L, float3 V)
             {
                 float3 H = normalize(L + V);
-                half power = exp2(_Smoothness * 9.0 + 2.0);
+                half power = exp2(_Smoothness * 7.0 + 5.0);
                 half s = pow(saturate(dot(N, H)), power);
-                return smoothstep(.45, .55, s) * _SpecStrength;
+                return smoothstep(.45, .55, s) * _SpecStrength * smoothstep(.35, .75, _Smoothness);
             }
 
             half4 frag(Varyings i) : SV_Target
@@ -185,6 +190,15 @@ Shader "Blindside/Toon"
                 #endif
                 float3 V = GetWorldSpaceNormalizeViewDir(i.positionWS);
                 half3 albedo = base.rgb;
+                // baked shine: the generated textures paint light grey glints over dark cloth; grey mid-to-light tones (not white, not
+                // coloured) are pulled down toward the cloth by _TameShine
+                {
+                    half lum = dot(albedo, half3(.299, .587, .114));
+                    half sat = max(albedo.r, max(albedo.g, albedo.b)) - min(albedo.r, min(albedo.g, albedo.b));
+                    // (linear values: the glint facets are sRGB ~.3–.6 → .07–.32, the cloth under .25 → .05, white parts .85+ → .7+)
+                    half grey = smoothstep(.045, .1, lum) * (1.0 - smoothstep(.36, .52, lum)) * (1.0 - saturate(sat * 4.0));
+                    albedo *= 1.0 - .55 * _TameShine * grey;
+                }
 
                 // ---- the main light: two bands, a tinted shadow side ----
                 float4 shadowCoord = TransformWorldToShadowCoord(i.positionWS);
@@ -194,7 +208,8 @@ Shader "Blindside/Toon"
                 half3 shadowSide = albedo * _ShadowColor.rgb;
                 half mid = lerp(1.0 - _MidTone * .22, 1.0, smoothstep(.15, .65, ndl));
                 half3 col = lerp(shadowSide, albedo * mid, lit) * ml.color;
-                col += Highlight(N, ml.direction, V) * lit * ml.color;
+                half3 specTint = lerp(albedo, 1.0, .35);   // the spot takes the surface's colour (not a white sticker)
+                col += Highlight(N, ml.direction, V) * lit * ml.color * specTint;
 
                 // ---- the sky ----
                 col += albedo * SampleSH(N) * _AmbientStrength * lerp(_ShadowColor.rgb, 1.0, .5);
@@ -210,14 +225,15 @@ Shader "Blindside/Toon"
                     LIGHT_LOOP_BEGIN(count)
                         Light l = GetAdditionalLight(lightIndex, i.positionWS, half4(1, 1, 1, 1));
                         half b = Band(dot(N, l.direction), l.shadowAttenuation) * l.distanceAttenuation;
-                        col += (albedo * b + Highlight(N, l.direction, V) * b) * l.color;
+                        col += (albedo * b + Highlight(N, l.direction, V) * b * .5 * specTint) * l.color;
                     LIGHT_LOOP_END
                 #endif
 
                 // ---- the rim ----
                 half fres = 1.0 - saturate(dot(N, V));
-                half rim = smoothstep(1.0 - _RimWidth, 1.0 - _RimWidth + .1, fres) * _RimStrength * (.35 + .65 * lit);
-                col += rim * _RimColor.rgb * ml.color;
+                // (softer than the material's value and tinted toward the surface: a thin edge, not a sheen)
+                half rim = smoothstep(1.0 - _RimWidth, 1.0 - _RimWidth + .1, fres) * _RimStrength * .6 * (.35 + .65 * lit);
+                col += rim * _RimColor.rgb * lerp(albedo, 1.0, .5) * ml.color;
 
                 #if defined(_EMISSION)
                     col += SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, i.uv).rgb * _EmissionColor.rgb;

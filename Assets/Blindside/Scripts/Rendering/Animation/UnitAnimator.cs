@@ -112,6 +112,14 @@ namespace Blindside.Rendering
             if (graph.IsValid()) graph.Destroy();
         }
 
+        /// <summary>Holds the figure still in the pose it has now (the armoury's turned-back gadget pose): the graph stops and this
+        /// stops running, so nothing writes the bones until it is released.</summary>
+        public void SetFrozen(bool on)
+        {
+            if (graph.IsValid()) { if (on) graph.Stop(); else graph.Play(); }
+            enabled = !on;
+        }
+
         // ================================================================
         //  Actions
         // ================================================================

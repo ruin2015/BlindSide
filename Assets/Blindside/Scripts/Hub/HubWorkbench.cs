@@ -129,19 +129,28 @@ namespace Blindside.Hub
             float thick = mesh.size.z * s;
             t.localPosition = new Vector3(-center.x, thick * .5f - center.y + .005f, -center.z);
 
-            // the slot points, in the model's own space (as UnitView reads the gun)
-            float rearX = sign > 0f ? mesh.min.x : mesh.max.x, frontX = sign > 0f ? mesh.max.x : mesh.min.x;
+            SlotPoints(mesh, w, anchors);
+            for (int i = 0; i < anchors.Length; i++) anchors[i] = t.TransformPoint(anchors[i]);
+        }
+
+        /// <summary>Where each part goes on `gun` (a model of `w`), in the model's own space — the workbench's points, and the armoury's
+        /// zoom targets on the gun in a figure's hands (UnitView.HeldGun).</summary>
+        public static void SlotPoints(GameObject gun, WeaponData w, Vector3[] into) => SlotPoints(LocalBounds(gun), w, into);
+
+        static void SlotPoints(Bounds mesh, WeaponData w, Vector3[] into)
+        {
+            float sign = w != null && w.modelForwardSign < 0f ? -1f : 1f;
+            float rearX = sign > 0f ? mesh.min.x : mesh.max.x;
             float L = mesh.size.x, y0 = mesh.min.y, H = mesh.size.y, z = mesh.center.z;
             float gr = w != null ? w.gripFromRear : .38f, fg = w != null ? w.foregripFromRear : .65f;
             float sh = w != null ? w.sightHeight : .82f, bh = w != null ? w.buttHeight : .55f;
             Vector3 P(float fromRear, float height) => new Vector3(rearX + sign * fromRear * L, y0 + height * H, z);
-            anchors[0] = P(.99f, .78f);                                    // マズル: the muzzle
-            anchors[1] = P(Mathf.Clamp01((gr + fg) * .5f), Mathf.Min(1f, sh + .1f));   // 光学機器: the top rail
-            anchors[2] = P(fg, .12f);                                     // グリップ: under the handguard
-            anchors[3] = P(Mathf.Clamp01(gr + .1f), .1f);                 // マガジン: ahead of the grip
-            anchors[4] = P(Mathf.Clamp01(fg + (1f - fg) * .55f), .72f);   // バレル: between the handguard and the muzzle
-            anchors[5] = P(.03f, bh);                                     // ストック: the butt
-            for (int i = 0; i < anchors.Length; i++) anchors[i] = t.TransformPoint(anchors[i]);
+            into[0] = P(.99f, .78f);                                    // マズル: the muzzle
+            into[1] = P(Mathf.Clamp01((gr + fg) * .5f), Mathf.Min(1f, sh + .1f));   // 光学機器: the top rail
+            into[2] = P(fg, .12f);                                     // グリップ: under the handguard
+            into[3] = P(Mathf.Clamp01(gr + .1f), .1f);                 // マガジン: ahead of the grip
+            into[4] = P(Mathf.Clamp01(fg + (1f - fg) * .55f), .72f);   // バレル: between the handguard and the muzzle
+            into[5] = P(.03f, bh);                                     // ストック: the butt
         }
 
         // ---- the entrance (the loadout screen drives it) ------------------------------------------------------------------------

@@ -282,8 +282,7 @@ namespace Blindside.UI
 
         void IgnisOptions()
         {
-            SetOptions(null, new Option { title = "ロードアウト", sub = "武器とパーツを装着する", icon = "⌖", click = () => screen.OpenLoadout() },
-                             new Option { title = "アイテム", sub = "を持たせる", icon = "▣", click = () => screen.OpenItems() },
+            SetOptions(null, new Option { title = "ロードアウト", sub = "銃とガジェットを装備する", icon = "⌖", click = () => screen.OpenLoadout() },
                              new Option { title = "装備", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 0) });
         }
 

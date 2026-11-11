@@ -1,7 +1,8 @@
 // A conversation scene, visual-novel style (the HQ only: its tutorial; in a match people talk on the radio), on its own overlay canvas (menu
 // 1440×810, order 80): the speaker's full illustration on the left standing behind a wide black box, a blue name plate on the box's top
 // edge, the line centred in the box, typed in; the choices, when there are any, stacked at the right above the box (black, a blue bar on
-// the left). A click / Space / Enter finishes the typing, then goes on; a choice is clicked or picked with 1 / 2 …
+// the left; under the pointer one slides left, grows a little, turns deep blue and its bar widens — HubHover). A click / Space / Enter
+// finishes the typing, then goes on; a choice is clicked or picked with 1 / 2 …
 // One unscaled clock (ITimedEffect.Evaluate(t)): the box fades in and the art slides in; per frame only the typing moves, nothing is allocated.
 using System.Collections;
 using System.Collections.Generic;
@@ -14,9 +15,10 @@ namespace Blindside.UI
 {
     public class KitDialogue : MonoBehaviour, ITimedEffect
     {
-        public const float BoxX = 28f, BoxY = 530f, BoxW = 1384f, BoxH = 236f, ArtX = 30f, ArtY = 96f, ArtS = 520f;
-        public const float NameX = 92f, NameW = 310f, NameH = 50f, LineSize = 32f, LinePad = 70f;
+        public const float BoxX = 120f, BoxY = 584f, BoxW = 1200f, BoxH = 190f, ArtX = 70f, ArtY = 196f, ArtS = 440f;
+        public const float NameX = 176f, NameW = 280f, NameH = 44f, LineSize = 27f, LinePad = 64f;
         public const float ChoiceW = 316f, ChoiceH = 44f, ChoiceGap = 10f, ChoiceRight = 36f, ChoiceBar = 14f, ChoiceSize = 20f;
+        public const float ChoiceHoverShift = 16f, ChoiceBarHover = 24f;
         public const float InTime = .25f, ArtSlide = 40f, CharsPerSecond = 40f, NextBlink = .8f;
         public const int SortingOrder = 80, MaxChoices = 4;
 
@@ -28,6 +30,7 @@ namespace Blindside.UI
         readonly RectTransform[] choiceRects = new RectTransform[MaxChoices];
         readonly TMP_Text[] choiceTexts = new TMP_Text[MaxChoices];
         readonly Image[] choiceBacks = new Image[MaxChoices];
+        readonly HubHover[] choiceHovers = new HubHover[MaxChoices];
         int choiceCount, chars;
         float clock, typeClock;
         bool running, typing, asking;
@@ -115,6 +118,7 @@ namespace Blindside.UI
                 choiceTexts[i].text = options[i];
                 // stacked up from the box, the first on top
                 UILayout.Place(choiceRects[i], BoxX + BoxW - ChoiceRight - ChoiceW, BoxY - ChoiceGap - (choiceCount - i) * (ChoiceH + ChoiceGap) + ChoiceGap, ChoiceW, ChoiceH);
+                choiceHovers[i].SetBase(choiceRects[i].anchoredPosition);
             }
             if (!typing && !running) ShowChoices();
         }
@@ -208,7 +212,7 @@ namespace Blindside.UI
             HudKit.AddImage(plate, theme.blue);
             plate.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 10f);
             plate.gameObject.AddComponent<LintIgnoreOverlap>().reason = "the name plate sits on the box's top edge on purpose";
-            d.nameText = HudKit.AddText(plate, "", 26f, Color.white, true, TextAlignmentOptions.Center, "Name", UITheme.TextRole.Title);
+            d.nameText = HudKit.AddText(plate, "", 23f, Color.white, true, TextAlignmentOptions.Center, "Name", UITheme.TextRole.Title);
             d.nameText.textWrappingMode = TextWrappingModes.NoWrap;
             HudKit.Stretch(d.nameText.rectTransform);
 
@@ -216,7 +220,7 @@ namespace Blindside.UI
             d.lineText.textWrappingMode = TextWrappingModes.Normal;
             var lr = d.lineText.rectTransform;
             lr.anchorMin = Vector2.zero; lr.anchorMax = Vector2.one;
-            lr.offsetMin = new Vector2(LinePad, 24f); lr.offsetMax = new Vector2(-LinePad, -34f);
+            lr.offsetMin = new Vector2(LinePad, 20f); lr.offsetMax = new Vector2(-LinePad, -30f);
 
             d.next = HudKit.NewRect("DecoNext", box);
             d.next.anchorMin = d.next.anchorMax = new Vector2(1f, 0f); d.next.pivot = new Vector2(.5f, .5f);
@@ -234,11 +238,18 @@ namespace Blindside.UI
                 d.choiceBacks[i] = HudKit.AddImage(r, Color.black, true);
                 var btn = r.gameObject.AddComponent<Button>();
                 btn.targetGraphic = d.choiceBacks[i];
-                var colors = btn.colors; colors.highlightedColor = new Color(.45f, .55f, .8f, 1f); colors.pressedColor = theme.blue; btn.colors = colors;
+                btn.transition = Selectable.Transition.None;   // (HubHover tints it)
                 btn.onClick.AddListener(() => d.Pick(idx));
                 var bar = HudKit.NewRect("DecoBar", r);
                 UILayout.Place(bar, 0f, 0f, ChoiceBar, ChoiceH);
                 HudKit.AddImage(bar, theme.blue);
+                // hover: slides left, grows a little, the black turns to a deep blue and the bar widens
+                var hv = r.gameObject.AddComponent<HubHover>();
+                hv.target = r; hv.graphic = d.choiceBacks[i];
+                hv.baseColor = Color.black; hv.hoverColor = Color.Lerp(Color.black, theme.blue, .45f);
+                hv.shift = new Vector2(-ChoiceHoverShift, 0f); hv.scale = 1.04f;
+                hv.grow = bar; hv.growFrom = ChoiceBar; hv.growTo = ChoiceBarHover;
+                d.choiceHovers[i] = hv;
                 d.choiceTexts[i] = HudKit.AddText(r, "", ChoiceSize, Color.white, false, TextAlignmentOptions.Center, "Text", UITheme.TextRole.Body);
                 d.choiceTexts[i].textWrappingMode = TextWrappingModes.NoWrap;
                 var tr = d.choiceTexts[i].rectTransform;

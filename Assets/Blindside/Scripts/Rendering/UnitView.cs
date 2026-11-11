@@ -221,6 +221,8 @@ namespace Blindside.Rendering
 
         /// <summary>How the held gun is gripped and aimed (GunRig), for the battle stage's copy of this figure.</summary>
         public GunRig.Setup GunSetup { get; private set; }
+        /// <summary>The held gun's model (its own space: the WeaponData placements), null with none.</summary>
+        public GameObject HeldGun => gunInstance;
         /// <summary>Name of the held gun's object under the right hand; null with none or without a rig.</summary>
         public string GunObjectName { get; private set; }
 
