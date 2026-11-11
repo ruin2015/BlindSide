@@ -35,6 +35,10 @@ namespace Blindside.Integration
         public static event System.Action<SimUnit> DroneFinished;
         public static void RaiseDroneFinished(SimUnit u) { if (Active) DroneFinished?.Invoke(u); }
 
+        /// <summary>The player's unit finished a throw (it has landed and gone off): where it landed.</summary>
+        public static event System.Action<SimUnit, UnityEngine.Vector2> ThrowFinished;
+        public static void RaiseThrowFinished(SimUnit u, UnityEngine.Vector2 land) { if (Active) ThrowFinished?.Invoke(u, land); }
+
         /// <summary>Which wall panels a panel ability may target (null: every valid one) — the lesson's one wall.</summary>
         public static System.Func<int, bool> PanelFilter;
 
@@ -56,6 +60,7 @@ namespace Blindside.Integration
             MoveFinished = null;
             ShotFinished = null;
             DroneFinished = null;
+            ThrowFinished = null;
             PanelFilter = null;
             Blindside.Combat.CombatSystem.FloorHP = 0;
         }

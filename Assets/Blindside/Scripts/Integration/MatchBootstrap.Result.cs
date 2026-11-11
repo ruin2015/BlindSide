@@ -22,6 +22,7 @@ namespace Blindside.Integration
         readonly int[] kills = new int[2];
         ResultScreen resultScreen;
         OperationResultScreen operationResult;
+        Blindside.Abilities.AbilityContext matchCtx;
 
         /// <summary>G.stats[team] — units that team has killed this match.</summary>
         public int KillsBy(Blindside.Data.OperatorTeam team) => kills[team == Blindside.Data.OperatorTeam.Attack ? 0 : 1];
@@ -62,7 +63,12 @@ namespace Blindside.Integration
             // the save (a real match only: not the tutorial's, not the editor's test play): experience, mastery, money, contribution
             // (a win only) and the record, in one write
             bool real = !tutorialMode && !PlaySession.IsTest;
-            if (Record != null) Record.Rounds = RoundsPlayed;
+            if (Record != null)
+            {
+                Record.Rounds = RoundsPlayed;
+                Record.CamerasLeft = 0;
+                if (matchCtx != null) foreach (var c in matchCtx.Cameras) if (c.alive) Record.CamerasLeft++;
+            }
             Record?.Close();
             Blindside.Progress.AwardReport report = real ? Blindside.Progress.MatchAward.Grant(Record, side, win, Live) : null;
             // the rescue operation won: GHOST and SILENCE join the squad for good (their guns with them); written with the rest below
@@ -152,6 +158,7 @@ namespace Blindside.Integration
             PlaySession.End();
             RestoreDefaultWorld();
             Blindside.Tutorial.TutorialDirector.Disarm(this);
+            Blindside.Hub.HubEntrance.Pending = true;   // the HQ opens with the squad coming home (it also lifts the fade)
             Blindside.Flow.SceneFlow.GoHub();
         }
 
@@ -173,7 +180,8 @@ namespace Blindside.Integration
         public void TutorialToMainOperation(bool deployBriefing = false)
         {
             Blindside.Tutorial.TutorialDeployGuide.Pending = deployBriefing;
-            Blindside.Save.AutoSave.TutorialFinished();     // the save: tutorial done, the next sortie the default house's attack
+            var first = Blindside.Progress.Campaign.FirstMain();
+            Blindside.Save.AutoSave.TutorialFinished(first != null ? first.stem : "");     // the save: tutorial done, the next sortie the story's first operation
             var title = FindAnyObjectByType<TitleSelectScreen>(FindObjectsInactive.Include);
             ClearMatch();
             BattlefieldCamera.Deactivate();
@@ -181,13 +189,29 @@ namespace Blindside.Integration
             RestoreDefaultWorld();
             if (Blindside.Flow.SceneFlow.InRole(Blindside.Flow.SceneRole.Tutorial))
             {
-                // the tutorial scene: the operation is the battle scene's, on the default house with its intro (the briefing flag carries over)
+                // the tutorial scene: the story's first operation with its intro (the briefing flag carries over)
                 Blindside.Tutorial.TutorialDirector.Disarm(this);
+                Blindside.Map.MapData firstMap = null;
+                if (first == null || first.entry == null) firstMap = Blindside.Map.MapLibrary.LoadDefault();
+                else if (first.scene == null) firstMap = Blindside.Flow.MapCatalog.DataOf(first.entry) ?? Blindside.Map.MapLibrary.LoadDefault();
                 Blindside.Flow.SceneFlow.GoBattle(new Blindside.Flow.LaunchRequest
-                    { team = Blindside.Data.OperatorTeam.Attack, map = Blindside.Map.MapLibrary.LoadDefault() });
+                    { team = Blindside.Data.OperatorTeam.Attack, map = firstMap, sceneName = first != null ? first.scene : null });
                 return;
             }
             if (title != null) title.LaunchMainOperation();
+        }
+
+        /// <summary>A training picked at the HQ (or the wall lesson after the HQ's tour) is over: back to the HQ, from black.</summary>
+        public void TutorialToHub()
+        {
+            Blindside.UI.SceneFade.SetBlack();
+            ClearMatch();
+            BattlefieldCamera.Deactivate();
+            PlaySession.End();
+            RestoreDefaultWorld();
+            Blindside.Tutorial.TutorialDirector.Disarm(this);
+            if (Blindside.Flow.SceneFlow.HubAvailable) Blindside.Flow.SceneFlow.GoHub();
+            else Blindside.Flow.SceneFlow.GoTitle();
         }
 
         /// <summary>After a match on another map: the default map is the current one again and the scene's floors / exfil planes fit it.</summary>

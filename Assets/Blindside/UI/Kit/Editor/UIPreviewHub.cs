@@ -128,6 +128,22 @@ namespace Blindside.UI.EditorTools
         public static void BuildStationBastion(UIPreview.Stage s) => Screen(s).Station.Pose("BASTION", 1);
         public static void BuildStationCrusher(UIPreview.Stage s) => Screen(s).Station.Pose("CRUSHER");
 
+        public const string StationPrograms = "hub_station_programs", Dialogue = "dialogue", DialogueChoice = "dialogue_choice";
+        public static void BuildStationPrograms(UIPreview.Stage s) => Screen(s).Station.PoseGadgetPrograms();
+
+        /// <summary>The conversation scene: a line, then a line with its two choices.</summary>
+        public static void BuildDialogue(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("Dialogue_Canvas", UITheme.CanvasKind.Menu, KitDialogue.SortingOrder);
+            KitDialogue.Build(canvas.transform, canvas).PoseAt("CRUSHER", "任務ご苦労だった、新入り。");
+        }
+
+        public static void BuildDialogueChoice(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("Dialogue_Canvas", UITheme.CanvasKind.Menu, KitDialogue.SortingOrder);
+            KitDialogue.Build(canvas.transform, canvas).PoseAt("CRUSHER", "他に聞きたいことはあるか？", "ありません", "もう一度聞かせてください");
+        }
+
         public static void BuildTalk(UIPreview.Stage s)
         {
             var hs = Screen(s);

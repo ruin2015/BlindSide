@@ -20,6 +20,17 @@ namespace Blindside.Combat
         AttachmentEffect Gear { get; }
     }
 
+    /// <summary>What the HQ's items do to a unit in a fight (only the units that have any: nothing changes for the others).</summary>
+    public interface IItemEffects
+    {
+        /// <summary>Hit by a flashbang: every hit on it is a headshot.</summary>
+        bool Flashed { get; }
+        /// <summary>The HP a 除細動器 brings it back with when it falls (0: none carried).</summary>
+        int ReviveHp { get; }
+        /// <summary>The 除細動器 goes off: back up at ReviveHp.</summary>
+        void Revive();
+    }
+
     public static class CombatModifiers
     {
         /// <summary>The unit's move range: its operator / weapon's (WeaponData.MoveRangeOf) + its 機動力 bonus, × its gear's 機動力 %.</summary>

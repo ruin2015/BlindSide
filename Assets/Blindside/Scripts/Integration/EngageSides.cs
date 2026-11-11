@@ -41,6 +41,20 @@ namespace Blindside.Integration
             s.resultTotal = v.total;
         }
 
+        /// <summary>The 追撃 rounds of `s`'s side: who joins in and how each round goes.</summary>
+        public static void Pursuers(ref EngagePreview.Side s, System.Collections.Generic.List<CombatSystem.PursuitOutcome> list)
+        {
+            if (list == null || list.Count == 0) { s.pursuers = null; return; }
+            var p = new EngagePreview.Pursuer[list.Count];
+            for (int i = 0; i < p.Length; i++)
+            {
+                var o = list[i];
+                var su = o.who as SimUnit;
+                p[i] = new EngagePreview.Pursuer { key = su != null && su.Op != null ? su.Op.key : "?", hit = o.hit, crit = o.crit, blocked = o.blocked, damage = o.damage };
+            }
+            s.pursuers = p;
+        }
+
         /// <summary>The numbers of one volley: damage per round, hit %, headshot %, rounds, and whether it is the preemptive one.</summary>
         public static void Volley(ref EngagePreview.Side s, int chance, int dmg, int shots, int hs, bool preempt)
         {

@@ -120,7 +120,10 @@ namespace Blindside.UI
             HudLog.OnRemoved -= RemoveLine;
         }
 
-        void OnAdd(string text, HudLogType type) { AddLine(text, type, false); }
+        /// <summary>While on, new lines aren't drawn here (the Tab window still has them): the deployment outside the first main quest.</summary>
+        public bool Muted { get; set; }
+
+        void OnAdd(string text, HudLogType type) { if (!Muted) AddLine(text, type, false); }
 
         /// <summary>Editor previews: lays the log out and adds a line directly, settled (no HudLog subscription, no slide-in).</summary>
         public void PreviewLine(string text, HudLogType type)

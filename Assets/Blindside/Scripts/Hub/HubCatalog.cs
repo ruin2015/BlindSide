@@ -6,8 +6,8 @@
 //               are sold at the shop (WeaponPrice) and, once bought, can be equipped by whoever lists them
 //   Attachments 19 parts with their illustrations (Resources/Equipment), bought once for the squad, one per slot per operator; slots
 //               マズル / 光学機器 / グリップ / マガジン / バレル / ストック
-//   Items       consumables (Gadgets): tactical ones at the shop, medical ones at the 医務室; one carried per operator. Attachments and
-//               items are kept and equipped in the save; the match does not read them yet (phase 2)
+//   Items       consumables (Gadgets): tactical ones at the shop, medical ones at the 医務室; one carried per item slot. Attachments and
+//               items are kept and equipped in the save; the match uses them (PlayerSelectionController.Items.cs)
 //   Training    money for one stat point: TrainCost(n) for the operator's n-th session in that stat (0-based), MaxTrain per stat
 //   Operations  the operations the war room offers: the built-in house, then every listed catalog map (MapCatalog), attack side,
 //               paid as StageRewards says
@@ -134,6 +134,9 @@ namespace Blindside.Hub
         }
 
         public const int MaxGadgetStock = 9;
+        /// <summary>The drone sold at the shop ("drone" is an old save's retired item: SaveData.RenamedGadget) and how far it flies a round.</summary>
+        public const string ReconDroneKey = "recon_drone";
+        public const float ReconDroneMove = 10f;
 
         public static readonly Gadget[] Gadgets =
         {
@@ -142,6 +145,7 @@ namespace Blindside.Hub
             new Gadget { key = "flash",    name = "閃光弾",       note = "範囲内の全員の命中率を大きく下げ、被弾は必ずヘッドショットになる (敵味方問わず)", price = 3000, art = "28_flashbang" },
             new Gadget { key = "breach",   name = "粘着爆薬",     note = "壁に貼り付けて爆破し、壁を取り除く", price = 2000, art = "29_breach_charge" },
             new Gadget { key = "claymore", name = "クレイモア",   note = "設置した場所に敵が近づくと爆発する。敵の射撃で破壊される", price = 2000, art = "30_claymore" },
+            new Gadget { key = ReconDroneKey, name = "偵察ドローン", note = "移動距離10m。発見した敵のガジェットをマップに表示する。展開すると1台消費", price = 4000 },
             new Gadget { key = "kit_low",   name = "下級医療キット", note = "体力を30回復する",   price = 1000, medical = true, art = "20_medkit_basic", heal = 30 },
             new Gadget { key = "kit_mid",   name = "中級医療キット", note = "体力を50回復する",   price = 2500, medical = true, art = "21_medkit_mid", heal = 50 },
             new Gadget { key = "kit_high",  name = "上級医療キット", note = "体力を80回復する",   price = 4000, medical = true, art = "22_medkit_high", heal = 80 },
@@ -197,7 +201,8 @@ namespace Blindside.Hub
         {
             into.Clear();
             var house = Progress.StageRewards.For("");
-            into.Add(new Operation { stem = "", name = string.IsNullOrEmpty(house.label) ? "基本邸宅" : house.label, money = house.money, contribution = house.contribution, expScale = house.expScale });
+            if (Progress.Campaign.HouseIsQuest)
+                into.Add(new Operation { stem = "", name = string.IsNullOrEmpty(house.label) ? "基本邸宅" : house.label, money = house.money, contribution = house.contribution, expScale = house.expScale });
             var cat = MapCatalog.Instance;
             if (cat == null) return;
             foreach (var e in cat.entries)

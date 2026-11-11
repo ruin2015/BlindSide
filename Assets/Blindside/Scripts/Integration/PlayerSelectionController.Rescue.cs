@@ -46,8 +46,21 @@ namespace Blindside.Integration
             Sfx.Ui();
             WorldPopup.Show(c.X, c.Y, "RESCUED", c.Op != null ? c.Op.color : Color.white);
             CombatFx.Ring(GridSpace.GridToWorld(c.X, c.Y), c.Op != null ? c.Op.color : Color.white, .6f, 1.4f);
-            SelectUnit(u);
             UnitsChanged?.Invoke();
+            SelectUnit(u);
+            string line = c.Op != null ? RescueLine(c.Op.key) : null;
+            if (line != null) Callout(c, line, true);
+        }
+
+        // what the freed operator says (on the squad's radio)
+        static string RescueLine(string key)
+        {
+            switch (key)
+            {
+                case "SILENCE": return "見事だ、新入り。\n世話になったな。";
+                case "GHOST": return "チッ、お前らがいなくても\n自分でなんとかしてた。";
+                default: return null;
+            }
         }
     }
 }

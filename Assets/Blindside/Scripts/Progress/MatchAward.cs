@@ -141,7 +141,7 @@ namespace Blindside.Progress
         /// <summary>The rank (RankRules) and its scale.</summary>
         static void Rate(AwardReport rep, MatchRecord record, OperatorTeam side, bool win)
         {
-            rep.rank = RankRules.Evaluate(record, side, record.Rounds, win);
+            rep.rank = RankRules.Evaluate(record, side, record.Rounds, win, rep.map);
             rep.rankScale = win ? RankRules.Multiplier(rep.rank.rank) : 1f;
         }
 

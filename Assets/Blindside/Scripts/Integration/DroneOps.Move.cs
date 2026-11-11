@@ -37,6 +37,8 @@ namespace Blindside.Integration
         public System.Func<int> Round;
         /// <summary>cellVisible(G.side,x,y) — the player's current sight (null: everything is visible).</summary>
         public System.Func<float, float, bool> CellVisibleToPlayer;
+        /// <summary>The map's mines and sensors (the shop drone marks them too).</summary>
+        public MapGadgetRuntime MapGadgets;
 
         /// <summary>deployDrone(u).</summary>
         public Drone Deploy(SimUnit u)
@@ -127,6 +129,8 @@ namespace Blindside.Integration
                 if (own) { HudLog.Add($"ドローン: {e.Kr}の位置を表示", HudLogType.Ally); Sfx.Alert(); EnemySpotted?.Invoke(d, e); }
             }
 
+            if (!d.revealsGadgets) return;   // (the player's basic drone only lights its circle; the shop's drone marks what it finds)
+
             // Enemy installations inside the drone's circle (cells the fog clears for the attack side).
             var cells = new HashSet<int>();
             Blindside.Rendering.TeamVisionBuilder.AddCircleCells(vision, map, nx, ny, 2.5f, OperatorTeam.Attack, cells);
@@ -146,6 +150,15 @@ namespace Blindside.Integration
                 Marks?.Add(OperatorTeam.Attack, f.x, f.y, MarkKind.Gadget);
                 if (own) { HudLog.Add("ドローン: 電界の位置を表示", HudLogType.Ally); Sfx.Alert(); }
             }
+            // the map's own mines and motion sensors
+            if (own && MapGadgets != null)
+                MapGadgets.Scan(cells, (x, y, name) =>
+                {
+                    if (HasLiveMark(x, y)) return;
+                    Marks?.Add(OperatorTeam.Attack, x, y, MarkKind.Gadget);
+                    HudLog.Add($"ドローン: {name}の位置を表示", HudLogType.Ally);
+                    Sfx.Alert();
+                });
         }
 
         static int Cell(float x, float y) => Mathf.FloorToInt(y + .5f) * MapGrid.Width + Mathf.FloorToInt(x + .5f);

@@ -72,6 +72,9 @@ namespace Blindside.Cinematic
         static Vector2 ownCentre;
         static float ownScale = 1f;
         static float Scale => ownWorld ? ownScale : 1f;
+        // how far the whole-plan shot stands off: a smaller map than the house's is framed closer
+        static float ownFit = 1f;
+        static float Fit => ownWorld ? ownFit : 1f;
         readonly System.Collections.Generic.List<Renderer> townOff = new System.Collections.Generic.List<Renderer>();
         bool introCutDone;
         // ---- the shot list (seconds on the Intro_Timeline clock, 22 s long) ----
@@ -88,7 +91,7 @@ namespace Blindside.Cinematic
         // The rescue intro (RescueStyle: MapData.rescueIntro) is the same flight, but its hologram is the operation's briefing on two of
         // the squad taken in the last operation: the camera comes round the whole hologram slowly instead of closing in on one hostage,
         // the two captives' places are driven in one after the other (each in its operator's colour, M.I.A + codename), and each
-        // one's profile card comes up tied to its marker (IntroMiaCards). Its own lines (RescueLines).
+        // one's profile card comes up tied to its marker (IntroMiaCards). Its own lines (RescueLinesFor).
         const float HeliStart = 3f, HoloStart = 7f, CutAt = 13.8f, ArriveAt = 17.8f, RopeStart = 18.1f, RopeEnd = 19.5f;
         // the helicopter's progress along its approach: the wide shot's ease-out (as if it arrived WideSpan after HeliStart)
         // until the hologram, slow while it is off screen, then easing into the hover over the low-angle shot
@@ -116,14 +119,28 @@ namespace Blindside.Cinematic
         const float RescueSlam0 = 2.3f, RescueSlamGap = 1.45f;
         // the camera round the hologram: RescueRadius out, RescueHeight up, turning RescueTurn degrees over the shot
         const float RescueRadius = 34f, RescueHeight = 25f, RescueTurn = 55f, RescueBlend = 1.6f, RescueFov = 40f, RescueLookAhead = 14f;
-        static readonly (float at, float seconds, string text)[] RescueLines =
+        // (who is held, and how many, come from the map)
+        static (float at, float seconds, string text)[] RescueLinesFor(Blindside.Map.MapData d)
         {
-            (.8f, 5.6f, "今回は救出作戦だ。\n気を引き締めろ。"),
-            (HoloStart + .9f, 5.6f, "前回の作戦で、GHOSTとSILENCEが敵に捕らえられた。\n二人はここに拘束されている。"),
-            (CutAt + .5f, 5.2f, "二人を救出しろ。\n救出すれば、そのまま戦力に加わる。"),
+            var names = new System.Collections.Generic.List<string>();
+            foreach (var c in d.RescueRoster()) names.Add(c.operatorKey);
+            string group = names.Count == 2 ? "二人" : names.Count > 2 ? "全員" : "";
+            return new[]
+            {
+                (.8f, 5.6f, "今回は救出作戦だ。\n気を引き締めろ。"),
+                (HoloStart + .9f, 5.6f, "前回の作戦で、" + string.Join("と", names.ToArray()) + "が敵に捕らえられた。\n" + (group.Length > 0 ? group + "は" : "") + "ここに拘束されている。"),
+                (CutAt + .5f, 5.2f, (group.Length > 0 ? group + "を" : "") + "救出しろ。\n救出すれば、そのまま戦力に加わる。"),
+            };
+        }
+        // ---- a map with no civilian (the wipe-out operation): the whole plan as for the rescue, one marker on the building and the organisation's card ----
+        static (float at, float seconds, string text)[] AssaultLines(int foes) => new[]
+        {
+            (.8f, 5.6f, "緊張しろ、新入り。\n今回は実戦だ。"),
+            (HoloStart + .9f, 4.9f, "武装組織の構成員が\nこの建物に立てこもった。\n鎮圧対象は" + foes + "名だ。"),
+            (CutAt + .5f, 5.2f, "敵を全員制圧しろ。\n一人も逃がすな。"),
         };
         (float at, float seconds, string text)[] lines = Lines;
-        bool rescue;
+        bool rescue, assault;
         IntroMiaCards miaCards;
         Blindside.Tutorial.TutorialRadio radio;
         float radioCloseAt = -1f;
@@ -413,7 +430,9 @@ namespace Blindside.Cinematic
         void OnIntroPlayed(PlayableDirector d)
         {
             rescue = RescueStyle;
-            lines = rescue ? RescueLines : Lines;
+            var introMap = Blindside.Map.MapLibrary.Current;
+            assault = !rescue && introMap != null && !introMap.HasCivilian;
+            lines = rescue ? RescueLinesFor(introMap) : assault ? AssaultLines(FoeCells(introMap).Count) : Lines;
             Blindside.Rendering.MissionAtmosphere.Apply(Blindside.Map.MapLibrary.Current);
             SetUpOwnWorld();
             lowCut = false; rollNow = 0f;
@@ -435,6 +454,7 @@ namespace Blindside.Cinematic
             var b = d.IndoorBounds();
             ownCentre = b.width > 0 ? new Vector2(b.x + (b.width - 1) / 2f, b.y + (b.height - 1) / 2f) : d.MapCenter;
             ownScale = Mathf.Max(1f, Mathf.Max(d.width, d.height) / 26f);
+            ownFit = Mathf.Max(.7f, Mathf.Max(d.width, d.height) / 26f);
             MapFloorSync.Apply(d);
             MapWallSync.Bind(Blindside.Map.MapGrid.CreateDefault());
         }
@@ -580,12 +600,18 @@ namespace Blindside.Cinematic
                 holoBegun = true;
                 var env = introHouse != null ? introHouse.transform.Find("Environment") : null;
                 var hostageCell = Blindside.Map.MapLibrary.Current.hostage;
-                var targets = rescue ? RescueTargets() : null;
+                var targets = rescue ? RescueTargets() : assault ? AssaultTargets() : null;
                 if (ownWorld) TownOverMap(Blindside.Map.MapLibrary.Current, true);
                 bool begun = holo.Begin(mapRoot, env != null ? env.Find("Buildings") : null, env != null ? env.Find("Streets") : null,
                                GridSpace.GridToWorld(hostageCell.x, hostageCell.y), Camera.main, targets);
                 if (ownWorld) TownOverMap(null, false);
                 if (begun && holoScreen != null) holoScreen.Play(holo.Texture);
+                if (assault && miaCards != null && holo.Built && holo.MarkerCount > 0)
+                {
+                    miaCards.Clear();
+                    var d = Blindside.Map.MapLibrary.Current;
+                    miaCards.AddTarget(BuildAssetRegistry.Operator(Blindside.Map.MapData.TerroristKey), FoeCells(d).Count, holo.MarkerImpact(0));
+                }
                 if (rescue && miaCards != null && holo.Built)
                 {
                     miaCards.Clear();
@@ -615,7 +641,7 @@ namespace Blindside.Cinematic
                 else
                 {
                     holo.Tick(t - HoloStart, Camera.main);
-                    if (rescue && miaCards != null && holo.Built)
+                    if ((rescue || assault) && miaCards != null && holo.Built)
                     {
                         if (t >= CutAt - .3f) miaCards.Hide(t - HoloStart);
                         miaCards.Tick(t - HoloStart, Camera.main, holo.MarkerPoint);
@@ -660,6 +686,31 @@ namespace Blindside.Cinematic
             return list;
         }
 
+        /// <summary>Where the map's enemies start: its defenders, then its terrorists.</summary>
+        static System.Collections.Generic.List<Vector2Int> FoeCells(Blindside.Map.MapData d)
+        {
+            var cells = new System.Collections.Generic.List<Vector2Int>();
+            if (d.defenderStarts != null) foreach (var s in d.defenderStarts) if (s != null) cells.Add(s.cell);
+            if (d.terrorists != null) foreach (var t in d.terrorists) if (t != null) cells.Add(t.cell);
+            return cells;
+        }
+
+        /// <summary>The wipe-out operation's marker: one, on the building the organisation holds (its card is tied to it).</summary>
+        System.Collections.Generic.List<IntroHologram.Target> AssaultTargets()
+        {
+            var at = Blindside.Map.MapLibrary.Current.FacingTarget;
+            return new System.Collections.Generic.List<IntroHologram.Target>
+            {
+                new IntroHologram.Target
+                {
+                    pos = GridSpace.GridToWorld(at.x, at.y),
+                    color = Blindside.UI.UIPalette.Foe,
+                    label = "目標建物 <size=60%>TARGET</size>",
+                    slamAt = RescueSlam0,
+                },
+            };
+        }
+
         /// <summary>The rescue hologram shot: from the wide framing into a slow turn round the whole hologram (RescueRadius out,
         /// RescueHeight up), RescueTurn degrees over the shot, looking at the house's middle.</summary>
         void RescuePose(float t, out Vector3 pos, out Vector3 look, out float fov)
@@ -670,7 +721,7 @@ namespace Blindside.Cinematic
             var flat = new Vector3(wide.x - centre.x, 0f, wide.z - centre.z).normalized;
             float turn = RescueTurn * Mathf.Clamp01((t - t0) / (CutAt - t0));
             var toCam = Quaternion.Euler(0f, turn, 0f) * flat;
-            var orbit = centre + toCam * (RescueRadius * Scale) + Vector3.up * (RescueHeight * Scale);
+            var orbit = centre + toCam * (RescueRadius * Fit) + Vector3.up * (RescueHeight * Fit);
             float b = Mathf.Clamp01((t - t0) / RescueBlend);
             float e = b * b * b * (b * (b * 6f - 15f) + 10f);   // smootherstep
             pos = Vector3.Lerp(wide, orbit, e);
@@ -754,7 +805,7 @@ namespace Blindside.Cinematic
             if (t >= HoloStart + HoloMoveIn && t < CutAt && holo.Built)
             {
                 // the hologram: closing in on the hostage (the rescue: coming round the whole of it)
-                if (rescue) RescuePose(t, out camPos, out look, out fov);
+                if (rescue || assault) RescuePose(t, out camPos, out look, out fov);
                 else HoloPose(t, out camPos, out look, out fov);
                 shakeRoll = 0f;
             }

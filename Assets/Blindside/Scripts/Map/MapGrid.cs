@@ -125,6 +125,9 @@ namespace Blindside.Map
         /// <summary>bumpMap() for a change outside the panels (refreshGas: gas clouds added/expired).</summary>
         public void BumpMap() => Changed?.Invoke();
 
+        /// <summary>Cells under a smoke screen (y*Width+x): sight stops there and shots through them are harder. Bump the map after changing it.</summary>
+        public readonly HashSet<int> SmokeCells = new HashSet<int>();
+
         public void SetPanelElectrified(int panelId, bool value)
         {
             var p = Panels[panelId]; p.electrified = value; Panels[panelId] = p;

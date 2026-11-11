@@ -122,6 +122,8 @@ namespace Blindside.Save
         public double playSeconds;
 
         public bool tutorialDone;
+        /// <summary>CRUSHER has shown the player round the HQ (the first return from an operation).</summary>
+        public bool hubTutorialDone;
         public int lastTeam;                // (int)OperatorTeam
         public string lastMap = "";         // MapStore stem of the last sortie ("" = the default house)
 

@@ -21,15 +21,15 @@ namespace Blindside.Rendering
             if (glow == null)
             {
                 glow = NewLight("NightGlow", LightType.Point, new Vector3(0f, 1.6f, 0f), Quaternion.identity);
-                glow.range = ally ? 4.2f : 2.6f;
-                glow.intensity = ally ? 2.2f : 1.4f;
+                glow.range = ally ? 3.2f : 2.2f;
+                glow.intensity = ally ? .9f : .7f;
                 glow.color = ally ? AllyGlow : FoeGlow;
             }
             if (ally && torch == null)
             {
                 torch = NewLight("WeaponLight", LightType.Spot, new Vector3(0f, 1.2f, .3f), Quaternion.Euler(14f, 0f, 0f));
-                torch.range = 9f; torch.spotAngle = 52f; torch.innerSpotAngle = 20f;
-                torch.intensity = 9f;
+                torch.range = 6.5f; torch.spotAngle = 52f; torch.innerSpotAngle = 20f;
+                torch.intensity = 2.5f;   // (soft: enough to find the operator, not to flood the room)
                 torch.color = Torch;
             }
         }

@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-09 14:54
+Screen 1440x810 · 0 issues · generated 2026-11-11 15:23
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -26,9 +26,13 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | menu_confirm | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | save_indicator | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | battle_exp_gain | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| battle_exp_gain_support | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_banner | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_filling | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_final | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| result_rank_slam | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| result_rank | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_entrance | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | growth_panel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_overlay | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_shop | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -45,6 +49,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_station_ignis | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_station_bastion | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_station_crusher | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_station_programs | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| dialogue | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| dialogue_choice | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench_pick | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench_enter | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -97,6 +104,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | intro_subtitle_typing | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | intro_subtitle | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | intro_holo_wipe | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| intro_target_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | intro_title_wide | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | intro_title_gather | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | intro_briefing_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -116,6 +124,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | tutorial_objective_fire | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | engage_forecast | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | engage_forecast_ally_down | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| engage_forecast_pursuit | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| tutorial_forecast_tour | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| support_fire_badge | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_wall_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_wall_card_shot | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_gadget_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -132,79 +143,83 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 72종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 76종)
 
 - Brighten ×6
-- Chip ×542
-- ClickRelay ×3
-- CornerBrackets ×27
-- CutCornerGraphic ×243
-- EngagePreview ×3
-- ExpGainPopup ×1
-- HazardStripe ×188
-- HubHover ×56
+- Chip ×575
+- ClickRelay ×5
+- CornerBrackets ×30
+- CutCornerGraphic ×255
+- EngagePreview ×5
+- ExpGainPopup ×2
+- HazardStripe ×203
+- HubHover ×66
 - HubListPanel ×5
 - HubLoadoutScreen ×3
 - HubMenu ×2
 - HubMinimap ×1
-- HubPointer ×53
-- HubScreen ×20
+- HubPointer ×54
+- HubScreen ×21
 - HubShopScreen ×5
-- HubStationScreen ×4
+- HubStationScreen ×5
 - HubTalkPanel ×1
 - IntroBriefing ×3
 - IntroHoloScreen ×1
+- IntroMiaCards ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
-- KitBannerStrip ×38
-- KitBrighten ×121
+- KitBannerStrip ×41
+- KitBrighten ×124
 - KitChoice ×5
-- KitCommandMenu ×13
+- KitCommandMenu ×16
+- KitDialogue ×2
 - KitGradient ×12
 - KitGrowthPanel ×1
 - KitLogHistory ×1
 - KitMenuLogo ×6
 - KitOptionsPanel ×5
 - KitPointer ×59
-- KitRoster ×35
+- KitRoster ×38
 - KitSaveIndicator ×1
-- KitShadow ×132
+- KitShadow ×141
 - KitSlider ×6
 - KitStepper ×1
-- KitSweep ×170
+- KitSupportBadge ×1
+- KitSweep ×196
 - KitSwitch ×4
-- KitTextButton ×63
-- KitTint ×304
+- KitTextButton ×65
+- KitTint ×325
 - KitTitleLeft ×6
-- LintIgnoreClip ×859
-- LintIgnoreOverlap ×319
+- LintIgnoreClip ×902
+- LintIgnoreOverlap ×332
 - MainMenuScreen ×6
-- OperationResultScreen ×3
+- OperationResultScreen ×5
 - PauseMenu ×6
 - ResultScreen ×3
-- SegmentedBar ×302
-- SlantedGraphic ×3064
-- SlantedMask ×293
-- TacticalPanel ×1168
+- SegmentedBar ×317
+- SlantedGraphic ×3268
+- SlantedMask ×311
+- TacticalPanel ×1231
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
+- TutorialForecastTour ×1
 - TutorialGadgetCard ×1
-- TutorialGuide ×3
+- TutorialGuide ×4
 - TutorialObjective ×2
 - TutorialOperatorCard ×1
 - TutorialRadio ×17
 - TutorialSiren ×1
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
-- UIContactAlert ×35
-- UIGlitchImage ×315
-- UIGlitchName ×54
-- UIGlitchText ×133
-- UIHeadshotBadge ×35
-- UIPerspective ×3
-- UIPerspectiveVertex ×165
-- UIPhaseBanner ×35
-- UIPulse ×35
+- UIContactAlert ×38
+- UIGlitchImage ×343
+- UIGlitchName ×60
+- UIGlitchText ×148
+- UIHeadshotBadge ×38
+- UIPerspective ×5
+- UIPerspectiveVertex ×268
+- UIPhaseBanner ×38
+- UIPulse ×38
 - WallIllustration ×5
 
 ## 미리보기 상태 (Render Previews)
@@ -222,9 +237,13 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | menu_confirm | 1440x810 | メインメニュー — 上書き確認 |
 | save_indicator | 1440x810 | オートセーブ表示 (t=0.8s) |
 | battle_exp_gain | 1440x810 | 戦闘シーン — 経験値獲得 (t=1.0s) |
+| battle_exp_gain_support | 1440x810 | 戦闘シーン — 経験値獲得 (支援射撃の味方を含む) |
 | result_banner | 1440x810 | 作戦成功 — バナー (無線の後 1.0s) |
 | result_filling | 1440x810 | 作戦結果 — 経験値の加算中 |
 | result_final | 1440x810 | 作戦結果 — 完了 (昇進・LEVEL UP) |
+| result_rank_slam | 1440x810 | 作戦評価 — ランク登場 (グリッチ) |
+| result_rank | 1440x810 | 作戦評価 — 完了 |
+| hub_entrance | 1440x810 | 本部帰還 — 帯 |
 | growth_panel | 1440x810 | 隊員強化 (本部) |
 | hub_overlay | 1440x810 | 本部 — 画面 (案内・名札) |
 | hub_shop | 1440x810 | 本部 — 装備購入 (武器) |
@@ -241,6 +260,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_station_ignis | 1440x810 | 本部 — IGNIS |
 | hub_station_bastion | 1440x810 | 本部 — 訓練所 (隊員を選ぶ) |
 | hub_station_crusher | 1440x810 | 本部 — 作戦室 (CRUSHER) |
+| hub_station_programs | 1440x810 | 本部 — 訓練所 (ガジェット訓練) |
+| dialogue | 1440x810 | 会話シーン — セリフ |
+| dialogue_choice | 1440x810 | 会話シーン — 選択肢 |
 | hub_bench | 1440x810 | 本部 — ロードアウト (作業台) |
 | hub_bench_pick | 1440x810 | 本部 — ロードアウト (パーツ選択) |
 | hub_bench_enter | 1440x810 | 本部 — ロードアウト (登場演出の途中) |
@@ -293,6 +315,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | intro_subtitle_typing | 1440x810 | イントロ 台詞 — 表示中 (t=0.9s) |
 | intro_subtitle | 1440x810 | イントロ 台詞 — 全文 |
 | intro_holo_wipe | 1440x810 | イントロ ホログラム切替 — ワイプ途中 |
+| intro_target_card | 1440x810 | イントロ ホログラム — 鎮圧対象カード |
 | intro_title_wide | 1440x810 | イントロ 作戦タイトル — 散らばり (t=0.1s) |
 | intro_title_gather | 1440x810 | イントロ 作戦タイトル — 集まる途中 (t=0.5s) |
 | intro_briefing_glitch | 1440x810 | イントロ 作戦概要 — 作戦名グリッチ (t=0.4s) |
@@ -312,6 +335,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | tutorial_objective_fire | 1440x810 | チュートリアル 現在の目標 (射撃) · ポインター案内 |
 | engage_forecast | 1440x810 | 先制攻撃 交戦予測 — 敵撃破予測 |
 | engage_forecast_ally_down | 1440x810 | 先制攻撃 交戦予測 — 味方撃破予測 |
+| engage_forecast_pursuit | 1440x810 | 先制攻撃 交戦予測 — 支援射撃あり |
+| tutorial_forecast_tour | 1440x810 | チュートリアル 攻撃予測の説明 (HP) |
+| support_fire_badge | 1440x810 | 戦闘シーン — 支援射撃バッジ |
 | tutorial_wall_card | 1440x810 | チュートリアル 壁の種類 (三種類) |
 | tutorial_wall_card_shot | 1440x810 | チュートリアル 壁の種類 (貫通) |
 | tutorial_gadget_card | 1440x810 | チュートリアル フレアのガジェット |

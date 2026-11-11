@@ -18,7 +18,7 @@ namespace Blindside.UI
 {
     public class EngagePreview : MonoBehaviour, ITimedEffect
     {
-        public const float W = 440f, H = 662f, PanelX = 70f, Pad = 22f, Face = 168f, BarH = 14f, RowH = 42f;
+        public const float W = 440f, H = 662f, PanelX = 112f, Pad = 22f, Face = 168f, BarH = 14f, RowH = 42f;
         public const float InTime = .3f, XFrom = .32f, XTo = .5f, BlinkPeriod = .7f, BtnW = 188f, BtnH = 50f, SlideFrom = 60f;
         public const int SortingOrder = 60;
         public const float LiveRaise = 64f;
@@ -37,8 +37,21 @@ namespace Blindside.UI
             public bool preempt;           // its volley is the preemptive one (×1.4 chip by the damage)
             public string result;          // the forecast: "2/3" rounds hit ("BLOCK": the shield takes them), null: no volley
             public int crits, resultTotal; // headshots among the hits (CRIT ×n chip), and the damage they all make
+            public Pursuer[] pursuers;     // the allies joining in with 追撃 (small faces beside this side's), null: none
             public bool Dies => after <= 0;
         }
+
+        /// <summary>One ally's 追撃 round: whose face, and how it goes.</summary>
+        public struct Pursuer
+        {
+            public string key;
+            public bool hit, crit, blocked;
+            public int damage;
+        }
+
+        public const int PursuitSlots = 2;
+        // 追撃: to the left of the panel, flat (outside its bend), level with the player's face
+        public const float SlotFace = 88f, SlotChipW = 92f, SlotChipH = 24f, SlotGap = 10f, SlotSide = 10f, SlotTop = 130f;
 
         class Column
         {
@@ -48,12 +61,16 @@ namespace Blindside.UI
             public Image fillAfter, fillLoss, plate;
             public TMP_Text en, weapon, hpText;
             public TMP_Text[] vals = new TMP_Text[5];
+            public RectTransform[] pursuitSlots;
+            public UIGlitchImage[] pursuitFaces;
+            public Image[] pursuitChips;
+            public TMP_Text[] pursuitLabels;
             public bool left;
             public Side side;
         }
 
         public Canvas canvas;
-        public RectTransform panel, buttons;
+        public RectTransform panel, buttons, pursuitRoot;
         public CanvasGroup group;
         public TMP_Text tag, title, note;
         Image dim;
@@ -105,6 +122,22 @@ namespace Blindside.UI
             if (!was && hideOthers) HideOthers(keep);
         }
 
+        UIPerspective warp;
+        readonly Vector3[] partCorners = new Vector3[4];
+
+        /// <summary>Grows min / max (world) round where the panel's child `name` is drawn, the panel's bend included (the tutorial's walk round it).</summary>
+        public void Encapsulate(string name, ref Vector3 min, ref Vector3 max)
+        {
+            var t = panel.Find(name) as RectTransform;
+            if (t == null) return;
+            t.GetWorldCorners(partCorners);
+            for (int i = 0; i < 4; i++)
+            {
+                var w = panel.TransformPoint(warp.Bend(panel.InverseTransformPoint(partCorners[i])));
+                min = Vector3.Min(min, w); max = Vector3.Max(max, w);
+            }
+        }
+
         void Show(bool entrance)
         {
             gameObject.SetActive(true);
@@ -143,23 +176,47 @@ namespace Blindside.UI
         static void Fill(Column c, Side s)
         {
             c.side = s;
-            var face = OperatorArt.Face(s.key);
-            if (face != null)
-            {
-                // cover the square slot: the middle of a wide face, the top of a tall one
-                var tex = face.texture; var r = face.textureRect;
-                float a = r.width / Mathf.Max(1f, r.height);
-                Rect uv = a >= 1f ? new Rect(r.x + (r.width - r.height) * .5f, r.y, r.height, r.height)
-                                  : new Rect(r.x, r.y + r.height - r.width, r.width, r.width);
-                c.face.SetTexture(tex, new Rect(uv.x / tex.width, uv.y / tex.height, uv.width / tex.width, uv.height / tex.height));
-            }
-            c.face.enabled = face != null;
+            SetFace(c.face, s.key);
+            FillPursuit(c);
             var team = s.ally ? UIPalette.Blue : UIPalette.Foe;
             c.plate.color = new Color(team.r, team.g, team.b, .92f);
             c.en.text = s.en;
             c.weapon.text = string.IsNullOrEmpty(s.weapon) ? s.kr : $"{s.kr}  <color=#FFFFFFB0>{s.weapon}</color>";
             FillHp(c);
             FillVals(c);
+        }
+
+        // the operator's face, covering a square slot: the middle of a wide face, the top of a tall one
+        public static void SetFace(UIGlitchImage img, string key)
+        {
+            var face = OperatorArt.Face(key);
+            if (face != null)
+            {
+                var tex = face.texture; var r = face.textureRect;
+                float a = r.width / Mathf.Max(1f, r.height);
+                Rect uv = a >= 1f ? new Rect(r.x + (r.width - r.height) * .5f, r.y, r.height, r.height)
+                                  : new Rect(r.x, r.y + r.height - r.width, r.width, r.width);
+                img.SetTexture(tex, new Rect(uv.x / tex.width, uv.y / tex.height, uv.width / tex.width, uv.height / tex.height));
+            }
+            img.enabled = face != null;
+        }
+
+        // 追撃: a small face per ally joining in, what its round does on a chip under it
+        static void FillPursuit(Column c)
+        {
+            if (c.pursuitSlots == null) return;
+            var list = c.side.pursuers;
+            for (int i = 0; i < c.pursuitSlots.Length; i++)
+            {
+                bool on = list != null && i < list.Length;
+                c.pursuitSlots[i].gameObject.SetActive(on);
+                if (!on) continue;
+                var p = list[i];
+                SetFace(c.pursuitFaces[i], p.key);
+                bool landed = p.hit && !p.blocked;
+                c.pursuitLabels[i].text = p.blocked && p.hit ? "BLOCK" : landed ? "支援射撃 -" + p.damage : "支援射撃 MISS";
+                c.pursuitChips[i].color = !landed ? UIPalette.Ink2 : p.crit ? UIPalette.Foe : UIPalette.Blue;
+            }
         }
 
         static void FillHp(Column c)
@@ -216,6 +273,7 @@ namespace Blindside.UI
             group.alpha = k;
             // (aiming: a little higher, clear of the unit panel bottom left)
             panel.anchoredPosition = new Vector2(PanelX - SlideFrom * (1f - k), live ? LiveRaise : 0f);
+            pursuitRoot.anchoredPosition = panel.anchoredPosition;
             // the X marks stamp on: big and faint → their size
             float x = Mathf.Clamp01((t - XFrom) / (XTo - XFrom));
             float xs = Mathf.Lerp(1.6f, 1f, UIEase.Tactical(x));
@@ -286,6 +344,12 @@ namespace Blindside.UI
             var vs = Text(panel, "VS", 30f, UIPalette.Accent, UITheme.TextRole.Display, "Vs");
             vs.alignment = TextAlignmentOptions.Center;
             Place(vs.rectTransform, Pad + Face, 130f + Face * .5f - 20f, W - 2f * (Pad + Face), 40);
+            // 追撃: left of the panel, on a layer of its own that moves with it but isn't bent
+            var pursuit = NewRect("Pursuit", root);
+            pursuit.anchorMin = pursuit.anchorMax = new Vector2(0f, .5f); pursuit.pivot = new Vector2(0f, .5f);
+            pursuit.sizeDelta = new Vector2(W, H); pursuit.anchoredPosition = new Vector2(PanelX, 0f);
+            p.pursuitRoot = pursuit;
+            BuildPursuitSlots(pursuit, p.top, -SlotChipW - SlotSide, SlotTop, SlotTop + SlotFace + SlotChipH + SlotGap);
 
             // HP: the numbers over the bars, "HP" in the middle, each bar running out from the middle
             float hy = 130f + Face + 16f;
@@ -319,6 +383,7 @@ namespace Blindside.UI
             // bend the whole panel (buttons stay outside it)
             var warp = panel.gameObject.AddComponent<UIPerspective>();
             warp.Apply();
+            p.warp = warp;
 
             // under it: what happens either way, and the two answers (forecast only)
             var btns = NewRect("Buttons", root);
@@ -327,7 +392,7 @@ namespace Blindside.UI
             p.buttons = btns;
             Button(btns, "Attack", "攻撃", "ENTER", UIPalette.Foe, 0f, () => p.onYes?.Invoke());
             Button(btns, "Ignore", "無視して移動", "ESC", UIPalette.Ink2, BtnW + 14f, () => p.onNo?.Invoke());
-            p.note = Text(btns, "攻撃すると、この場で移動を終了します。\n無視すると、描いた経路のまま移動を続けます。\n<color=#6A7078>予測はクリティカルを含め、実際の交戦結果と同じです</color>", 12f, new Color(.62f, .65f, .7f), UITheme.TextRole.Body, "Note");
+            p.note = Text(btns, "攻撃すると、この場で移動を終了します。\n無視すると、描いた経路のまま移動を続けます。\n<color=#6A7078>予測はクリティカルと支援射撃を含め、実際の交戦結果と同じです</color>", 12f, new Color(.62f, .65f, .7f), UITheme.TextRole.Body, "Note");
             p.note.textWrappingMode = TextWrappingModes.Normal;
             Place(p.note.rectTransform, 0, BtnH + 10f, W, 54);
 
@@ -384,6 +449,32 @@ namespace Blindside.UI
             Place(kiaJa.rectTransform, 62, 3, 82, 20);
             c.kiaChip = kia;
             kia.gameObject.SetActive(false);
+        }
+
+        static void BuildPursuitSlots(RectTransform panel, Column c, float x, float y0, float y1)
+        {
+            c.pursuitSlots = new RectTransform[PursuitSlots];
+            c.pursuitFaces = new UIGlitchImage[PursuitSlots];
+            c.pursuitChips = new Image[PursuitSlots];
+            c.pursuitLabels = new TMP_Text[PursuitSlots];
+            for (int i = 0; i < PursuitSlots; i++)
+            {
+                var slot = NewRect("Pursuit" + i, panel); Place(slot, x, i == 0 ? y0 : y1, SlotChipW, SlotFace + SlotChipH);
+                c.pursuitSlots[i] = slot;
+                var frame = NewRect("Frame", slot); Place(frame, (SlotChipW - SlotFace) * .5f, 0f, SlotFace, SlotFace);
+                Img(frame, UIPalette.Blue);
+                var paper = NewRect("Paper", frame); Stretch(paper);
+                paper.offsetMin = new Vector2(3f, 3f); paper.offsetMax = new Vector2(-3f, -3f);
+                var pi = Img(paper, Color.white); pi.sprite = OperatorArt.PaperGradient;
+                var f = NewRect("Face", paper); Stretch(f);
+                c.pursuitFaces[i] = f.gameObject.AddComponent<UIGlitchImage>();
+                c.pursuitFaces[i].raycastTarget = false;
+                var chip = NewRect("Chip", slot); Place(chip, 0f, SlotFace, SlotChipW, SlotChipH);
+                c.pursuitChips[i] = Img(chip, UIPalette.Blue);
+                c.pursuitLabels[i] = Text(chip, "", 12f, Color.white, UITheme.TextRole.Body, "Result");
+                c.pursuitLabels[i].alignment = TextAlignmentOptions.Center; Stretch(c.pursuitLabels[i].rectTransform);
+                slot.gameObject.SetActive(false);
+            }
         }
 
         static void BuildHp(RectTransform panel, Column c, float y, bool left)

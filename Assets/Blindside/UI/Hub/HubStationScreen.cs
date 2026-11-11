@@ -21,9 +21,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Blindside.Data;
+using Blindside.Flow;
 using Blindside.Hub;
 using Blindside.Progress;
 using Blindside.Save;
+using Blindside.Tutorial;
 
 namespace Blindside.UI
 {
@@ -318,14 +320,48 @@ namespace Blindside.UI
 
         void BastionStats()
         {
-            var list = new Option[5];
+            var list = new Option[6];
             for (int i = 0; i < 5; i++)
             {
                 int stat = i;
                 list[i] = new Option { title = KitGrowthPanel.StatNames[i], sub = "を鍛える  ·  " + Drills[i], icon = StatIcons[i], click = () => BastionPartner(stat) };
             }
+            list[5] = new Option { title = "訓練プログラム", sub = "これまでの訓練をもう一度", icon = "⌖", click = BastionPrograms };
             SetOptions("鍛える能力を選ぶ", list);
             onBack = null;
+        }
+
+        // the tutorial's lessons, played again: each runs on the training map and comes back to the HQ
+        void BastionPrograms()
+        {
+            SetOptions("訓練プログラムを選ぶ",
+                Program("基礎訓練", "移動・射撃・視界", "➜", TutorialSegment.Basics),
+                Program("壁の破壊", "壁の種類と破壊", "▣", TutorialSegment.Walls),
+                new Option { title = "ガジェット訓練", sub = "ドローン・投擲物・爆薬", icon = "✹", click = BastionGadgetPrograms });
+            SetLine("何を訓練する？");
+            onBack = () => { BastionStats(); var l = HubCatalog.StationLines("BASTION"); SetLine(l[0]); };
+        }
+
+        void BastionGadgetPrograms()
+        {
+            SetOptions("ガジェットを選ぶ",
+                Program("ドローン", "建物内の偵察", "⌖", TutorialSegment.Drone),
+                Program("破片手榴弾", "爆風で攻撃", "✹", TutorialSegment.Frag),
+                Program("閃光弾", "敵の視界を奪う", "✦", TutorialSegment.Flash),
+                Program("スモーク弾", "煙幕で視線を切る", "◎", TutorialSegment.Smoke),
+                Program("粘着爆薬", "壁を吹き飛ばす", "▣", TutorialSegment.Breach));
+            SetLine("どのガジェットを試す？");
+            onBack = BastionPrograms;
+        }
+
+        Option Program(string title, string sub, string icon, TutorialSegment segment) =>
+            new Option { title = title, sub = sub, icon = icon, click = () => StartProgram(segment) };
+
+        void StartProgram(TutorialSegment segment)
+        {
+            if (SceneFlow.Leaving) return;
+            TutorialDirector.Segment = segment;
+            SceneFade.Out(SceneFade.DefaultOut, SceneFlow.GoTutorial);
         }
 
         void BastionPartner(int stat)
@@ -520,6 +556,16 @@ namespace Blindside.UI
         {
             Open(key);
             if (stat >= 0) BastionPartner(stat);
+            Evaluate(Duration);
+            EvaluateOptions(99f);
+            bubbleText.maxVisibleCharacters = 99999;
+        }
+
+        /// <summary>Previews: BASTION's list of gadget lessons.</summary>
+        public void PoseGadgetPrograms()
+        {
+            Open("BASTION");
+            BastionGadgetPrograms();
             Evaluate(Duration);
             EvaluateOptions(99f);
             bubbleText.maxVisibleCharacters = 99999;

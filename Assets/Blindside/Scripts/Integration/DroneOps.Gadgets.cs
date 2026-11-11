@@ -29,19 +29,21 @@ namespace Blindside.Integration
         public readonly Drone Drone;
         public readonly SurveillanceCamera Camera;
         public readonly ElectricField Field;
+        public readonly MapGadgetRuntime.Claymore Claymore;
 
-        public GadgetTarget(Drone d) { Drone = d; Camera = null; Field = null; }
-        public GadgetTarget(SurveillanceCamera c) { Drone = null; Camera = c; Field = null; }
-        public GadgetTarget(ElectricField f) { Drone = null; Camera = null; Field = f; }
+        public GadgetTarget(Drone d) { Drone = d; Camera = null; Field = null; Claymore = null; }
+        public GadgetTarget(SurveillanceCamera c) { Drone = null; Camera = c; Field = null; Claymore = null; }
+        public GadgetTarget(ElectricField f) { Drone = null; Camera = null; Field = f; Claymore = null; }
+        public GadgetTarget(MapGadgetRuntime.Claymore m) { Drone = null; Camera = null; Field = null; Claymore = m; }
 
         public bool IsDrone => Drone != null;
         public bool IsField => Field != null;
-        public float X => Drone != null ? Drone.x : Field != null ? Field.x : Camera.x;
-        public float Y => Drone != null ? Drone.y : Field != null ? Field.y : Camera.y;
-        public bool Alive => Drone != null ? Drone.alive : Field != null || Camera.alive;
+        public float X => Drone != null ? Drone.x : Field != null ? Field.x : Claymore != null ? Claymore.x : Camera.x;
+        public float Y => Drone != null ? Drone.y : Field != null ? Field.y : Claymore != null ? Claymore.y : Camera.y;
+        public bool Alive => Drone != null ? Drone.alive : Claymore != null ? Claymore.alive : Field != null || Camera.alive;
         /// <summary>(a field is taken off the context's list by DroneOps.DestroyGadget)</summary>
-        public void Kill() { if (Drone != null) Drone.alive = false; else if (Camera != null) Camera.alive = false; }
-        public string Name => Drone != null ? "ドローン" : Field != null ? "電界" : "監視カメラ";
+        public void Kill() { if (Drone != null) Drone.alive = false; else if (Claymore != null) Claymore.Remove(); else if (Camera != null) Camera.alive = false; }
+        public string Name => Drone != null ? "ドローン" : Field != null ? "電界" : Claymore != null ? "クレイモア" : "監視カメラ";
     }
 
     public partial class DroneOps
@@ -77,9 +79,10 @@ namespace Blindside.Integration
                 foreach (var c in ctx.Cameras) if (c.alive) list.Add(new GadgetTarget(c));
                 if (player) foreach (var f in ctx.Electrics) if (f.discovered) list.Add(new GadgetTarget(f));
             }
-            else if (ctx.Drones != null)
+            else
             {
-                foreach (var d in ctx.Drones.Drones) if (d.alive) list.Add(new GadgetTarget(d));
+                if (ctx.Drones != null) foreach (var d in ctx.Drones.Drones) if (d.alive) list.Add(new GadgetTarget(d));
+                if (MapGadgets != null) foreach (var m in MapGadgets.Claymores) if (m.alive) list.Add(new GadgetTarget(m));
             }
             return list;
         }

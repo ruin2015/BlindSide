@@ -88,7 +88,8 @@ namespace Blindside.Vision
                 if (p.HasValue && p.Value.mirror && team == OperatorTeam.Defense) return false;
                 return true;
             }
-            return GasCells.Contains(y * MapGrid.Width + x);
+            int k = y * MapGrid.Width + x;
+            return GasCells.Contains(k) || map.SmokeCells.Contains(k);   // (a smoke screen hides like gas)
         }
 
         byte[] BuildOpaqueGrid(OperatorTeam team)

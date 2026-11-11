@@ -53,11 +53,13 @@ namespace Blindside.Progress
                 held[k] = n + 1;
                 carry.Add(k);
             }
+            // a drone isn't a throwable in the queue: it is the unit's drone command for the match
+            u.ShopDrone = carry.RemoveAll(k => k == Blindside.Hub.HubCatalog.ReconDroneKey) > 0;
             carry.Sort((a, b) => (b == "frag" ? 1 : 0) - (a == "frag" ? 1 : 0));
-            u.Item = carry.Count > 0 ? carry[0] : "";
-            u.ItemSpent = false;
-            u.ItemQueue.Clear();
-            for (int i = 1; i < carry.Count; i++) u.ItemQueue.Add(carry[i]);
+            // the 除細動器 works by itself when the operator falls; the rest are the unit's item commands
+            u.Defib = carry.RemoveAll(k => k == ItemEffects.DefibKey) > 0;
+            u.Items.Clear();
+            u.Items.AddRange(carry);
             // FLARE's co-op with this operator (CoopPerks): the rank its perks read; BASTION's rank-3 堅牢な移動 moves 2
             u.CoopRank = Campaign.Rank(d, u.Op.key);
             if (u.Op.key == "BASTION" && u.CoopRank >= CoopPerks.Unique3 && u.Mv < 2) u.Mv = 2;

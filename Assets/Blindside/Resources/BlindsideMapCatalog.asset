@@ -13,12 +13,43 @@ MonoBehaviour:
   m_Name: BlindsideMapCatalog
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Flow.MapCatalog
   entries:
+  - id: map_7554805a
+    displayName: BLINDSIDE
+    listed: 1
+    mapJson: {fileID: 4900000, guid: 17c8e1e225bccd248b4dc3ac98a90716, type: 3}
+    sceneName: 
+    sourceStem: BLINDSIDE
+    rescue: 0
+    rescueHostages: []
+    questKind: 0
+    questTime: 0
+    mainOrder: 1
+    daysAfterPrevious: 15
+    operationCode: BLINDSIDE
+    operationNameJa: "\u30D6\u30E9\u30A4\u30F3\u30C9\u30B5\u30A4\u30C9"
+    briefWeather: "\u65E5\u4E2D \xB7 \u6674\u308C \xB7 \u8996\u754C\u826F\u597D"
+    briefLocation: "\u90CA\u5916 \xB7 \u76EE\u6A19: \u6B66\u88C5\u52E2\u529B\u306E\u6F5C\u4F0F\u5EFA\u7269"
+    briefClock: 
+    night: 0
+    rain: 0
+    challenges:
+    - kind: 0
+      value: 0
+    - kind: 1
+      value: 10
+    - kind: 2
+      value: 0
+    squad:
+    - CRUSHER
+    - FLARE
+    - SERUM
+    noAbilities: 1
   - id: map_b909c9d2
     displayName: QUIETPLACE
     listed: 1
     mapJson: {fileID: 4900000, guid: 15297153b09b73c4ba242c12a10d93b4, type: 3}
     sceneName: map_b909c9d2
-    sourceStem: SILENCE
+    sourceStem: QuietPlace
     rescue: 0
     rescueHostages: []
     questKind: 0
@@ -32,3 +63,6 @@ MonoBehaviour:
     briefClock: 02:40
     night: 1
     rain: 1
+    challenges: []
+    squad: []
+    noAbilities: 0

@@ -155,14 +155,14 @@ namespace Blindside.Save
             SaveSystem.Write(true);
         }
 
-        /// <summary>The tutorial's end (its hand-over to the main operation on the default house, attack side).</summary>
-        public static void TutorialFinished()
+        /// <summary>The tutorial's end (its hand-over to the story's first operation, attack side).</summary>
+        public static void TutorialFinished(string map = "")
         {
             var d = SaveSystem.Current;
             if (d == null) return;
             d.tutorialDone = true;
             d.LastTeam = OperatorTeam.Attack;
-            d.lastMap = "";
+            d.lastMap = map ?? "";
             SaveSystem.Write(true);
         }
 

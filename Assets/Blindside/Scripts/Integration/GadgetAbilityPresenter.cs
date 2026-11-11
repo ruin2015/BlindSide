@@ -141,6 +141,7 @@ namespace Blindside.Integration
         void Kill(SimUnit t)
         {
             if (t == null) return;
+            if (t.ReviveHp > 0) { t.Revive(); return; }   // (除細動器)
             t.HP = 0; t.Alive = false;
             OnGasKill?.Invoke(t);
             t.View?.PlayDeath();

@@ -152,6 +152,7 @@ namespace Blindside.MapEditor
                 throw new InvalidOperationException("the map is incomplete (a hostage or a captive, a defender or terrorist and an exfil zone are required)");
             var d = Data.Clone();
             d.name = Data.name; d.version = 1; d.useHouseIntro = false;
+            d.exactPlacement = true;   // (what was placed is what is played: no defense AI preparation on top)
             // no civilian: `hostage` is still where the defense centres itself — the first captive
             d.noHostage = !o.hostage.HasValue;
             // (nobody held — a wipe-out map: the defense centres on its first defender / terrorist)

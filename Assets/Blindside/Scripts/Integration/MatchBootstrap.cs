@@ -18,7 +18,7 @@ using Blindside.Cinematic;
 
 namespace Blindside.Integration
 {
-    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers, ICaptive,
+    public class SimUnit : ITurnUnit, IVisionAgent, IOperatorNamed, IFacingLockable, IRevealable, ISpeedRated, IAlertable, IJammable, Blindside.Combat.ICombatModifiers, Blindside.Combat.IItemEffects, ICaptive,
                            Blindside.Combat.ICoopRanked, Blindside.Combat.IExposable
     {
         /// <summary>FLARE's co-op rank with this operator (Progress.ProgressBonus: the player's side in a real match; else 0).</summary>
@@ -28,13 +28,72 @@ namespace Blindside.Integration
         public bool Exposed { get; set; }
         /// <summary>Held by the enemy (the rescue operation): not on the map (Placed false), no turn, until an attacker frees it.</summary>
         public bool Captive { get; set; }
+        /// <summary>A captive the squad's sight has found: its figure shows from then on.</summary>
+        public bool CaptiveSeen { get; set; }
+        /// <summary>Carries a shop drone (HubCatalog.ReconDroneKey) out of the HQ — the player's operators in a real match only.</summary>
+        public bool ShopDrone { get; set; }
         // growth (Progress.ProgressBonus: the player's operators in a real match); neutral for everyone else
         public float DamageScale { get; set; } = 1f;
         public float AccuracyBonus { get; set; }
         public float DamageTakenScale { get; set; } = 1f;
         public float MoveBonus { get; set; }
         /// <summary>The fitted attachments (Progress.ProgressBonus from the save); null for everyone else.</summary>
-        public AttachmentEffect Gear { get; set; }
+        public AttachmentEffect Gear
+        {
+            get => gearNow;
+            set { baseGear = value; RebuildGear(); }
+        }
+        AttachmentEffect baseGear, gearNow;
+
+        // ---- what the HQ's items do (PlayerSelectionController.Items.cs) ----
+        /// <summary>A timed effect: a medical buff, or a flashbang's blindness. It runs out as its side's phases begin.</summary>
+        public class TimedEffect { public int turns, bonusHp; public float acc, headshot, mobilityPct; public bool flash; }
+        readonly List<TimedEffect> effects = new List<TimedEffect>(2);
+
+        public bool Flashed { get { for (int i = 0; i < effects.Count; i++) if (effects[i].flash) return true; return false; } }
+
+        /// <summary>Carries a 除細動器: when it falls it gets up again (once, while the squad still holds one).</summary>
+        public bool Defib { get; set; }
+        public int ReviveHp => Defib && ItemEffects.Stock(ItemEffects.DefibKey) > 0 ? Mathf.Max(1, MaxHP * ItemEffects.DefibPercent / 100) : 0;
+        public void Revive() { int hp = ReviveHp; Defib = false; HP = hp; ItemEffects.Revived(this); }
+
+        public void AddEffect(TimedEffect e)
+        {
+            if (e.flash) effects.RemoveAll(o => o.flash);   // (a second flash starts over; it doesn't stack)
+            if (e.bonusHp > 0) { MaxHP += e.bonusHp; HP += e.bonusHp; }
+            effects.Add(e);
+            RebuildGear();
+        }
+
+        /// <summary>Its side's phase begins: every effect is a turn shorter; the extra HP goes with its effect.</summary>
+        public void TickEffects()
+        {
+            bool changed = false;
+            for (int i = effects.Count - 1; i >= 0; i--)
+            {
+                if (--effects[i].turns > 0) continue;
+                if (effects[i].bonusHp > 0) { MaxHP -= effects[i].bonusHp; HP = Mathf.Max(1, Mathf.Min(HP, MaxHP)); }
+                effects.RemoveAt(i);
+                changed = true;
+            }
+            if (changed) RebuildGear();
+        }
+
+        // the gear in effect: the attachments plus whatever is running (null with neither: the unit plays as before)
+        void RebuildGear()
+        {
+            if (effects.Count == 0) { gearNow = baseGear; return; }
+            var g = new AttachmentEffect();
+            if (baseGear != null)
+            {
+                g.acc = baseGear.acc; g.accNear = baseGear.accNear; g.accMid = baseGear.accMid; g.accFar = baseGear.accFar; g.firstAcc = baseGear.firstAcc;
+                g.headshot = baseGear.headshot; g.damagePct = baseGear.damagePct; g.mobilityPct = baseGear.mobilityPct; g.speed = baseGear.speed;
+                g.extraShots = baseGear.extraShots; g.noFalloff = baseGear.noFalloff; g.silenced = baseGear.silenced;
+            }
+            foreach (var e in effects) { g.acc += e.acc; g.headshot += e.headshot; g.mobilityPct += e.mobilityPct; }
+            gearNow = g;
+        }
+
         public string Id { get; set; }
         // X/Y/Facing/Alive raise Changed when their value actually changes — the cue for anything that
         // derives from them (the vision polygon) to recompute instead of polling every frame.
@@ -85,12 +144,9 @@ namespace Blindside.Integration
         // Remaining per-unit flags commands() reads (mkUnit defaults). Nothing sets them yet — the
         // gadget/facing systems aren't wired into this harness — but the menu's enable rules use them.
         public bool GadgetUsed { get; set; }
-        /// <summary>The item carried from the HQ (HubCatalog.Gadgets key; "" = none) — the player's operators in a real match only
-        /// (Progress.ProgressBonus); ItemSpent once it has been used (one per match).</summary>
-        public string Item { get; set; } = "";
-        public bool ItemSpent { get; set; }
-        /// <summary>Items carried in the other slots (co-op rank 4 / 7): the next one comes out once Item is spent.</summary>
-        public readonly List<string> ItemQueue = new List<string>(2);
+        /// <summary>The items carried from the HQ and not yet used (HubCatalog.Gadgets keys, one per item slot) — the player's operators
+        /// in a real match only (Progress.ProgressBonus).</summary>
+        public readonly List<string> Items = new List<string>(3);
         /// <summary>The second gun (co-op rank 6): 持ち替え swaps it with Weapon.</summary>
         public WeaponData Weapon2 { get; set; }
         public bool DroneSpent { get; set; }
@@ -172,6 +228,13 @@ namespace Blindside.Integration
         public static int HostageCount { get; private set; }
         /// <summary>The running match is the rescue operation.</summary>
         public static bool RescueMatch { get; private set; }
+        /// <summary>The running match is the first main quest (the built-in house), or has no save session to say otherwise: the drop
+        /// guidance shows. There are no drones in it (they are taught at the training room later); later operations use the ones bought at the shop.</summary>
+        public static bool FirstMainQuest { get; private set; }
+        /// <summary>The player's operators have no abilities on this operation (MapData.noAbilities).</summary>
+        public static bool NoAbilities { get; private set; }
+        /// <summary>Every operator has the basic drone: the tutorial, an editor test play.</summary>
+        public static bool FreeDrone { get; private set; }
 
         public GameplayUIBridge uiBridge;
         public bool runOnStart = true;
@@ -284,7 +347,9 @@ namespace Blindside.Integration
                 u.View.SetCombatReady(u.Alive && Time.unscaledTime < u.RevealT);
                 // syncUnits: `show=u.alive&&u.placed!==false&&…` — the player's own not-yet-dropped units aren't in
                 // the scene (the enemy side is hidden by VisibilityController via the same Placed flag).
-                if (playerTeam == OperatorTeam.Attack && u.Team == OperatorTeam.Attack && u.Alive) u.View.SetVisible(u.Placed || u.Airborne || u.Captive);   // (a captive: where it is held)
+                // (a captive: hidden until the squad's sight has found it, then where it is held)
+                if (u.Captive && !u.CaptiveSeen && visibility != null && visibility.CellSeen(u.X, u.Y)) u.CaptiveSeen = true;
+                if (playerTeam == OperatorTeam.Attack && u.Team == OperatorTeam.Attack && u.Alive) u.View.SetVisible(u.Placed || u.Airborne || (u.Captive && u.CaptiveSeen));
             }
             for (int i = 0; i < activeHostages.Count && i < hostageViews.Count; i++)
             {
@@ -406,6 +471,10 @@ namespace Blindside.Integration
             // the rescue operation (MapData.rescueIntro): the player's attack only — GHOST and SILENCE held instead of the civilian
             bool rescueMatch = mapData.rescueIntro && playerTeam == OperatorTeam.Attack && !tutorialMode;
             RescueMatch = rescueMatch;
+            var startSave = Blindside.Save.SaveSystem.Current;
+            FirstMainQuest = !tutorialMode && !PlaySession.IsTest && (startSave == null || Blindside.Progress.Campaign.MainIndex(startSave.lastMap) == 0);
+            FreeDrone = tutorialMode || PlaySession.IsTest;
+            NoAbilities = !tutorialMode && mapData.noAbilities && playerTeam == OperatorTeam.Attack;
             var roster = rescueMatch ? mapData.RescueRoster() : new List<MapCaptive>();
             RescueKeys.Clear();
             foreach (var c in roster) RescueKeys.Add(c.operatorKey);
@@ -420,6 +489,8 @@ namespace Blindside.Integration
             var units = new List<SimUnit>();
             // Attack team: the map's default drop points (ATK_SPAWN in 01_core_data_map_vision.js).
             var atkSpawn = mapData.anchors.attackerDrops;
+            // (an operation that names its squad fields only those, for the player's side)
+            var fielded = playerTeam == OperatorTeam.Attack && mapData.squadKeys != null && mapData.squadKeys.Length > 0 ? mapData.squadKeys : AttackerKeys;
             if (tutorialMode)
             {
                 // the tutorial: FLARE alone, standing at the first drop point; CRUSHER (the instructor) on the other side at the first
@@ -432,7 +503,7 @@ namespace Blindside.Integration
                 units.Add(flare); units.Add(crusher);
             }
             else
-            for (int i = 0; i < (rescueMatch ? Mathf.Min(RescueSquadSize, atkSpawn.Length) : atkSpawn.Length); i++)
+            for (int i = 0; i < (rescueMatch ? Mathf.Min(RescueSquadSize, atkSpawn.Length) : Mathf.Min(fielded.Length, atkSpawn.Length)); i++)
                 units.Add(MakeUnit($"atk{i + 1}", OperatorTeam.Attack, atkSpawn[i].x, atkSpawn[i].y, weaponAr));
             // the rescue operation: the captives, held where the map says (the civilian hostage's place is theirs)
             var captives = new List<SimUnit>();
@@ -472,7 +543,7 @@ namespace Blindside.Integration
             // OPS records: attackers take OPS.atk in order (spawnAttackers: `OPS.atk.forEach((o,i)=>...
             // spots[i])`), defenders are already keyed by name. UIDs follow startGame()'s creation
             // order — OPS.def first (1-5), then spawnAttackers (6-10).
-            var atkKeys = AttackerKeys;   // (the rescue operation: the first RescueSquadSize of them; the captives are named below)
+            var atkKeys = fielded;   // (the rescue operation: the first RescueSquadSize of them; the captives are named below)
             int uid = 0, atkIdx = 0;
             if (!tutorialMode)
             {
@@ -629,6 +700,7 @@ namespace Blindside.Integration
             var abilities = AbilitySystem.CreateDefault();
             // G.drones: shock's drone kill reaches into it (drone deployment itself isn't connected yet).
             var abilityCtx = new AbilityContext { Map = map, Vision = vision, Drones = new Blindside.Drones.DroneController(), Units = units.ConvertAll(u => (IAbilityUnit)u) };
+            matchCtx = abilityCtx;
             breachPresenter?.Unbind();
             breachPresenter = new BreachAbilityPresenter(abilities, marks);
             // stim / shield / shock: popup · fxRing · sfx · log, and the G.electrics fields + electrified walls.
@@ -676,6 +748,7 @@ namespace Blindside.Integration
             if (mapGadgets == null) mapGadgets = GetComponent<MapGadgetRuntime>();
             if (mapGadgets == null) mapGadgets = gameObject.AddComponent<MapGadgetRuntime>();
             mapGadgets.Bind(tutorialMode ? null : mapData, map, vision, abilityCtx, turns, marks, ai, gadgetPresenter, playerTeam);
+            visibility.MapGadgets = mapGadgets;
             if (selection.Movement != null) selection.Movement.OnStep += mapGadgets.Step;
             reconPresenter?.Unbind();
             reconPresenter = new ReconAbilityPresenter(abilities, abilityCtx, turns, marks, playerTeam);
@@ -691,6 +764,7 @@ namespace Blindside.Integration
                 Marks = marks,
                 Hostage = hostage,
                 Round = () => turns.Round,
+                MapGadgets = mapGadgets,
                 CellVisibleToPlayer = playerTeam.HasValue ? (System.Func<float, float, bool>)visibility.CellVisible : null,
                 UnitsChanged = () => { },
             };
@@ -713,6 +787,7 @@ namespace Blindside.Integration
             if (playerTeam.HasValue && !tutorialMode)
                 turns.OnPhaseBegin += phase => { if (phase == MatchPhase.Attack) Music.Play(Music.BattleTrack); };
             selection.BindAbilities(abilities, abilityCtx);
+            selection.BindItems(mapGadgets);
             // Deploy phase (attack side): the helicopter the intro flew in stays in the scene and drops the squad.
             if (playerTeam == OperatorTeam.Attack && !tutorialMode)
             {

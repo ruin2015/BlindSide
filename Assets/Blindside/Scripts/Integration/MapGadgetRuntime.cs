@@ -4,7 +4,7 @@
 //   MINE     — hidden from the attack; an attacker stepping within MineReach sets it off: MineDamage, its move ends, the mine is gone;
 //   SENSOR   — a motion sensor: an attacker moving within SensorRadius (once per sensor and round) is reported to the defense — a
 //              Spotted mark, revealed for a moment, the defense AI's latest intel. Once it has gone off, the attack knows it is there.
-// Mines and sensors are drawn for the defense side (and AI-vs-AI); for an attacking player only a sensor that has gone off.
+// Mines and sensors are drawn for the defense side (and AI-vs-AI); for an attacking player once its sight reaches them (they stay shown).
 // The step check runs from MovementSystem.OnStep (every .2 m of every walk, the player's and the AI's).
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,6 +37,38 @@ namespace Blindside.Integration
             public readonly List<SimUnit> seen = new List<SimUnit>();
         }
 
+        /// <summary>A クレイモア the player has set: an enemy coming within ClaymoreReach sets it off; an enemy's shot destroys it.</summary>
+        public class Claymore
+        {
+            public float x, y; public bool alive = true; public SimUnit owner; public GameObject go;
+            public void Remove() { alive = false; if (go != null) Destroy(go); }
+        }
+        public const float ClaymoreReach = 1f;
+        public readonly List<Claymore> Claymores = new List<Claymore>();
+        /// <summary>A claymore has gone off (owner, x, y): the blast itself is PlayerSelectionController.Items.cs's.</summary>
+        public System.Action<SimUnit, float, float> ClaymoreBlast;
+
+        public void PlaceClaymore(SimUnit owner, float x, float y)
+        {
+            EnsureRoot();
+            var go = new GameObject("Claymore");
+            go.transform.SetParent(root, false);
+            go.transform.position = GridSpace.GridToWorld(x, y);
+            go.transform.rotation = Quaternion.Euler(0f, 90f - owner.Facing * Mathf.Rad2Deg, 0f);
+            Part(go.transform, PrimitiveType.Cube, new Vector3(0, .2f, 0), new Vector3(.3f, .2f, .07f), new Color32(0x4a, 0x55, 0x3a, 0xff));
+            Part(go.transform, PrimitiveType.Cylinder, new Vector3(-.1f, .05f, 0), new Vector3(.02f, .06f, .02f), Casing);
+            Part(go.transform, PrimitiveType.Cylinder, new Vector3(.1f, .05f, 0), new Vector3(.02f, .06f, .02f), Casing);
+            Part(go.transform, PrimitiveType.Sphere, new Vector3(0, .34f, 0), new Vector3(.05f, .05f, .05f), MineOrange);
+            Claymores.Add(new Claymore { x = x, y = y, owner = owner, go = go });
+        }
+
+        void EnsureRoot()
+        {
+            if (root != null) return;
+            root = new GameObject("MapGadgets").transform;
+            root.SetParent(transform, false);
+        }
+
         readonly List<Mine> mines = new List<Mine>();
         readonly List<Sensor> sensors = new List<Sensor>();
         Transform root;
@@ -56,8 +88,7 @@ namespace Blindside.Integration
             Unbind();
             this.turns = turns; this.marks = marks; this.ai = ai; this.presenter = presenter; this.playerTeam = playerTeam;
             if (data == null || data.gadgets == null || data.gadgets.Length == 0) return;
-            root = new GameObject("MapGadgets").transform;
-            root.SetParent(transform, false);
+            EnsureRoot();
             bool electrified = false;
             foreach (var g in data.gadgets)
             {
@@ -87,7 +118,7 @@ namespace Blindside.Integration
 
         public void Unbind()
         {
-            mines.Clear(); sensors.Clear();
+            mines.Clear(); sensors.Clear(); Claymores.Clear();
             if (root != null) Destroy(root.gameObject);
             root = null;
             turns = null; marks = null; ai = null; presenter = null;
@@ -103,11 +134,39 @@ namespace Blindside.Integration
             return n;
         }
 
+        static int CellOf(float x, float y) => Mathf.FloorToInt(y + .5f) * MapGrid.Width + Mathf.FloorToInt(x + .5f);
+
+        /// <summary>The attack side's sight (`cells`): a mine or a sensor inside it is found and stays shown.</summary>
+        public void Discover(HashSet<int> cells)
+        {
+            bool changed = false;
+            foreach (var m in mines) if (m.alive && !m.revealed && cells.Contains(CellOf(m.x, m.y))) { m.revealed = true; changed = true; }
+            foreach (var s in sensors) if (!s.discovered && cells.Contains(CellOf(s.x, s.y))) { s.discovered = true; changed = true; }
+            if (changed) SyncVisibility();
+        }
+
+        /// <summary>Calls `found(x, y, name)` for each live mine and every sensor in `cells` (the shop drone's scan).</summary>
+        public void Scan(HashSet<int> cells, System.Action<float, float, string> found)
+        {
+            foreach (var m in mines) if (m.alive && cells.Contains(CellOf(m.x, m.y))) found(m.x, m.y, "地雷");
+            foreach (var s in sensors) if (cells.Contains(CellOf(s.x, s.y))) found(s.x, s.y, "動体センサー");
+        }
+
         /// <summary>MovementSystem.OnStep: an attacker has just moved a step.</summary>
         public void Step(ITurnUnit tu)
         {
             var u = tu as SimUnit;
-            if (u == null || !u.Alive || u.Team != OperatorTeam.Attack) return;
+            if (u == null || !u.Alive) return;
+            for (int i = 0; i < Claymores.Count; i++)
+            {
+                var c = Claymores[i];
+                if (!c.alive || c.owner.Team == u.Team || Dist(c.x, c.y, u.X, u.Y) > ClaymoreReach) continue;
+                c.Remove();
+                u.MoveLeft = 0f;   // (the walk ends here)
+                ClaymoreBlast?.Invoke(c.owner, c.x, c.y);
+                if (!u.Alive) return;
+            }
+            if (u.Team != OperatorTeam.Attack) return;
             for (int i = 0; i < mines.Count; i++)
             {
                 var m = mines[i];
@@ -148,7 +207,7 @@ namespace Blindside.Integration
             if (wasHidden) SyncVisibility();
         }
 
-        /// <summary>The attacking player sees a sensor only once it has gone off, and never a mine; everyone else sees them all.</summary>
+        /// <summary>The attacking player sees a mine or a sensor once it has come into sight (or a sensor has gone off); everyone else sees them all.</summary>
         void SyncVisibility()
         {
             bool all = playerTeam != OperatorTeam.Attack;

@@ -253,7 +253,7 @@ namespace Blindside.Hub
                 var rec = D.RecordOf(o.stem);
                 into.Add(new HubRow
                 {
-                    name = o.name, note = "攻撃 · 人質救出   報酬 " + Yen("", o.money) + " · 貢献度 " + o.contribution + (o.expScale != 1f ? " · 経験値 ×" + o.expScale.ToString("0.#") : ""),
+                    name = o.name, note = "攻撃   報酬 " + Yen("", o.money) + " · 貢献度 " + o.contribution + (o.expScale != 1f ? " · 経験値 ×" + o.expScale.ToString("0.#") : ""),
                     value = "出撃 " + rec.plays + " · 成功 " + rec.wins, current = o.stem == D.lastMap,
                     button = "出撃", enabled = true,
                 });

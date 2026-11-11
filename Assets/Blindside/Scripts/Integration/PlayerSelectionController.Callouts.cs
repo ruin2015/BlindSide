@@ -30,6 +30,7 @@ namespace Blindside.Integration
         public const string CEngage = "{0}と交戦する！";
         public const string CKill = "{0}を倒した！";
         public const string CPreempted = "くっ、{0}の先制攻撃だ！";
+        public const string CSupport = "支援する！";
         /// <summary>The radio over the battle cinematic's letterbox (8% of 1013 + a gap).</summary>
         public const float CinematicLift = 92f;
 
@@ -39,6 +40,12 @@ namespace Blindside.Integration
             if (!(victim is SimUnit v) || !(killer is SimUnit k) || k.Team != side || v.Team == side) return;
             CalledOut(v);
             Callout(k, string.Format(CKill, Name(v)), true);
+        }
+
+        /// <summary>An ally joins in with 支援射撃: it says so on the radio.</summary>
+        void OnSupportCallout(Blindside.Combat.ICombatUnit who, Blindside.Combat.ICombatUnit target)
+        {
+            if (who is SimUnit s && s.Team == side) Callout(s, CSupport, true);
         }
 
         /// <summary>An enemy opens fire on one of ours preemptively: the one hit calls it.</summary>

@@ -258,7 +258,7 @@ namespace Blindside.Integration
         IEnumerator AskEngageForecast(ITurnUnit u, ITurnUnit e, System.Action<bool> answer)
         {
             if (engagePreview == null) engagePreview = EngagePreview.Build(transform);
-            Forecast(u, e, out var a, out var b);
+            Forecast(u, e, true, out var a, out var b);   // (an encounter's first strike always hits)
 
             modal = true;
             dialogResult = DialogResult.None;
@@ -274,14 +274,18 @@ namespace Blindside.Integration
         /// <summary>exchange(u,e,true) exactly as it is going to happen (CombatSystem.ForecastExchange: the same rolls on a copy of the
         /// game's random stream, headshots included): `u`'s preemptive volley, then `e`'s return fire if it still stands and can shoot
         /// back — the two sides of the engagement panel. The fight that follows draws the same numbers, so it ends the same way.</summary>
-        void Forecast(ITurnUnit u, ITurnUnit e, out EngagePreview.Side a, out EngagePreview.Side b)
+        void Forecast(ITurnUnit u, ITurnUnit e, bool sureHit, out EngagePreview.Side a, out EngagePreview.Side b)
         {
-            Blindside.Combat.CombatSystem.ForecastExchange(map, u, e, true, out var v1, out var v2, out int uAfter, out int eAfter, true);   // (the first strike always hits)
+            Blindside.Combat.CombatSystem.ForecastExchange(map, u, e, true, out var v1, out var v2, out int uAfter, out int eAfter, sureHit,
+                combat != null ? combat.PursuitAllies : null, forecastPursuits);
             a = EngageSides.Of(u, side, uAfter);
             b = EngageSides.Of(e, side, eAfter);
             if (v1.fired) EngageSides.Volley(ref a, v1);
             if (v2.fired) EngageSides.Volley(ref b, v2);
+            EngageSides.Pursuers(ref a, forecastPursuits);   // (追撃: the allies joining in, small beside the face)
         }
+
+        readonly List<Blindside.Combat.CombatSystem.PursuitOutcome> forecastPursuits = new List<Blindside.Combat.CombatSystem.PursuitOutcome>(4);
 
         // ---- FIRE's aim on an enemy: the same forecast beside it (the click fires: no buttons) ----
         SimUnit aimForecastShooter, aimForecastTarget;
@@ -313,7 +317,7 @@ namespace Blindside.Integration
             if (target == aimForecastTarget && uiUnit == aimForecastShooter) return;   // (positions don't move while aiming)
             aimForecastTarget = target; aimForecastShooter = uiUnit;
             if (engagePreview == null) engagePreview = EngagePreview.Build(transform);
-            Forecast(uiUnit, target, out var a, out var b);
+            Forecast(uiUnit, target, false, out var a, out var b);   // (FIRE rolls its hits as usual)
             // the selection UI (aim tip, hint bar) and the tutorial's canvases stay; the roster and the rest step aside
             engagePreview.OpenAim(a, b, true, canvas != null ? canvas.name : "", "TutorialGuide_Canvas", "TutorialRadio_Canvas");
         }

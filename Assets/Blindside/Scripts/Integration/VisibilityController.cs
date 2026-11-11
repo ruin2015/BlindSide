@@ -132,10 +132,18 @@ namespace Blindside.Integration
             return visibleCells.Contains(Mathf.FloorToInt(y + .5f) * MapGrid.Width + Mathf.FloorToInt(x + .5f));
         }
 
-        // updateDiscovery(): what the attack side's sight has come across stays known (cams, electric fields).
+        /// <summary>The cell holding (x,y) is really in the player side's sight now (false before any sight exists, unlike CellVisible).</summary>
+        public bool CellSeen(float x, float y) =>
+            active && visibleCells != null && visibleCells.Contains(Mathf.FloorToInt(y + .5f) * MapGrid.Width + Mathf.FloorToInt(x + .5f));
+
+        /// <summary>The map's mines and sensors, shown once the attack side's sight reaches them.</summary>
+        public MapGadgetRuntime MapGadgets;
+
+        // updateDiscovery(): what the attack side's sight has come across stays known (cams, electric fields, mines, sensors).
         void UpdateDiscovery(HashSet<int> tv)
         {
             if (side != OperatorTeam.Attack || Gadgets == null) return;
+            if (MapGadgets != null) MapGadgets.Discover(tv);
             foreach (var c in Gadgets.Cameras)
                 if (c.alive && tv.Contains(Mathf.FloorToInt(c.y + .5f) * MapGrid.Width + Mathf.FloorToInt(c.x + .5f))) c.discovered = true;
             foreach (var e in Gadgets.Electrics)

@@ -51,6 +51,7 @@ namespace Blindside.Integration
         {
             if (abilities == null || abilityCtx == null || map == null) return false;
             if (!IsBreachAbility(u.AbilityKey) && !IsSupportAbility(u.AbilityKey)) return false;
+            breachItemMode = false;
             abilityCtx.PrepPhase = turns.Phase == MatchPhase.Prep;
             var sp = abilities.GetSpec(u, abilityCtx);
             HideMenu();
@@ -92,6 +93,7 @@ namespace Blindside.Integration
             if (pid < 0 || !validPanels.Contains(pid)) { SfxNoise.Click(); return true; }
             busy = true; HideHint();
             mode = Mode.Busy;   // G.ui={mode:'busy',unit:u}
+            if (breachItemMode) { StartCoroutine(BreachItemRoutine(u, map.Panels[pid])); return true; }   // 粘着爆薬 (.Items.cs)
             StartCoroutine(AbilityRoutine(u, AbilityTarget.FromPanel(map.Panels[pid])));
             return true;
         }

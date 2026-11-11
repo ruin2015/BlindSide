@@ -29,7 +29,11 @@ namespace Blindside.Cinematic
             public Vector2 pos;
             public float at;          // when it comes in (s, hologram clock)
             public bool right;        // on the right of the screen
+            public float w = CardW, h = CardH;
         }
+
+        // the enemy organisation's card (the wipe-out operation): the illustration large, who they are, how many are to be put down
+        public const float TargetW = 400f, TargetH = 450f, TargetTop = 130f, TargetArtH = 256f, TargetFace = 44f, TargetFaceGap = 8f;
 
         RectTransform root;
         CanvasGroup rootGroup;
@@ -126,6 +130,80 @@ namespace Blindside.Cinematic
             Pose(k, -1f, Vector2.zero, false);
         }
 
+        /// <summary>The operation's targets on one card on the right: `op`'s illustration, the organisation and `count` faces, the 鎮圧対象 chip;
+        /// comes in at `at`, its line to the marker as the M.I.A cards'.</summary>
+        public void AddTarget(OperatorData op, int count, float at)
+        {
+            if (op == null) return;
+            gameObject.SetActive(true);
+            transform.SetAsLastSibling();
+            var theme = UITheme.Current;
+            var k = new Card { at = at, right = true, w = TargetW, h = TargetH };
+
+            k.line = HudKit.NewRect("DecoLineTarget", root);
+            k.line.anchorMin = k.line.anchorMax = new Vector2(.5f, .5f); k.line.pivot = new Vector2(0f, .5f);
+            HudKit.AddImage(k.line, new Color(MiaRed.r, MiaRed.g, MiaRed.b, .85f));
+            k.dot = HudKit.NewRect("DecoDotTarget", root);
+            k.dot.anchorMin = k.dot.anchorMax = k.dot.pivot = new Vector2(.5f, .5f);
+            k.dot.sizeDelta = new Vector2(10f, 10f);
+            HudKit.AddImage(k.dot, MiaRed);
+
+            k.rt = HudKit.NewRect("TargetCard_" + op.key, root);
+            k.rt.anchorMin = k.rt.anchorMax = k.rt.pivot = new Vector2(1f, 1f);
+            k.pos = new Vector2(-SideX, -TargetTop);
+            k.rt.anchoredPosition = k.pos; k.rt.sizeDelta = new Vector2(TargetW, TargetH);
+            k.group = k.rt.gameObject.AddComponent<CanvasGroup>();
+            HudKit.AddImage(k.rt, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .94f));
+            k.rt.gameObject.AddComponent<CutCornerGraphic>().Set(14f, CutCornerGraphic.Corners.Mockup);
+            var stripe = HudKit.NewRect("DecoStripe", k.rt);
+            UILayout.Place(stripe, 0f, 0f, 6f, TargetH);
+            HudKit.AddImage(stripe, MiaRed);
+
+            var artBack = HudKit.NewRect("DecoArtBack", k.rt);
+            UILayout.Place(artBack, 18f, 14f, TargetW - 32f, TargetArtH);
+            HudKit.AddImage(artBack, Color.black);   // (the illustration's own ground)
+            artBack.gameObject.AddComponent<RectMask2D>();
+            var art = HudKit.NewRect("Art", artBack);
+            HudKit.Stretch(art);
+            var artImg = art.gameObject.AddComponent<Image>();
+            artImg.sprite = OperatorArt.Body(op.key); artImg.preserveAspect = true; artImg.raycastTarget = false;
+            artImg.enabled = artImg.sprite != null;
+
+            float y = 14f + TargetArtH + 10f;
+            var name = HudKit.AddText(k.rt, op.DisplayName, 28f, Color.white, true, TextAlignmentOptions.TopLeft, "Name", UITheme.TextRole.Display);
+            name.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(name.rectTransform, 18f, y, TargetW - 36f, 34f);
+            var sub = HudKit.AddText(k.rt, op.kr + " · 武装組織の構成員", 14f, theme.paper2, true, TextAlignmentOptions.TopLeft, "Sub", UITheme.TextRole.Body);
+            sub.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(sub.rectTransform, 18f, y + 36f, TargetW - 36f, 20f);
+            var st = HudKit.AddText(k.rt, "鎮圧対象 · " + count + "名", 16f, theme.acc, true, TextAlignmentOptions.TopLeft, "Status", UITheme.TextRole.Body);
+            st.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(st.rectTransform, 18f, y + 60f, TargetW - 36f, 24f);
+            int shown = Mathf.Min(count, 7);   // (as many faces as fit across the card)
+            for (int i = 0; i < shown; i++)
+            {
+                var slot = HudKit.NewRect("Portrait" + i, k.rt);   // (the paper behind it; ApplyFace puts the face in as a child)
+                UILayout.Place(slot, 18f + i * (TargetFace + TargetFaceGap), y + 90f, TargetFace, TargetFace);
+                var img = HudKit.AddImage(slot, Color.Lerp(theme.paper2, theme.ink, .2f));
+                slot.gameObject.AddComponent<RectMask2D>();
+                OperatorArt.ApplyFace(img, op.key);
+            }
+
+            k.chip = HudKit.NewRect("Chip", k.rt);
+            k.chip.anchorMin = k.chip.anchorMax = k.chip.pivot = new Vector2(1f, 1f);
+            k.chip.anchoredPosition = new Vector2(-22f, -22f); k.chip.sizeDelta = new Vector2(92f, 28f);
+            HudKit.AddImage(k.chip, MiaRed);
+            k.chip.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 6f);
+            var ct = HudKit.AddText(k.chip, "TARGET", 14f, Color.white, true, TextAlignmentOptions.Center, "Text", UITheme.TextRole.Display);
+            HudKit.Stretch(ct.rectTransform);
+
+            cards.Add(k);
+            Pose(k, -1f, Vector2.zero, false);
+        }
+
+        /// <summary>Previews: every card settled.</summary>
+        public void PoseSettled() { for (int i = 0; i < cards.Count; i++) Pose(cards[i], 9f, Vector2.zero, false); }
+
         /// <summary>Starts the fade-out at `t` (hologram clock).</summary>
         public void Hide(float t) { if (hideAt < 0f) hideAt = t; }
 
@@ -165,8 +243,8 @@ namespace Blindside.Cinematic
 
             // the leader line: from the card's inner edge (its vertical middle) out to the marker
             var rect = root.rect;
-            float edgeX = k.right ? rect.width * .5f + k.rt.anchoredPosition.x - CardW : -rect.width * .5f + k.rt.anchoredPosition.x + CardW;
-            var from = new Vector2(edgeX, rect.height * .5f + k.rt.anchoredPosition.y - CardH * .5f);
+            float edgeX = k.right ? rect.width * .5f + k.rt.anchoredPosition.x - k.w : -rect.width * .5f + k.rt.anchoredPosition.x + k.w;
+            var from = new Vector2(edgeX, rect.height * .5f + k.rt.anchoredPosition.y - k.h * .5f);
             float lp = s < .1f ? 0f : UIEase.Tactical(Mathf.Clamp01((s - .1f) / LineTime));
             bool lineOn = markerOn && lp > 0f;
             if (k.line.gameObject.activeSelf != lineOn) k.line.gameObject.SetActive(lineOn);

@@ -50,7 +50,7 @@ namespace Blindside.Integration
             ctx = null; units = null;
             if (root != null) Destroy(root.gameObject);
             root = null;
-            cams.Clear(); gases.Clear(); mirrorStrips.Clear();
+            cams.Clear(); gases.Clear(); smokes.Clear(); mirrorStrips.Clear();
             mirrorMat = null;   // re-made per match: its opacity depends on the side
         }
 
@@ -63,7 +63,43 @@ namespace Blindside.Integration
             float t = Time.unscaledTime * 1000f;
             SyncCams(t);
             SyncGas(t);
+            SyncSmoke(t);
             SyncMirrors();
+        }
+
+        // ---------------- smoke screens (スモーク弾) ----------------
+        static readonly Color SmokeGrey = new Color32(0xb8, 0xbe, 0xc6, 0xff);
+        readonly Dictionary<SmokeCloud, GameObject> smokes = new Dictionary<SmokeCloud, GameObject>();
+
+        void SyncSmoke(float t)
+        {
+            foreach (var s in ctx.Smokes)
+            {
+                if (!smokes.TryGetValue(s, out var o)) { o = BuildSmoke(s); smokes[s] = o; }
+                o.transform.rotation = Quaternion.Euler(0f, -(t / 6000f) * Mathf.Rad2Deg, 0f);
+            }
+            if (smokes.Count == ctx.Smokes.Count) return;
+            List<SmokeCloud> gone = null;
+            foreach (var kv in smokes) if (!ctx.Smokes.Contains(kv.Key)) (gone ??= new List<SmokeCloud>()).Add(kv.Key);
+            if (gone != null) foreach (var s in gone) { Destroy(smokes[s]); smokes.Remove(s); }
+        }
+
+        GameObject BuildSmoke(SmokeCloud c)
+        {
+            var o = new GameObject("SmokeCloud");
+            o.transform.SetParent(root, false);
+            o.transform.position = GridSpace.GridToWorld(c.x, c.y, 0f);
+            var mat = Unlit(new Color(SmokeGrey.r, SmokeGrey.g, SmokeGrey.b, .3f), 3005);
+            for (int i = 0; i < 16; i++)
+            {
+                var s = Prim(PrimitiveType.Sphere, "Puff", o.transform, mat);
+                float a = i / 16f * 6.28f * 2f, r = c.r * (i < 8 ? .35f : .75f);
+                s.transform.localPosition = new Vector3(Mathf.Cos(a) * r, .6f + Random.value * .7f, -Mathf.Sin(a) * r);
+                float sc = (1f + Random.value * .5f) * 1.9f;
+                s.transform.localScale = new Vector3(sc, sc * .8f, sc);
+                s.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            return o;
         }
 
         // ---------------- cams ----------------

@@ -273,6 +273,7 @@ namespace Blindside.Turns
                 {
                     yield return WaitForPlayerDeploy();
                     if (Over) yield break;
+                    if (BeforeFirstRound != null) { var talk = BeforeFirstRound; BeforeFirstRound = null; yield return talk(); }
                 }
                 else if (Phase == MatchPhase.Prep && PlayerTeam == OperatorTeam.Defense)
                 {
@@ -308,7 +309,12 @@ namespace Blindside.Turns
             AwaitingPlayer = false;
         }
 
+        /// <summary>Played once the player's deployment is over, before round 1 (the first operation's opening talk).</summary>
+        public System.Func<IEnumerator> BeforeFirstRound;
+
         public const string DeployLogLine = "防衛チームは人質のいる部屋に集まっています。降下地点を決めてください。";
+        public const string DeployLogLineNoHostage = "防衛チームは建物内で待ち構えています。降下地点を決めてください。";
+        string DeployLine { get { foreach (var h in hostages) if (h != null) return DeployLogLine; return DeployLogLineNoHostage; } }
         /// <summary>Length of the DEPLOYMENT banner (UIPhaseBanner.duration) — input opens once it is gone
         /// (`showBanner('deploy').then(()=>{ G.busy=false; ... })`).</summary>
         const float DeployBannerSeconds = 1.9f - 0.3f;   // RunMatch has already waited 0.3s
@@ -325,13 +331,13 @@ namespace Blindside.Turns
         IEnumerator WaitForPlayerDeploy()
         {
             yield return new WaitForSecondsRealtime(DeployBannerSeconds);
-            HudLog.Add(DeployLogLine, HudLogType.Warn);
+            HudLog.Add(DeployLine, HudLogType.Warn);
             deployFinished = false;
             AwaitingDeploy = true;
             DeployOpened?.Invoke();
             while (!deployFinished && !Over) yield return null;
             AwaitingDeploy = false;
-            HudLog.Remove(DeployLogLine);
+            HudLog.Remove(DeployLine);
         }
 
         /// <summary>Ends the deployment; RunMatch moves on to round 1's attack phase.</summary>

@@ -109,13 +109,24 @@ namespace Blindside.Integration
         // ================================================================
         //  buildRoster()
         // ================================================================
+        int rosterBuilt;
+
+        // the squad has grown (a captive freed): the list is built again with it
+        void SyncRosterSize()
+        {
+            int n = 0;
+            foreach (var u in units) if (u.Team == side && !u.Captive) n++;
+            if (n != rosterBuilt) BuildRoster();
+        }
+
         void BuildRoster()
         {
             cardUnits.Clear();
             kitUnits.Clear();
             if ((roster == null && kitRoster == null) || units == null) return;
             var mine = new List<SimUnit>();
-            foreach (var u in units) if (u.Team == side) mine.Add(u);   // G.units.filter(u=>u.team===G.side)
+            foreach (var u in units) if (u.Team == side && !u.Captive) mine.Add(u);   // G.units.filter(u=>u.team===G.side); a captive joins the list once freed
+            rosterBuilt = mine.Count;
             if (kitRoster != null) { BuildKitRoster(mine); return; }
             var cards = roster.Build(mine.Count);
             for (int i = 0; i < cards.Count; i++)
@@ -173,6 +184,9 @@ namespace Blindside.Integration
             if (turns == null || units == null) return;
             var phase = turns.Phase;
             var selected = selection != null ? selection.SelectedUnit : null;
+            SyncRosterSize();
+            // the deployment's lines (the drop guidance) are for the first main quest only; the Tab window still records them
+            if (kitLog != null) kitLog.Muted = phase == MatchPhase.Deploy && !MatchBootstrap.FirstMainQuest;
 
             // ---- .rcard ----
             foreach (var kv in cardUnits)
@@ -221,6 +235,8 @@ namespace Blindside.Integration
                     default: main = "DEFENDER PHASE"; sub = "防衛チームの番" + who; break;
                 }
                 string mode = side == OperatorTeam.Attack ? "攻撃チーム · 人質救出作戦" : "防衛チーム · 人質死守作戦";
+                if (side == OperatorTeam.Attack && MatchBootstrap.RescueMatch) mode = "攻撃チーム · 隊員救出作戦";
+                else if (side == OperatorTeam.Attack && MatchBootstrap.HostageCount == 0) mode = "攻撃チーム · 制圧作戦";
                 if (TutorialGate.Active) { main = "TRAINING"; sub = "CQB訓練場 · 基礎訓練"; mode = "チュートリアル · 訓練中"; }   // (no phases in the tutorial)
                 if (kitTopbar != null)
                 {
@@ -252,14 +268,14 @@ namespace Blindside.Integration
                     body = $"① 人質{MatchBootstrap.HostageCount}人全員を救出地点{Blindside.Map.ExfilZone.RangeText}のいずれかまで護送\n② または防衛チームを全員制圧";
                 else if (side == OperatorTeam.Defense && MatchBootstrap.WinRule == Blindside.Map.MapData.WinExtract)
                     body = $"① {TurnManager.MaxRound}ラウンド終了まで人質を死守\n② または攻撃チームを全員制圧\n(防衛チームが全滅しても試合は続く)";
-                if (TutorialGate.Active) body = "① クラッシャーの指示に従って訓練を進める\n② 移動・射撃・視界・ドローン・壁の破壊を習得";
+                if (TutorialGate.Active) body = "① クラッシャーの指示に従って訓練を進める\n② 訓練の内容を習得";
                 if (MatchBootstrap.RescueMatch && side == OperatorTeam.Attack) body = "① 拘束された" + string.Join("・", MatchBootstrap.RescueKeys) + "を救出 (救出すると分隊に合流)\n② 防衛チームを全員制圧";
                 if (objectivePhaseLine && phase == MatchPhase.Prep) body += $"\n<color=#A37200><b>残り強化 {(selection != null ? selection.reinforceLeft : 10)}/10</b></color>";
                 if (objectivePhaseLine && phase == MatchPhase.Deploy) body += "\n<color=#A37200><b>建物の外の好きな位置に隊員を配置</b></color>";
 
                 var ally = new List<bool>(); var enemy = new List<bool>();
                 // G.units.some(u=>u.team===ft) — attackers don't exist yet during a defense-side preparation.
-                foreach (var u in units) { if (u.Team == side) ally.Add(u.Alive); else if (u.Placed || u.Airborne) enemy.Add(u.Alive); }
+                foreach (var u in units) { if (u.Team == side) { if (!u.Captive) ally.Add(u.Alive); } else if (u.Placed || u.Airborne) enemy.Add(u.Alive); }
                 if (enemy.Count == 0) for (int i = 0; i < 5; i++) enemy.Add(false);   // '<i class="off"></i>'.repeat(5)
                 if (kitTopbar != null) kitTopbar.SetObjective(body, ally, enemy);
                 else objective.Set(body, ally, enemy);

@@ -33,6 +33,8 @@ namespace Blindside.Progress
         public readonly List<UnitRecord> Lines = new List<UnitRecord>();
         /// <summary>Rounds the match took (set at its end).</summary>
         public int Rounds;
+        /// <summary>Surveillance cameras still standing at the end (set at its end) — the rank's challenge.</summary>
+        public int CamerasLeft;
         /// <summary>Every kill's helpers: (the killer's key, the helper's key) — Campaign's combat bond.</summary>
         public readonly List<(string killer, string helper)> Assists = new List<(string, string)>();
         /// <summary>Who spotted whom (a drone, a camera, a sensor of the same side): the spotter helps the kill too.</summary>
@@ -90,6 +92,7 @@ namespace Blindside.Progress
                 combat.OnShot += OnShot;
                 combat.OnResolved += OnResolved;
                 combat.OnKill += OnKill;
+                combat.OnSupportFire += OnSupportFire;
             }
             if (abilities != null)
             {
@@ -100,7 +103,7 @@ namespace Blindside.Progress
 
         public void Unbind()
         {
-            if (combat != null) { combat.OnShot -= OnShot; combat.OnResolved -= OnResolved; combat.OnKill -= OnKill; }
+            if (combat != null) { combat.OnShot -= OnShot; combat.OnResolved -= OnResolved; combat.OnKill -= OnKill; combat.OnSupportFire -= OnSupportFire; }
             if (abilities != null) { abilities.OnBreachComplete -= OnBreach; abilities.OnGasDamage -= OnGas; }
             combat = null; abilities = null;
         }
@@ -127,6 +130,18 @@ namespace Blindside.Progress
         }
 
         void OnKill(ICombatUnit victim, ICombatUnit killer) => Kill(victim, killer);
+
+        /// <summary>Who has fired 支援射撃 since the last experience beat (ProgressLive.Flush gives them theirs with the two fighters').</summary>
+        public readonly List<object> SupportSinceFlush = new List<object>(2);
+
+        // a 支援射撃 round counts as an attack, hit or miss (a volley's is counted by OnResolved)
+        void OnSupportFire(ICombatUnit who, ICombatUnit target)
+        {
+            var a = Of(who);
+            if (a == null) return;
+            a.attacks++;
+            if (!SupportSinceFlush.Contains(who)) SupportSinceFlush.Add(who);
+        }
 
         void OnBreach(IAbilityUnit unit, Blindside.Map.WallPanel panel, Blindside.Map.TileType state, bool wasReinforced)
         {

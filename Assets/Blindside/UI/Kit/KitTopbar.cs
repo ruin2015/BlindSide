@@ -212,7 +212,7 @@ namespace Blindside.UI
         /// <summary>Builds the bar's parts on this object (once; the prefab holds only the root).</summary>
         public void Build()
         {
-            if (logo != null) return;
+            if (logo != null) { HideLogo(); return; }
             var theme = UITheme.Current;
             var root = (RectTransform)transform;
             root.anchorMin = new Vector2(0f, 1f); root.anchorMax = new Vector2(1f, 1f); root.pivot = new Vector2(.5f, 1f);
@@ -289,7 +289,11 @@ namespace Blindside.UI
             LayoutPips(5, 5);
 
             baseY[0] = logo.anchoredPosition.y; baseY[1] = phase.anchoredPosition.y; baseY[2] = objective.anchoredPosition.y;
+            HideLogo();
         }
+
+        // the battle screen no longer shows the BLINDSIDE plate (kept built, switched off: set active again to bring it back)
+        void HideLogo() { if (logo.gameObject.activeSelf) logo.gameObject.SetActive(false); }
 
         RectTransform Block(string name, Vector2 anchor, float x, float y, float w, float h, out CanvasGroup g)
         {

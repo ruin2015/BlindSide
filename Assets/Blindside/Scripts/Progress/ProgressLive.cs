@@ -55,6 +55,9 @@ namespace Blindside.Progress
             gains.Clear();
             Give(record.Of(a));
             if (b != a) Give(record.Of(b));
+            // the allies who joined in with 支援射撃
+            foreach (var s in record.SupportSinceFlush) if (s != a && s != b) Give(record.Of(s));
+            record.SupportSinceFlush.Clear();
             return gains;
         }
 

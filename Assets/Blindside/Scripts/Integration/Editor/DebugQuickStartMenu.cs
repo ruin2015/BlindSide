@@ -47,5 +47,23 @@ namespace Blindside.UITools.EditorTools
 
         [MenuItem(RescuePath, true)]
         static bool ValidateRescue() { return !Application.isPlaying; }
+
+        // Blindside > Debug > Hub Tour / Training: (Play mode) the HQ's tour whatever the save says, and each part of the tutorial
+        [MenuItem("Blindside/Debug/Hub Tour")]
+        public static void HubTour() { Blindside.Hub.HubTutorial.Force = true; Blindside.Flow.SceneFlow.GoHub(); }
+        [MenuItem("Blindside/Debug/Hub Tour", true)]
+        static bool ValidateHubTour() { return Application.isPlaying; }
+
+        static void Training(Blindside.Tutorial.TutorialSegment part) { Blindside.Tutorial.TutorialDirector.Segment = part; Blindside.Flow.SceneFlow.GoTutorial(); }
+
+        [MenuItem("Blindside/Debug/Training/Walls")] public static void TrainWalls() => Training(Blindside.Tutorial.TutorialSegment.Walls);
+        [MenuItem("Blindside/Debug/Training/Drone")] public static void TrainDrone() => Training(Blindside.Tutorial.TutorialSegment.Drone);
+        [MenuItem("Blindside/Debug/Training/Frag")] public static void TrainFrag() => Training(Blindside.Tutorial.TutorialSegment.Frag);
+        [MenuItem("Blindside/Debug/Training/Flash")] public static void TrainFlash() => Training(Blindside.Tutorial.TutorialSegment.Flash);
+        [MenuItem("Blindside/Debug/Training/Smoke")] public static void TrainSmoke() => Training(Blindside.Tutorial.TutorialSegment.Smoke);
+        [MenuItem("Blindside/Debug/Training/Breach")] public static void TrainBreach() => Training(Blindside.Tutorial.TutorialSegment.Breach);
+        [MenuItem("Blindside/Debug/Training/Walls", true)] [MenuItem("Blindside/Debug/Training/Drone", true)] [MenuItem("Blindside/Debug/Training/Frag", true)]
+        [MenuItem("Blindside/Debug/Training/Flash", true)] [MenuItem("Blindside/Debug/Training/Smoke", true)] [MenuItem("Blindside/Debug/Training/Breach", true)]
+        static bool ValidateTraining() { return Application.isPlaying; }
     }
 }

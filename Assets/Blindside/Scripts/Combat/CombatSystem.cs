@@ -36,7 +36,9 @@ namespace Blindside.Combat
     {
         public readonly bool Blocked;
         public readonly int Walls;
-        public ShotPath(bool blocked, int walls) { Blocked = blocked; Walls = walls; }
+        /// <summary>The line goes through a smoke screen (スモーク弾): harder to hit.</summary>
+        public readonly bool Smoked;
+        public ShotPath(bool blocked, int walls, bool smoked = false) { Blocked = blocked; Walls = walls; Smoked = smoked; }
     }
 
     public readonly struct ShotResult
@@ -150,6 +152,8 @@ namespace Blindside.Combat
         /// the gun's accuracyFalloffPerTile per tile past its range (the source's 12 for its four weapons),
         /// -22 per wall in the way, +15 on a preemptive shot. Clamped 5..95.
         /// </summary>
+        public const float SmokePenalty = 30f;
+
         public static int HitChance(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt)
         {
             WeaponData w = attacker.Weapon;
@@ -158,6 +162,7 @@ namespace Blindside.Combat
             if (w.breach && d <= 2.5f) c += 15f;
             if (d > w.range) c -= (d - w.range) * w.accuracyFalloffPerTile;
             c -= path.Walls * 22f;
+            if (path.Smoked) c -= SmokePenalty;
             if (preempt) c += 15f;
             if (attacker is ICombatModifiers m)
             {
@@ -176,6 +181,7 @@ namespace Blindside.Combat
         public static int HeadshotChance(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt)
         {
             if (target == null || target.IsHostage) return 0;
+            if (target is IItemEffects fx && fx.Flashed) return 100;   // (閃光弾: every hit is a headshot)
             WeaponData w = attacker.Weapon;
             float d = Distance(attacker, target);
             float c = HeadshotBase.TryGetValue(w.ClassKey, out int b) ? b : 8;
@@ -207,6 +213,7 @@ namespace Blindside.Combat
             float dx = x1 - x0, dy = y1 - y0;
             int n = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(dx * dx + dy * dy) / .1f));
             int walls = 0, last = -1;
+            bool smoked = false;
             int s = JsRoundI(y0) * W + JsRoundI(x0), e = JsRoundI(y1) * W + JsRoundI(x1);
             for (int i = 1; i < n; i++)
             {
@@ -216,6 +223,7 @@ namespace Blindside.Combat
                 bool inside = cx >= 0 && cy >= 0 && cx < W && cy < H;          // TL(): 'void' off the map
                 var t = inside ? map.TileAt(cx, cy) : TileType.Hard;
                 if (!inside || t == TileType.Hard) return new ShotPath(true, walls);
+                if (map.SmokeCells.Count > 0 && map.SmokeCells.Contains(k)) smoked = true;
                 if (t == TileType.Wall)
                 {
                     int pi = map.PanelIndexAt[k];
@@ -224,7 +232,7 @@ namespace Blindside.Combat
                     walls++;
                 }
             }
-            return new ShotPath(false, walls);
+            return new ShotPath(false, walls, smoked);
         }
 
         static int JsRoundI(float v) => Mathf.FloorToInt(v + 0.5f);   // JS Math.round (halves up)
@@ -251,6 +259,7 @@ namespace Blindside.Combat
         /// <summary>A kill from outside the gun path (a thrown grenade): every OnKill listener reacts as to a shot kill.</summary>
         public void ReportKill(ICombatUnit target, ICombatUnit killer) => OnKill?.Invoke(target, killer);
         public event System.Action<ShotEvent> OnShot;                                 // every shot: who→whom, hit, headshot, damage
+        public event System.Action<ICombatUnit, ICombatUnit> OnSupportFire;           // an ally joins in with 支援射撃: who, target
 
         /// <summary>
         /// Port of shoot(a,t,o). `path` is the attacker→target line trace the caller already has
@@ -291,7 +300,7 @@ namespace Blindside.Combat
             float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
             bool blocked = ShieldBlocks(target, attacker);
             // 弱点露出 (GHOST's co-op): twice the crit chance and twice the damage
-            if (CoopRules.IsExposed(target)) { hsChance = Mathf.Min(95, hsChance * 2); dmg *= 2; }
+            if (CoopRules.IsExposed(target)) { hsChance = Mathf.Min(hsChance >= 100 ? 100 : 95, hsChance * 2); dmg *= 2; }
 
             // combatShow(a,t,chance,dmg,w.shots,o.preempt,tr.walls,blocked,blocked?0:hsC); await sleep(700);
             var pres = Presenter;
@@ -327,6 +336,7 @@ namespace Blindside.Combat
                         dealt = d;
                         hits++; total += d;
                         target.HP = Mathf.Max(FloorHP, target.HP - d);
+                        if (target.HP <= 0 && target is IItemEffects rv && rv.ReviveHp > 0) rv.Revive();   // (除細動器: it never goes down)
                         if (crit) headshots++;
                         if (!down)
                         {
@@ -407,6 +417,7 @@ namespace Blindside.Combat
             var path = TraceLine(a, t);
             float dist = Distance(a, t);
             if (path.Blocked || dist > a.Weapon.range + 4f) yield break;
+            OnSupportFire?.Invoke(a, t);
             a.Facing = Mathf.Atan2(t.Y - a.Y, t.X - a.X);
             a.View?.SetFacing(a.Facing);
             OnShotStart?.Invoke(a, t);
@@ -414,7 +425,7 @@ namespace Blindside.Combat
             int chance = HitChance(a, t, path, false), hs = HeadshotChance(a, t, path, false);
             int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(a, dist));
             if (a is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
-            if (CoopRules.IsExposed(t)) { hs = Mathf.Min(95, hs * 2); dmg *= 2; }
+            if (CoopRules.IsExposed(t)) { hs = Mathf.Min(hs >= 100 ? 100 : 95, hs * 2); dmg *= 2; }
             bool blocked = ShieldBlocks(t, a);
             bool hit = Blindside.Core.GameRng.Range(0f, 100f) < chance, crit = false;
             int dealt = 0;
@@ -431,7 +442,7 @@ namespace Blindside.Combat
             }
             OnShotFired?.Invoke(a, t, hit, crit);
             OnShot?.Invoke(new ShotEvent(a, t, 0, 1, hit, crit, hit && blocked, dealt));
-            HudLog.Add($"{Kr(a)}: 追撃 → {Kr(t)} {(hit && !blocked ? dealt + " ダメージ" + (crit ? " (ヘッドショット)" : "") : "外れ")}", HudLog.TeamType(a.Team));
+            HudLog.Add($"{Kr(a)}: 支援射撃 → {Kr(t)} {(hit && !blocked ? dealt + " ダメージ" + (crit ? " (ヘッドショット)" : "") : "外れ")}", HudLog.TeamType(a.Team));
             yield return Sleep(.35f);
             if (t.HP <= 0)
             {
@@ -484,25 +495,78 @@ namespace Blindside.Combat
         /// on a copy of GameRng (nothing is drawn from the real stream, no unit is changed). As long as nothing else draws from GameRng
         /// before the exchange starts, the forecast and the fight are the same. Keep it in step with <see cref="Shoot"/> and ExchangeBody.
         /// </summary>
+        /// <param name="pursuit">the match's <see cref="PursuitAllies"/> (null: no 追撃)</param>
+        /// <param name="pursuits">filled with the 追撃 rounds that will be fired, in order</param>
         public static void ForecastExchange(MapGrid map, ICombatUnit first, ICombatUnit second, bool preempt,
-                                            out VolleyOutcome opening, out VolleyOutcome reply, out int firstHp, out int secondHp, bool sureHit = false)
+                                            out VolleyOutcome opening, out VolleyOutcome reply, out int firstHp, out int secondHp, bool sureHit = false,
+                                            System.Action<ICombatUnit, ICombatUnit, List<ICombatUnit>> pursuit = null, List<PursuitOutcome> pursuits = null)
         {
             var r = Blindside.Core.GameRng.Peek();
             firstHp = first.HP; secondHp = second.HP;
             reply = default;
+            pursuits?.Clear();
             opening = ForecastVolley(first, second, TraceLine(map, first.X, first.Y, second.X, second.Y), preempt, ref secondHp, r, sureHit);
+            if (opening.fired && !opening.blocked && firstHp > 0 && secondHp > 0) ForecastPursuit(map, first, second, ref secondHp, r, pursuit, pursuits);
             // ExchangeBody: the return fire when both still stand and the target can shoot back
             if (firstHp > 0 && secondHp > 0 && !second.IsHostage)
             {
                 var back = TraceLine(map, second.X, second.Y, first.X, first.Y);
-                if (CanShoot(second, first, back)) reply = ForecastVolley(second, first, back, false, ref firstHp, r);
+                if (CanShoot(second, first, back))
+                {
+                    reply = ForecastVolley(second, first, back, false, ref firstHp, r);
+                    if (reply.fired && !reply.blocked && firstHp > 0 && secondHp > 0) ForecastPursuit(map, second, first, ref firstHp, r, pursuit, pursuits);
+                }
+            }
+        }
+
+        /// <summary>One 追撃 round as it is going to play out.</summary>
+        public struct PursuitOutcome
+        {
+            public ICombatUnit who;
+            public bool hit, crit, blocked;
+            public int damage;
+        }
+
+        static readonly List<ICombatUnit> forecastPursuers = new List<ICombatUnit>(4);
+
+        // what Shoot's 追撃 does after a volley (PursuitShot's rolls, on the copy of the stream)
+        static void ForecastPursuit(MapGrid map, ICombatUnit attacker, ICombatUnit target, ref int targetHp, System.Random r,
+                                    System.Action<ICombatUnit, ICombatUnit, List<ICombatUnit>> pursuit, List<PursuitOutcome> into)
+        {
+            if (pursuit == null) return;
+            forecastPursuers.Clear();
+            pursuit(attacker, target, forecastPursuers);
+            for (int i = 0; i < forecastPursuers.Count && i < CoopRules.MaxPursuers && targetHp > 0; i++)
+            {
+                var a = forecastPursuers[i];
+                if (!a.Alive || a.Weapon == null) continue;
+                if (a.ShieldUp && !CoopRules.CanFireShielded(a)) continue;
+                var path = TraceLine(map, a.X, a.Y, target.X, target.Y);
+                float dist = Distance(a, target);
+                if (path.Blocked || dist > a.Weapon.range + 4f) continue;
+                int chance = HitChance(a, target, path, false), hs = HeadshotChance(a, target, path, false);
+                int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(a, dist));
+                if (a is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+                if (CoopRules.IsExposed(target)) { hs = Mathf.Min(hs >= 100 ? 100 : 95, hs * 2); dmg *= 2; }
+                var o = new PursuitOutcome { who = a, blocked = ShieldBlocks(target, a) };
+                o.hit = (float)r.NextDouble() * 100f < chance;
+                if (o.hit && !o.blocked)
+                {
+                    o.crit = (float)r.NextDouble() * 100f < hs;
+                    int d = o.crit ? dmg * 2 : dmg;
+                    float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
+                    if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
+                    o.damage = d;
+                    targetHp = Mathf.Max(FloorHP, targetHp - d);
+                }
+                into?.Add(o);
             }
         }
 
         static VolleyOutcome ForecastVolley(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, ref int targetHp, System.Random r, bool sureHit = false)
         {
             var o = new VolleyOutcome();
-            if (attacker.ShieldUp) return o;
+            if (attacker.ShieldUp && !CoopRules.CanFireShielded(attacker)) return o;
             WeaponData w = attacker.Weapon;
             if (w == null || path.Blocked || Distance(attacker, target) > w.range + 4f) return o;
             o.fired = true; o.preempt = preempt;
@@ -513,8 +577,10 @@ namespace Blindside.Combat
             int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(o.chance + gear.firstAcc, 5, 95) : o.chance;
             int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(attacker, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
             if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+            if (CoopRules.IsExposed(target)) { o.hsChance = Mathf.Min(o.hsChance >= 100 ? 100 : 95, o.hsChance * 2); dmg *= 2; }
             o.dmg = dmg;
             float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
+            int revive = target is IItemEffects rv ? rv.ReviveHp : 0;
             o.blocked = ShieldBlocks(target, attacker);
             for (int i = 0; i < o.shots; i++)
             {
@@ -526,6 +592,7 @@ namespace Blindside.Combat
                 if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
                 o.hits++; o.total += d; if (crit) o.crits++;
                 targetHp = Mathf.Max(FloorHP, targetHp - d);
+                if (targetHp <= 0 && revive > 0) { targetHp = revive; revive = 0; }
             }
             if (sureHit) o.chance = 100;
             return o;

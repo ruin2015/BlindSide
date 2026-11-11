@@ -3,6 +3,9 @@
 // TutorialGate and talking through TutorialRadio. Every lesson that the player can fail resets the unit and tries again.
 //   stage 1  greeting · movement: a demonstration path draws itself and is walked, then a straight move to a marked point, then a
 //            move round the low wall that has to be drawn by hand (no click auto path)
+// The tutorial comes in parts (TutorialSegment): the first one (moving, shooting, sight) is cut short by the emergency call just as CRUSHER
+// starts on walls and leads into the first operation; the walls follow after the HQ's tour (HubTutorial); every part, and one lesson per
+// gadget, can be played again from the training room, and those end back at the HQ.
 // Lines are CRUSHER's (Japanese, ko_ja_dictionary / glossary_ja terms).
 using System.Collections;
 using System.Collections.Generic;
@@ -17,6 +20,9 @@ using Blindside.UI;
 
 namespace Blindside.Tutorial
 {
+    /// <summary>Which part the next tutorial match plays: First is the opening, ending in the operation; the others end at the HQ.</summary>
+    public enum TutorialSegment { First, Basics, Walls, Drone, Frag, Flash, Smoke, Breach }
+
     public class TutorialDirector : MonoBehaviour
     {
         // ---- CRUSHER's lines ----
@@ -34,6 +40,8 @@ namespace Blindside.Tutorial
         public const string LCam = "練習として、\nそこにある監視カメラを破壊してみろ。";
         public const string LCamFail = "止まっているもの一つ当てられないで、\nどうやって動く敵を撃つつもりだ？";
         public const string LCamDone = "そうだ。監視カメラは敵に情報を渡す。\n破壊しておくに越したことはない。";
+        public const string LForecast = "敵に狙いを合わせると、\n攻撃予測の画面が出る。\nまずは見方を教えてやる。";
+        public const string LForecastDone = "敵を狙うたびにこの画面が出る。\nよく見てから撃て。";
         public const string LDuel = "次は対人戦だ。\n練習として、俺を撃ってみろ。";
         public const string LDuelFail = "迷っているのか？ そんな気持ちで、\nどうやって戦場に立つつもりだ？";
         public const string LDuelDone = "いいだろう。\nこうして敵と撃ち合うことができる。";
@@ -48,8 +56,10 @@ namespace Blindside.Tutorial
         public const string LHide = "俺が隠れてみるから、\n俺の視界を避けて移動し、\n攻撃してみろ。";
         public const string LHideFail = "どこを見ている？\n俺はここだ。";
         public const string LHideDone = "いいだろう。どちらが先に\n敵を視認したかで、先制攻撃が決まる。\n気をつけろ。";
-        public const string LLock = "視界を固定したまま\n移動することもできる。やってみろ。";
+        public const string LLock = "「視界変更」で向きを決めて\n左クリックすると、\nその向きで視界を固定できる。";
+        public const string LLockTry = "視界を固定したまま\n移動してみろ。";
         public const string LLockDone = "そうだ。視界を固定すれば、\n警戒すべき方向を見たまま動ける。";
+        public const string LLockOff = "固定をやめるときは、\nもう一度「視界変更」を開いて\n「視界固定 解除」を押せ。";
         public const string LDrone1 = "俺たちにはドローンという装備がある。\nこれを使えば、建物の内部を偵察できる。";
         public const string LDrone2 = "俺が隠れてみるから、\nドローンで俺の位置を突き止めてみろ。";
         public const string LDroneDone = "いいだろう。こうして敵の位置を\n把握してから突入するんだ。";
@@ -61,9 +71,27 @@ namespace Blindside.Tutorial
         public const string LBreach6 = "そうだ、お前の能力なら\n強化壁を破壊できる。やってみろ。";
         public const string LBreach7 = "視界が広がっただろう？\nもう一度使えば突入までできる。\nやってみろ。";
         public const string LBreach8 = "こうして壁を破壊して、\n視界を広げていけ。";
-        public const string LEnd1 = "俺が教えられるのはここまでだ。";
-        public const string LRadio = "現在、テロリストが民間人1名を拉致。\n速やかに移動されたし。";
-        public const string LFinal = "よし、新入り。いよいよ実戦だ。\n期待しているぞ。";
+        public const string LWallsCut = "よし、次は壁に……";
+        public const string LRadio = "現在、テロリスト{0}名が建物を占拠。\n速やかに移動されたし。";
+        public const string LCut1 = "チッ、タイミングの悪い……";
+        public const string LCut2 = "まずは作戦からだ。\n説明は戻ってからする。";
+        public const string LWallsResume = "さて、途中だった壁の話だ。";
+        public const string LFrag1 = "破片手榴弾は、投げてから三秒後に爆発する。\n中心に近いほどダメージが大きい。";
+        public const string LFrag2 = "壁に当たると跳ね返るから気をつけろ。\nダミーの近くに投げてみろ。";
+        public const string LFragFail = "遠すぎる。\nもっとダミーの近くに落とせ。";
+        public const string LFragDone = "いいだろう。爆風は近くの壁も半壊させる。\n敵が固まっている場所に投げ込め。";
+        public const string LFlash1 = "閃光弾は、範囲内にいる者の\n視界を奪う。敵も味方も関係ない。";
+        public const string LFlash2 = "食らった者の命中率は大きく下がり、\n被弾は必ずヘッドショットになる。";
+        public const string LFlash3 = "俺に向かって投げてみろ。";
+        public const string LFlashFail = "俺に届いていないぞ。\nもっと近くに投げろ。";
+        public const string LFlashDone = "そうだ。味方を巻き込まないよう、\n距離には気をつけろ。";
+        public const string LSmoke1 = "スモーク弾は煙幕を張る。\n煙の向こうは見えなくなり、\n煙越しの射撃は当たりにくくなる。";
+        public const string LSmoke2 = "目標地点に投げてみろ。";
+        public const string LSmokeFail = "目標地点から離れている。\nもう一度だ。";
+        public const string LSmokeDone = "いいだろう。煙は次の自分のターンで晴れる。\n敵の視線を切って前に出ろ。";
+        public const string LCharge1 = "粘着爆薬は、隣接した通常の壁に設置して\n吹き飛ばすための装備だ。";
+        public const string LCharge2 = "そこの壁に設置してみろ。";
+        public const string LChargeDone = "いいだろう。能力がなくても、\nこれで突入口を作れる。";
         // ---- guide chips ----
         public const string GDrone = "「ドローン」をクリック";
         public const string GPickWall = "強化壁をクリック";
@@ -72,7 +100,6 @@ namespace Blindside.Tutorial
         public const string GWallUnbreakable = "破壊できない壁";
         public const string GWallBreakable = "破壊できる壁";
         public const string GView = "「視界変更」をクリック";
-        public const string GLock = "[F] 視界固定をオン";
         public const string GSelect = "フレアをクリック";
         public const string GMove = "「移動」をクリック";
         public const string GFire = "「攻撃」をクリック";
@@ -85,6 +112,8 @@ namespace Blindside.Tutorial
         public const string TFire = "左クリックで射撃";
         public const string TDraw = "左ボタンを押したままドラッグ";
         public const string TDrawOrClick = "ドラッグで経路 · クリックで自動経路";
+        public const string TThrow = "左クリックで投擲";
+        public const string TLock = "左クリックで視界固定";
 
         // ---- the objective card (right): what to do, and the controls that do it ----
         public const string OMove1 = "目標地点に向かって移動しよう";
@@ -96,6 +125,10 @@ namespace Blindside.Tutorial
         public const string OLock = "視界を固定したまま移動しよう";
         public const string ODrone = "ドローンでクラッシャーの\n位置を突き止めよう";
         public const string OLauncher = "能力で強化壁を破壊しよう";
+        public const string OFrag = "訓練用ダミーの近くに\n破片手榴弾を投げよう";
+        public const string OFlash = "クラッシャーの近くに\n閃光弾を投げよう";
+        public const string OSmoke = "目標地点にスモーク弾を投げよう";
+        public const string OCharge = "壁に粘着爆薬を設置しよう";
         public static readonly (string, string)[] CMove1 =
             { ("左クリック", "フレアを選択"), ("「移動」", "移動モードにする"), ("ドラッグ", "経路を描いて移動"), ("クリック", "自動経路で移動"), ("ESC", "キャンセル") };
         static readonly (string, string)[] CMove2 =
@@ -105,7 +138,7 @@ namespace Blindside.Tutorial
         static readonly (string, string)[] CHide =
             { ("左クリック", "フレアを選択"), ("「移動」", "視界を避けて経路を描く"), ("「攻撃」", "先に発見したら攻撃") };
         static readonly (string, string)[] CLock =
-            { ("「視界変更」", "向きを変える"), ("F", "視界固定をオン"), ("左クリック", "向きを確定"), ("「移動」", "向きを保って移動") };
+            { ("「視界変更」", "視界変更モードにする"), ("マウス", "向きを決める"), ("左クリック", "視界を固定"), ("「移動」", "向きを保って移動") };
         static readonly (string, string)[] CDrone =
             { ("左クリック", "フレアを選択"), ("「ドローン」", "ドローンを展開"), ("ドラッグ", "飛行経路を描く"), ("ESC", "キャンセル") };
 
@@ -151,6 +184,7 @@ namespace Blindside.Tutorial
             TutorialGate.ShotFinished -= OnShotFinished;
             if (sel != null && sel.Movement != null) sel.Movement.EncounterResolved -= OnEncounter;
             TutorialGate.DroneFinished -= OnDroneFinished;
+            TutorialGate.ThrowFinished -= OnThrowFinished;
             if (mb != null && mb.visionPolys != null) { mb.visionPolys.ForceShow = null; mb.visionPolys.ForceHide = null; mb.visionPolys.Refresh(); }
             if (entranceOn)
             {
@@ -221,8 +255,12 @@ namespace Blindside.Tutorial
             if (sel.Movement != null) { sel.Movement.EncounterResolved -= OnEncounter; sel.Movement.EncounterResolved += OnEncounter; }
             TutorialGate.DroneFinished -= OnDroneFinished;
             TutorialGate.DroneFinished += OnDroneFinished;
+            TutorialGate.ThrowFinished -= OnThrowFinished;
+            TutorialGate.ThrowFinished += OnThrowFinished;
             TutorialGate.BlockInput = true;
             TutorialGate.Allow();
+            segment = Segment;
+            Segment = TutorialSegment.First;
 
             // the training hall replaces the town
             if (stage == null) stage = TutorialStage.Apply(transform, mb.ActiveMap, MapLibrary.Current);
@@ -230,6 +268,7 @@ namespace Blindside.Tutorial
             // the camera on the yard (where the entrance shot hands over)
             var cam = BattlefieldCamera.Instance;
             if (cam != null) { cam.x = 6f; cam.y = 12.5f; cam.h = 20f; cam.Apply(); }
+            if (segment != TutorialSegment.First) { yield return RunSegment(); yield break; }
             if (StartStage <= 1) yield return Entrance();
             else
             {
@@ -258,21 +297,232 @@ namespace Blindside.Tutorial
                 crusher.Placed = true;
             }
             if (StartStage <= 3) yield return Stage3();
-            else
-            {
-                // (checks: CRUSHER where stage 3 leaves him)
-                crusher.MoveTo(TutorialMap.HideSpot.x, TutorialMap.HideSpot.y);
-                crusher.Facing = TutorialMap.HideFacing;
-            }
-            yield return Stage4();
-            yield return Ending();
+            yield return Emergency();
         }
 
-        // ================= stage 4: drone, breaching =================
-        IEnumerator Stage4()
+        // ================= the parts played after the opening =================
+        /// <summary>The part the next tutorial match plays (read and put back to First as it starts).</summary>
+        public static TutorialSegment Segment = TutorialSegment.First;
+        TutorialSegment segment;
+
+        IEnumerator RunSegment()
+        {
+            // (no entrance to fade the black in)
+            var fade = GameObject.Find("BlindsideCanvas/Fade");
+            var cg = fade != null ? fade.GetComponent<CanvasGroup>() : null;
+            if (cg != null) cg.alpha = 0f;
+            yield return Wait(.5f);
+            CombatSystem.FloorHP = 1;   // nobody falls in practice
+            flare.Items.Clear();        // (only the lesson's own item in the menu)
+            switch (segment)
+            {
+                case TutorialSegment.Basics:
+                    yield return Stage1();
+                    yield return Stage2();
+                    yield return Stage3();
+                    break;
+                case TutorialSegment.Walls: yield return WallsPart(); break;
+                case TutorialSegment.Drone: yield return DronePart(); break;
+                case TutorialSegment.Frag: yield return FragPart(); break;
+                case TutorialSegment.Flash: yield return FlashPart(); break;
+                case TutorialSegment.Smoke: yield return SmokePart(); break;
+                case TutorialSegment.Breach: yield return ChargePart(); break;
+            }
+            yield return BackToHub();
+        }
+
+        IEnumerator BackToHub()
+        {
+            skipping = true;
+            skipButton.gameObject.SetActive(false);
+            radio.Close();
+            guide.HideFrame(); guide.HideTarget();
+            BattlefieldCamera.InputLocked = true;
+            yield return FadeToBlack(.6f);
+            yield return Wait(.2f);
+            mb.TutorialToHub();   // (disarms this tutorial: this coroutine ends here)
+        }
+
+        /// <summary>FLARE on the yard's lesson spot, the camera on her.</summary>
+        IEnumerator AtYard()
+        {
+            flare.MoveTo(TutorialMap.Move2.x, TutorialMap.Move2.y);
+            var cam = BattlefieldCamera.Instance;
+            if (cam != null) cam.PanTo(flare.X - 2f, flare.Y, 300f);
+            yield return Wait(.4f);
+        }
+
+        // the walls: bullets and walls in the yard, then the three kinds and breaking them at the building
+        IEnumerator WallsPart()
+        {
+            yield return AtYard();
+            yield return Say(LWallsResume);
+            yield return WallsLesson();
+            radio.Close();
+            crusher.MoveTo(TutorialMap.HammerRoute[0].x, TutorialMap.HammerRoute[0].y);
+            crusher.Facing = Mathf.PI;
+            crusher.Placed = true;
+            yield return FlareToDroneStart();
+            flare.Facing = 0f;
+            flare.Acted = false; flare.Ended = false;
+            yield return BreachLesson();
+        }
+
+        IEnumerator DronePart()
+        {
+            yield return AtYard();
+            crusher.MoveTo(TutorialMap.HideSpot.x, TutorialMap.HideSpot.y);
+            crusher.Facing = TutorialMap.HideFacing;
+            crusher.Placed = true;
+            yield return DroneStage();
+        }
+
+        const float ThrowNear = 2f;
+
+        IEnumerator FragPart()
+        {
+            yield return AtYard();
+            var spot = TutorialMap.DuelSpot;
+            float toSpot = Mathf.Atan2(spot.y - flare.Y, spot.x - flare.X);
+            var dummy = TutorialDummy.Create(spot, toSpot + Mathf.PI, transform);
+            yield return Say(LFrag1);
+            yield return ThrowLesson(PlayerSelectionController.FragKey, spot, GridSpace.GridToWorld(spot.x, spot.y, 2.3f), GDummy, LFrag2, LFragFail,
+                                     land => Vector2.Distance(land, spot) <= ThrowNear, null, OFrag);
+            dummy.Hit(toSpot);
+            yield return Wait(1f);
+            yield return Say(LFragDone);
+            Destroy(dummy.gameObject);
+        }
+
+        IEnumerator FlashPart()
+        {
+            yield return AtYard();
+            var spot = TutorialMap.DuelSpot;
+            crusher.MoveTo(spot.x, spot.y);
+            crusher.Facing = Mathf.Atan2(flare.Y - crusher.Y, flare.X - crusher.X);
+            crusher.Placed = true;
+            yield return Say(LFlash1);
+            yield return Say(LFlash2);
+            yield return ThrowLesson(PlayerSelectionController.FlashKey, spot, Vector3.zero, GCrusher, LFlash3, LFlashFail, land => crusher.Flashed, crusher, OFlash);
+            yield return Say(LFlashDone);
+        }
+
+        IEnumerator SmokePart()
+        {
+            yield return AtYard();
+            var spot = TutorialMap.DuelSpot;
+            yield return Say(LSmoke1);
+            yield return ThrowLesson(PlayerSelectionController.SmokeKey, spot, GridSpace.GridToWorld(spot.x, spot.y, 1.9f), GTarget, LSmoke2, LSmokeFail,
+                                     land => Vector2.Distance(land, spot) <= ThrowNear, null, OSmoke);
+            yield return Say(LSmokeDone);
+        }
+
+        /// <summary>One throw: only that item is offered until a throw's landing satisfies `ok`; any other is answered with `failLine`.</summary>
+        IEnumerator ThrowLesson(string key, Vector2 at, Vector3 chipWorld, string chip, string instruction, string failLine,
+                                System.Func<Vector2, bool> ok, SimUnit follow, string goal)
+        {
+            string command = "item:" + key;
+            var gadget = Blindside.Hub.HubCatalog.GadgetOf(key);
+            string itemName = "「" + (gadget != null ? gadget.name : key) + "」";
+            string press = itemName + "をクリック";
+            var marker = TutorialMarker.Create(at, transform, UIPalette.Foe);
+            flare.Facing = Mathf.Atan2(at.y - flare.Y, at.x - flare.X);
+            yield return Say(instruction);
+            objective.Set(goal, ("左クリック", "フレアを選択"), (itemName, "投擲モードにする"), ("マウス", "方向と距離を決める"), ("左クリック", "投げる"), ("ESC", "キャンセル"));
+            while (true)
+            {
+                flare.Acted = false; flare.Ended = false; flare.MoveLeft = 0f;
+                if (!flare.Items.Contains(key)) flare.Items.Add(key);
+                TutorialGate.Allow(command);
+                radio.Say(instruction, false);
+                throwDone = false;
+                TutorialGate.BlockInput = false;
+                while (!throwDone)
+                {
+                    guide.TargetLabel(follow != null && follow.View != null ? follow.View.LabelPoint + Vector3.up * .5f : chipWorld, chip);
+                    PointGuide(command, press);
+                    yield return null;
+                }
+                TutorialGate.BlockInput = true;
+                TutorialGate.Allow();
+                guide.HideFrame();
+                yield return null;   // AfterAction re-selects the unit; take it away again
+                sel.Deselect();
+                yield return Wait(.4f);
+                if (ok(throwLand)) break;
+                yield return Say(failLine);
+                flare.Facing = Mathf.Atan2(at.y - flare.Y, at.x - flare.X);
+            }
+            objective.Hide();
+            guide.HideTarget();
+            Destroy(marker.gameObject);
+            flare.Acted = false; flare.Ended = false;
+        }
+
+        bool throwDone;
+        Vector2 throwLand;
+        void OnThrowFinished(SimUnit u, Vector2 land) { if (u == flare) { throwDone = true; throwLand = land; } }
+
+        /// <summary>粘着爆薬 on the ordinary wall beside FLARE: only that wall is offered; done when it is rubble.</summary>
+        IEnumerator ChargePart()
+        {
+            string key = PlayerSelectionController.BreachKey, command = "item:" + key;
+            var wall = TutorialMap.HammerWall;
+            flare.MoveTo(wall.x - 1f, wall.y);
+            flare.Facing = 0f;
+            var cam = BattlefieldCamera.Instance;
+            if (cam != null) cam.PanTo(flare.X, flare.Y, 300f);
+            yield return Wait(.4f);
+            yield return Say(LCharge1);
+            var map = mb.ActiveMap;
+            int panelId = map.Panels[map.PanelIndexAt[wall.y * MapGrid.Width + wall.x]].id;
+            TutorialGate.PanelFilter = id => id == panelId;
+            var marker = TutorialMarker.Create(wall, transform, UIPalette.Accent);
+            yield return Say(LCharge2);
+            var gadget = Blindside.Hub.HubCatalog.GadgetOf(key);
+            string itemName = "「" + (gadget != null ? gadget.name : key) + "」";
+            objective.Set(OCharge, ("左クリック", "フレアを選択"), (itemName, "設置モードにする"), ("左クリック", "壁を選ぶ"), ("ESC", "キャンセル"));
+            flare.Acted = false; flare.Ended = false; flare.MoveLeft = 0f;
+            flare.Items.Add(key);
+            TutorialGate.Allow(command);
+            radio.Say(LCharge2, false);
+            TutorialGate.BlockInput = false;
+            var wallTop = GridSpace.GridToWorld(wall.x, wall.y, 1.3f);
+            while (!(map.TileAt(wall.x, wall.y) == TileType.Rubble && !sel.Busy))
+            {
+                if (sel.Busy) guide.HideFrame();
+                else if (sel.InAbilityMode) guide.FrameWorld(wallTop, GPickBreakable);
+                else PointGuide(command, itemName + "をクリック");
+                yield return null;
+            }
+            TutorialGate.BlockInput = true;
+            TutorialGate.Allow();
+            TutorialGate.PanelFilter = null;
+            guide.HideFrame();
+            objective.Hide();
+            yield return null;
+            sel.Deselect();
+            Destroy(marker.gameObject);
+            yield return Wait(.6f);
+            yield return Say(LChargeDone);
+        }
+
+        /// <summary>FLARE walks to the spot outside the building's west door (north of the low wall: round its east end, never through it).</summary>
+        IEnumerator FlareToDroneStart()
+        {
+            var here = new Vector2(flare.X, flare.Y);
+            var toStart = here.y < TutorialMap.MoveWallY + .6f
+                ? new[] { here, new Vector2(TutorialMap.MoveWallX1 + 1.6f, here.y), new Vector2(TutorialMap.MoveWallX1 + 1.6f, 12f), TutorialMap.DroneStart }
+                : new[] { here, TutorialMap.DroneStart };
+            var cam = BattlefieldCamera.Instance;
+            if (cam != null) cam.PanTo(12f, 13.5f, 500f);
+            yield return WalkUnit(flare, toStart, 2.6f);
+        }
+
+        // ================= the drone =================
+        IEnumerator DroneStage()
         {
             var cam = BattlefieldCamera.Instance;
-            // ---- the drone ----
             if (droneCard == null) droneCard = TutorialDroneCard.Build(radio.canvas.transform);
             droneCard.Play();
             yield return Say(LDrone1);
@@ -283,17 +533,16 @@ namespace Blindside.Tutorial
             if (cam != null) cam.PanTo(12f, 13.5f, 500f);
             yield return WalkUnit(crusher, TutorialMap.DroneHideRoute, 2.6f);
             crusher.Facing = Mathf.Atan2(13f - crusher.Y, 14f - crusher.X);   // toward the door
-            // (north of the low wall: round its east end, never through it)
-            var here = new Vector2(flare.X, flare.Y);
-            var toStart = here.y < TutorialMap.MoveWallY + .6f
-                ? new[] { here, new Vector2(TutorialMap.MoveWallX1 + 1.6f, here.y), new Vector2(TutorialMap.MoveWallX1 + 1.6f, 12f), TutorialMap.DroneStart }
-                : new[] { here, TutorialMap.DroneStart };
-            yield return WalkUnit(flare, toStart, 2.6f);
+            yield return FlareToDroneStart();
             flare.Facing = 0f;
             yield return DroneLesson();
             yield return Say(LDroneDone);
+        }
 
-            // ---- walls ----
+        // ================= breaching =================
+        IEnumerator BreachLesson()
+        {
+            var cam = BattlefieldCamera.Instance;
             yield return Say(LBreach1);
             // the three kinds at a glance while he names them
             WallCard().Show(HWallKinds, TutorialWallCard.Kind.Reinforced, TutorialWallCard.Kind.Solid, TutorialWallCard.Kind.Breakable);
@@ -633,6 +882,7 @@ namespace Blindside.Tutorial
         {
             TutorialGate.BlockInput = true;
             TutorialGate.Allow();
+            EndForecastLesson();
             if (sel != null) sel.Deselect();
             if (radio != null) radio.Close();
             if (guide != null) { guide.HideFrame(); guide.HideTarget(); guide.HideCursor(); }
@@ -643,7 +893,8 @@ namespace Blindside.Tutorial
             BattlefieldCamera.InputLocked = true;
             yield return FadeToBlack(.6f);
             yield return Wait(.2f);
-            mb.TutorialToMainOperation();   // (disarms this tutorial: this coroutine ends here)
+            if (segment != TutorialSegment.First) mb.TutorialToHub();
+            else mb.TutorialToMainOperation();   // (disarms this tutorial: this coroutine ends here)
         }
 
         static IEnumerator FadeToBlack(float seconds)
@@ -656,21 +907,27 @@ namespace Blindside.Tutorial
             cg.alpha = 1f;
         }
 
-        // ================= the end: the alarm, the call, off to the real operation =================
-        IEnumerator Ending()
+        // ================= the emergency call: walls will have to wait, off to the real operation =================
+        IEnumerator Emergency()
         {
             skipping = true;   // (no skipping the last few lines: they lead into the operation anyway)
             skipButton.gameObject.SetActive(false);
-            yield return Say(LEnd1);
+            radio.Say(LWallsCut, false);   // (cut off in mid-sentence by the alarm)
+            yield return Wait(1.3f);
             radio.Close();
             if (siren == null) siren = TutorialSiren.Build(radio.canvas.transform);
             siren.OnPulse = Sfx.Alert;
             siren.Play();
             yield return Wait(1.1f);
             radio.SetSpeaker(true);
-            yield return Say(LRadio);
+            // (how many are in there: from the first operation's map)
+            var firstOp = Blindside.Progress.Campaign.FirstMain();
+            var firstMap = firstOp != null ? Blindside.Flow.MapCatalog.DataOf(firstOp.entry) : null;
+            int foes = firstMap != null ? (firstMap.terrorists != null ? firstMap.terrorists.Length : 0) + (firstMap.defenderStarts != null ? firstMap.defenderStarts.Length : 0) : MapData.DefenderKeys.Length;
+            yield return Say(string.Format(LRadio, foes));
             radio.SetSpeaker(false);
-            yield return Say(LFinal);
+            yield return Say(LCut1);
+            yield return Say(LCut2);
             radio.Close();
             guide.HideFrame(); guide.HideTarget();
 
@@ -699,6 +956,7 @@ namespace Blindside.Tutorial
 
             yield return LockLesson();
             yield return Say(LLockDone);
+            yield return Say(LLockOff);
             flare.LockFacing = false;
         }
 
@@ -759,32 +1017,32 @@ namespace Blindside.Tutorial
             flare.HP = flare.MaxHP; crusher.HP = crusher.MaxHP;
         }
 
-        /// <summary>VIEW → [F] lock → confirm the facing → MOVE: done when a move ends with the facing locked. MOVE is only offered once
+        /// <summary>VIEW → left click (fixes the view) → MOVE: done when a move ends with the facing locked. MOVE is only offered once
         /// the lock is on.</summary>
         IEnumerator LockLesson()
         {
             yield return Say(LLock);
             flare.LockFacing = false;
             flare.MoveLeft = TutorialMap.LockBudget; flare.Acted = false; flare.Ended = false;
-            radio.Say(LLock, false);
+            radio.Say(LLockTry, false);
             objective.Set(OLock, CLock);
             moveDone = false;
             TutorialGate.BlockInput = false;
+            bool wasLocked = false;
             while (true)
             {
                 bool locked = flare.LockFacing;
                 if (locked) TutorialGate.Allow("face", "move"); else TutorialGate.Allow("face");
+                // (the click that fixes the view built the menu before MOVE was allowed: built again with it)
+                if (locked && !wasLocked && !sel.Busy && !sel.InFacingMode) sel.SelectUnit(flare);
+                wasLocked = locked;
                 if (moveDone)
                 {
                     if (locked) break;
                     moveDone = false;   // (can't happen: MOVE waits for the lock)
                 }
-                if (sel.Busy || sel.InMoveMode) guide.HideFrame();
-                else if (sel.InFacingMode)
-                {
-                    var lockBtn = !locked ? sel.HintButtonRect("lock") : null;
-                    if (lockBtn != null) guide.FrameRect(lockBtn, GLock); else guide.HideFrame();
-                }
+                if (sel.InFacingMode && !sel.Busy) guide.MouseTip(TLock); else guide.HideMouseTip();
+                if (sel.Busy || sel.InMoveMode || sel.InFacingMode) guide.HideFrame();
                 else
                 {
                     var btn = sel.MenuButtonRect(locked ? "move" : "face");
@@ -845,9 +1103,12 @@ namespace Blindside.Tutorial
 
         IEnumerator Stage1()
         {
-            yield return Say(LWelcome);
-            yield return Say(LUnit);
-            yield return Say(LTeach);
+            if (segment == TutorialSegment.First)
+            {
+                yield return Say(LWelcome);
+                yield return Say(LUnit);
+                yield return Say(LTeach);
+            }
 
             // ---- movement: the demonstration ----
             yield return Say(LMoveIntro);
@@ -901,11 +1162,40 @@ namespace Blindside.Tutorial
             crusher.MoveTo(TutorialMap.DuelSpot.x, TutorialMap.DuelSpot.y);
             crusher.Facing = Mathf.Atan2(flare.Y - crusher.Y, flare.X - crusher.X);
             crusher.Placed = true;
+            flare.Facing = Mathf.Atan2(crusher.Y - flare.Y, crusher.X - flare.X);
+            yield return ForecastLesson();
             yield return FireLesson(TutorialMap.DuelSpot, Vector3.zero, GCrusher, LDuel, LDuelFail, (target, gadget) => target == crusher, crusher, ODuel);
             crusher.HP = crusher.MaxHP; flare.HP = flare.MaxHP;
             yield return Say(LDuelDone);
+        }
 
-            // ---- walls: one a bullet goes through, one it doesn't ----
+        // ---- the attack forecast: put up and gone through part by part before the first duel ----
+        TutorialForecastTour forecastTour;
+
+        IEnumerator ForecastLesson()
+        {
+            yield return Say(LForecast);
+            radio.Close();
+            guide.HideFrame(); guide.HideTarget();
+            var preview = sel.TutorialOpenForecast(flare, crusher);
+            yield return Wait(EngagePreview.XTo + .1f);
+            forecastTour = TutorialForecastTour.Build(transform);
+            yield return forecastTour.Run(preview);
+            EndForecastLesson();
+            yield return Wait(.2f);
+            yield return Say(LForecastDone);
+        }
+
+        void EndForecastLesson()
+        {
+            if (forecastTour != null) Destroy(forecastTour.CanvasObject);
+            forecastTour = null;
+            if (sel != null) sel.TutorialCloseForecast();
+        }
+
+        // ---- walls: one a bullet goes through, one it doesn't ----
+        IEnumerator WallsLesson()
+        {
             yield return Say(LWalls);
             radio.Close();
             yield return WallTour();
@@ -1087,9 +1377,9 @@ namespace Blindside.Tutorial
         /// or aiming.</summary>
         void PointGuide(string command, string label)
         {
-            string tip = sel.Busy ? null : sel.InFireMode ? TFire : sel.InMoveMode ? (TutorialGate.NoAutoPath ? TDraw : TDrawOrClick) : null;
+            string tip = sel.Busy ? null : sel.InFireMode ? TFire : sel.InThrowMode ? TThrow : sel.InMoveMode ? (TutorialGate.NoAutoPath ? TDraw : TDrawOrClick) : null;
             if (tip != null) guide.MouseTip(tip); else guide.HideMouseTip();
-            if (sel.Busy || sel.InMoveMode || sel.InFireMode) { guide.HideFrame(); return; }
+            if (sel.Busy || sel.InMoveMode || sel.InFireMode || sel.InThrowMode) { guide.HideFrame(); return; }
             var btn = sel.MenuButtonRect(command);
             if (btn != null) { guide.FrameRect(btn, label); return; }
             if (flare.View != null) guide.FrameWorld(flare.View.LabelPoint, GSelect);

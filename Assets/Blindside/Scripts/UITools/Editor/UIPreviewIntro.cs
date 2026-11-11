@@ -12,6 +12,16 @@ namespace Blindside.UITools.EditorTools
         public const string SubtitleTyping = "intro_subtitle_typing", SubtitleFull = "intro_subtitle", HoloWipe = "intro_holo_wipe";
         public const string Briefing = "intro_briefing", BriefingIn = "intro_briefing_in", BriefingGlitch = "intro_briefing_glitch";
         public const string TitleWide = "intro_title_wide", TitleGather = "intro_title_gather";
+        public const string TargetCard = "intro_target_card";
+
+        /// <summary>The first operation's hologram: the organisation's card (no 3D: over the plain backdrop).</summary>
+        public static void BuildTargetCard(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("IntroTarget_Canvas", UITheme.CanvasKind.Menu, 0);
+            var cards = IntroMiaCards.Build(canvas.transform);
+            cards.AddTarget(Blindside.Data.BuildAssetRegistry.Operator(Blindside.Map.MapData.TerroristKey), 5, 0f);
+            cards.PoseSettled();
+        }
 
         /// <summary>The OPERATION BLINDSIDE title (as the scene has it: BSTactical 48, centred at 60% height) `t` s into its gathering.</summary>
         public static void BuildTitle(UIPreview.Stage s, float t)

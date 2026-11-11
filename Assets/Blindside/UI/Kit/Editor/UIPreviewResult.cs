@@ -42,7 +42,38 @@ namespace Blindside.UITools.EditorTools
             rep.pointsTo = rep.pointsFrom + rep.contribution;
             rep.rankFrom = RankTable.RankOf(rep.pointsFrom); rep.rankTo = RankTable.RankOf(rep.pointsTo);
             rep.moneyTotal = 30000;
+            // SERUM down: the no-losses challenge missed → A
+            rep.rank.rank = QuestRank.A; rep.rankScale = RankRules.Multiplier(QuestRank.A); rep.leaveGained = RankRules.LeaveDays(QuestRank.A);
+            rep.rank.challenges.Add(new ChallengeOutcome { text = "味方を一人も失わない", done = false });
+            rep.rank.challenges.Add(new ChallengeOutcome { text = "10ラウンド以内にクリア", done = true });
+            rep.rank.challenges.Add(new ChallengeOutcome { text = "監視カメラをすべて破壊", done = true });
             return rep;
+        }
+
+        public const string RankScreen = "result_rank", RankSlam = "result_rank_slam";
+
+        static void BuildRank(UIPreview.Stage s, float t)
+        {
+            UIPreview.BuildHudSelected(s);
+            var canvas = s.NewCanvas("OperationResult_Canvas", UITheme.CanvasKind.Menu, 100);
+            var host = new GameObject("OperationResultHost", typeof(RectTransform));
+            host.transform.SetParent(canvas.transform, false);
+            var r = host.AddComponent<OperationResultScreen>();
+            r.externalCanvas = canvas;
+            r.PoseRank(Sample(), t);
+        }
+
+        /// <summary>result_rank: settled; result_rank_slam: the letter landing, its glitch on.</summary>
+        public static void BuildRankFinal(UIPreview.Stage s) => BuildRank(s, OperationResultScreen.RankEnd);
+        public static void BuildRankSlam(UIPreview.Stage s) => BuildRank(s, OperationResultScreen.LetterAt + .14f);
+
+        public const string HubEntrance = "hub_entrance";
+
+        /// <summary>hub_entrance: the 本部帰還 band of the squad's return (no 3D: over the plain backdrop).</summary>
+        public static void BuildHubEntrance(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("HubEntrance_Canvas", UITheme.CanvasKind.Menu, 90);
+            Blindside.Hub.HubEntrance.BuildBand(canvas.transform, "DAY 3 · 昼", out _, out _);
         }
 
         static OperationResultScreen Build(UIPreview.Stage s, float t)
@@ -59,7 +90,25 @@ namespace Blindside.UITools.EditorTools
 
         public static void BuildBanner(UIPreview.Stage s) => Build(s, OperationResultScreen.BannerFrom + 1f);
 
-        public const string ExpGain = "battle_exp_gain";
+        public const string ExpGain = "battle_exp_gain", ExpGainSupport = "battle_exp_gain_support";
+
+        /// <summary>battle_exp_gain_support: the shooter and two allies who joined in with 支援射撃 (three cards), 1.0s in.</summary>
+        public static void BuildExpGainSupport(UIPreview.Stage s)
+        {
+            UIPreview.BuildHudSelected(s);
+            var canvas = s.NewCanvas("ExpGain_Canvas", UITheme.CanvasKind.Menu, 95);
+            var host = new GameObject("ExpGainHost", typeof(RectTransform));
+            host.transform.SetParent(canvas.transform, false);
+            var p = host.AddComponent<ExpGainPopup>();
+            p.externalCanvas = canvas;
+            var gains = new System.Collections.Generic.List<ProgressLive.Gain>
+            {
+                new ProgressLive.Gain { rec = Rec("CRUSHER", "AR15", 0, 1, 0, 1, 0, 120), exp = 190, killsNow = 1, levelFrom = 1, expFrom = 40, wLevelFrom = 2, wExpFrom = 90 },
+                new ProgressLive.Gain { rec = Rec("FLARE", "MX50", 0, 1, 0, 0, 1, 50), exp = 70, levelFrom = 2, expFrom = 20, wLevelFrom = 1, wExpFrom = 10 },
+                new ProgressLive.Gain { rec = Rec("IGNIS", "M870", 0, 1, 0, 0, 0, 0), exp = 20, levelFrom = 2, expFrom = 30, wLevelFrom = 1, wExpFrom = 60 },
+            };
+            p.PoseAt(gains, 1.0f);
+        }
 
         /// <summary>battle_exp_gain: the experience beat after an exchange — CRUSHER (a kill: level up, mastery up) and FLARE, 1.0s in.</summary>
         public static void BuildExpGain(UIPreview.Stage s)

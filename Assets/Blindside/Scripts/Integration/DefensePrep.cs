@@ -63,6 +63,7 @@ namespace Blindside.Integration
         public static PrepReport Apply(MapGrid map, VisionSystem vision, AbilityContext ctx, IReadOnlyList<SimUnit> units, SimHostage hostage)
         {
             var report = new PrepReport();
+            if (MapLibrary.Current.exactPlacement) return report;   // (a map from the editor is played as it was laid out)
             float hx = hostage != null ? hostage.X : MapLibrary.Current.hostage.x;
             float hy = hostage != null ? hostage.Y : MapLibrary.Current.hostage.y;
             float DistToHostage(float x, float y) => Mathf.Sqrt((x - hx) * (x - hx) + (y - hy) * (y - hy));

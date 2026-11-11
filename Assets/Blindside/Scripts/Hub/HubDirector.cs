@@ -17,7 +17,15 @@ namespace Blindside.Hub
     {
         public static HubDirector Active { get; private set; }
         /// <summary>A panel is open: no walking, no camera.</summary>
-        public static bool InputBlocked => Active != null && Active.screen != null && Active.screen.AnyOpen;
+        public static bool InputBlocked => Active != null && (Active.Entering || Active.Touring || (Active.screen != null && Active.screen.AnyOpen));
+
+        HubEntrance entrance;
+        /// <summary>The squad is still walking in from an operation (HubEntrance).</summary>
+        public bool Entering => entrance != null && entrance.Playing;
+
+        HubTutorial tour;
+        /// <summary>CRUSHER is showing the player round (HubTutorial).</summary>
+        public bool Touring => tour != null && tour.Playing;
 
         public Transform player;
         public Canvas canvas;
@@ -55,6 +63,15 @@ namespace Blindside.Hub
             }
             else Debug.LogError("[Hub] no canvas");
             Time.timeScale = 1f;
+            if (HubEntrance.Pending && player != null)
+            {
+                HubEntrance.Pending = false;
+                var save = Blindside.Save.SaveSystem.Current;
+                string day = save != null ? "DAY " + Blindside.Progress.Campaign.DayNumber(save) + " · " + Blindside.Progress.Campaign.TimeName(save) : "";
+                entrance = gameObject.AddComponent<HubEntrance>();
+                entrance.Begin(player, view, day);
+                if (canvas != null) canvas.enabled = false;   // (the HQ's own labels come up when it ends)
+            }
         }
 
         List<Bounds> Walls()
@@ -78,6 +95,16 @@ namespace Blindside.Hub
         void Update()
         {
             if (screen == null || player == null) return;
+            if (Entering) return;
+            if (Touring) return;
+            if (tour == null && HubTutorial.Due(Blindside.Save.SaveSystem.Current))
+            {
+                if (canvas != null) canvas.enabled = false;
+                tour = gameObject.AddComponent<HubTutorial>();
+                tour.Begin(player, view);
+                return;
+            }
+            if (canvas != null && !canvas.enabled) canvas.enabled = true;
             bool open = screen.AnyOpen;
             // the cursor: locked while walking, free over a panel
             var wantLock = open || !Application.isFocused ? CursorLockMode.None : CursorLockMode.Locked;

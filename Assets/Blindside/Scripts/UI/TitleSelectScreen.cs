@@ -507,7 +507,7 @@ namespace Blindside.UI
             // straight to the PREPARATION banner.
             // (the Timeline intro only on a map that has the house — MapData.useHouseIntro; any other map gets the short SimpleIntro).
             var mapData = MapLibrary.Current;
-            bool houseIntro = mapData.useHouseIntro || mapData.rescueIntro;
+            bool houseIntro = mapData.useHouseIntro || mapData.rescueIntro || !string.IsNullOrEmpty(mapData.operationCode);   // (a named operation gets the full flight and hologram)
             if (!skipIntro && introDirector != null && team != OperatorTeam.Defense && houseIntro)
             {
                 Blindside.Cinematic.IntroCameraRig.RescueStyle = mapData.rescueIntro || Blindside.Cinematic.IntroCameraRig.ForceRescueOnce;

@@ -45,10 +45,29 @@ namespace Blindside.Integration
         {
             HideMenu();
             var d = u.Drone != null && u.Drone.alive ? u.Drone : null;
-            if (d == null) { d = droneOps.Deploy(u); Log($"{KrOf(u)}: ドローン展開", "a"); }
+            if (d == null) { d = DeployPlayerDrone(u); Log($"{KrOf(u)}: ドローン展開", "a"); }
             StartDroneMoveMode(u, d);
-            SetHint("ドローンの移動経路を描いてください", $"ドローン周囲の円形視界 · 発見した敵は今ターンの間マップに表示 · 移動力 {M1(d.moveLeft)}m", ("cancel", "ESC キャンセル", false));
+            SetHint("ドローンの移動経路を描いてください", $"ドローン周囲の円形視界 · 発見した敵{(d.revealsGadgets ? "とガジェット" : "")}は今ターンの間マップに表示 · 移動力 {M1(d.moveLeft)}m", ("cancel", "ESC キャンセル", false));
         }
+
+        /// <summary>The player's drone: one bought at the shop (10 m, marks enemy gadgets; one taken from the squad's stock) when the
+        /// operator carries it, else the basic one (8 m).</summary>
+        Drone DeployPlayerDrone(SimUnit u)
+        {
+            var d = droneOps.Deploy(u);
+            if (u.ShopDrone)
+            {
+                d.moveMax = d.moveLeft = Blindside.Hub.HubCatalog.ReconDroneMove;
+                var save = Blindside.Save.SaveSystem.Current;
+                if (save != null) { var line = save.GadgetOf(Blindside.Hub.HubCatalog.ReconDroneKey); line.count = Mathf.Max(0, line.count - 1); }
+            }
+            else d.revealsGadgets = false;
+            return d;
+        }
+
+        /// <summary>The operator has a drone to use this match: the basic one in the tutorial and test plays, else one carried from the shop.</summary>
+        static bool HasDrone(SimUnit u) =>
+            MatchBootstrap.FreeDrone || u.DroneSpent || (u.ShopDrone && ItemStock(Blindside.Hub.HubCatalog.ReconDroneKey) > 0);
 
         /// <summary>startMoveMode(u,d,true).</summary>
         void StartDroneMoveMode(SimUnit u, Drone d)

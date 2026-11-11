@@ -164,7 +164,7 @@ namespace Blindside.Integration
             wallBounds.Clear();   // the blocks' size can differ from match to match (the tutorial's training hall raises them)
             ResetCallouts();
             intelOn = false;
-            if (combat != null) { combat.OnKill -= OnKillCallout; combat.OnKill += OnKillCallout; }
+            if (combat != null) { combat.OnKill -= OnKillCallout; combat.OnKill += OnKillCallout; combat.OnSupportFire -= OnSupportCallout; combat.OnSupportFire += OnSupportCallout; }
             GameplayUIBridge.VolleyShown -= OnVolleyCallout;
             GameplayUIBridge.VolleyShown += OnVolleyCallout;
             BindMovement(bridge);
@@ -191,13 +191,16 @@ namespace Blindside.Integration
         {
             if (built) Deselect();
             ResetCallouts();
-            if (combat != null) combat.OnKill -= OnKillCallout;
+            if (combat != null) { combat.OnKill -= OnKillCallout; combat.OnSupportFire -= OnSupportCallout; }
             GameplayUIBridge.VolleyShown -= OnVolleyCallout;
             turns = null; units = null; hostage = null; map = null; hasSide = false; hostages.Clear(); HostageList = null;
             vision = null; marks = null; shownToPlayer = null;
             movement = null; combat = null; busy = false; modal = false;
             abilities = null; abilityCtx = null; droneOps = null;
         }
+
+        // (a scene left mid-match never reaches Unbind: a destroyed controller left on this static hook would throw on the next shot and stop the match)
+        void OnDestroy() => GameplayUIBridge.VolleyShown -= OnVolleyCallout;
 
         // Port of playerCanAct(): G.state==='game' && !G.busy && !G.over && !G.modal && phase is the
         // player's. TurnManager only parks for the player during their own Attack/Defense phase.
@@ -259,7 +262,6 @@ namespace Blindside.Integration
                     if (PlayerCanAct() && HasSomethingToCancel) { CancelMode(); Blindside.UI.EscapeGate.Consume(); }
                 }
                 else if (kb.qKey.wasPressedThisFrame) CycleUnit();          // (Tab is the full battle log, KitLogHistory)
-                else if (kb.fKey.wasPressedThisFrame && mode == Mode.Facing) HintAction("lock");
                 else if (mode == Mode.Menu && uiUnit != null)
                 {
                     for (int k = 1; k <= 9; k++)
@@ -448,6 +450,8 @@ namespace Blindside.Integration
             RenderMenu(u);
             SyncRings();
             NotifySelection();
+            // the camera goes to the unit picked (the tutorial's scripted cameras stay as they are)
+            if (changed && u.Placed && !TutorialGate.Active && BattlefieldCamera.Instance != null) BattlefieldCamera.Instance.PanTo(u.X, u.Y, 350f);
         }
 
         /// <summary>
@@ -465,7 +469,7 @@ namespace Blindside.Integration
             {
                 bool changed = uiUnit != u;
                 SelectUnit(u);
-                if (changed && cam != null && u.Placed) cam.PanTo(u.X, u.Y, 350f);   // (enterDeploy pans only for a dropped unit)
+                if (changed && cam != null && u.Placed && TutorialGate.Active) cam.PanTo(u.X, u.Y, 350f);   // (SelectUnit pans outside the tutorial; enterDeploy pans only for a dropped unit)
             }
             else
             {
@@ -519,18 +523,20 @@ namespace Blindside.Integration
                 L.Add(new Command { id = "swap", kr = "持ち替え", en = "SWAP", ic = "⌖", ok = !u.Acted, sub = u.Weapon2.weaponName });
             if (!prep) L.Add(new Command { id = "fire", kr = "攻撃", en = "FIRE", ic = "✛", ok = !u.Acted && !shieldStops, sub = shieldStops ? "シールド中" : "" });
             string ab = u.AbilityKey, abName = u.Op != null ? u.Op.abilityName : ab;
+            if (!MatchBootstrap.NoAbilities)
             L.Add(new Command
             {
                 id = "skill", kr = abName, en = "ABILITY", ic = "✦",
                 ok = u.Charges > 0 && (prep || !u.AbilityUsed) && !(ab == "shield" && u.Shield) && !(ab == "ghost" && u.Ghost),
                 sub = u.Charges >= 99 ? "∞" : u.Charges + "回",
             });
-            if (u.Team == OperatorTeam.Attack)
+            if (u.Team == OperatorTeam.Attack && !HasDrone(u)) { }   // (past the first main quest a drone is equipment from the shop)
+            else if (u.Team == OperatorTeam.Attack)
             {
                 bool droneAlive = u.Drone != null && u.Drone.alive;
                 L.Add(new Command
                 {
-                    id = "gadget", kr = "ドローン", en = "DRONE", ic = "⌖",
+                    id = "gadget", kr = u.ShopDrone ? "偵察ドローン" : "ドローン", en = "DRONE", ic = "⌖",
                     ok = !u.GadgetUsed && (!u.DroneSpent || (droneAlive && u.Drone.moveLeft > .3f)),
                     sub = droneAlive ? "操縦" : u.DroneSpent ? "喪失" : "展開",
                 });
@@ -601,7 +607,7 @@ namespace Blindside.Integration
             if (c == "wait") { EnterFacing(u, true); return; }
             if (c == "escort") { DoEscort(u); return; }                          // 人質確保 (.Escort.cs)
             if (c == "reinforce") { StartReinforce(u); return; }
-            if (c == "item") { HideMenu(); StartThrow(u); return; }               // 破片手榴弾 (.Grenade.cs)
+            if (DoItemCommand(u, c)) return;                                      // the HQ's items (.Items.cs)
             if (c == "swap") { SwapGun(u); return; }                             // 持ち替え (co-op rank 6)
             if (c == "rescue") { DoRescue(u); return; }                          // 救出 (.Rescue.cs)                  // 壁強化 (.Reinforce.cs)
             if (c == "skill" && StartAbility(u)) return;                         // all ten abilities (.Ability.cs / .SupportAbility.cs)

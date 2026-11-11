@@ -46,9 +46,7 @@ namespace Blindside.Integration
                 if (p.electrified) { map.SetPanelElecSeen(p.id); ne++; foreach (var c in p.cells) intelElec.Add(c); }
             }
             Log($"偵察情報: 強化壁 {nr}か所、電気が流れる壁 {ne}か所を表示", "w");
-            EnsureIntelCard();
-            intelReinfText.text = $"強化壁  <color=#FFC81E><b>{nr}</b></color>か所";
-            intelElecText.text = $"電気が流れる壁  <color=#4FB3FF><b>{ne}</b></color>か所";
+            // (the WALL INTEL legend card is no longer shown; the caps on the walls still blink. BuildWallIntelCard stays for bringing it back)
             intelOn = true;
         }
 

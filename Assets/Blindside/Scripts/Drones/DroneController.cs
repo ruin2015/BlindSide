@@ -16,6 +16,10 @@ namespace Blindside.Drones
         public float returnX, returnY;   // recon home point (the deploy position)
         public bool alive = true;
         public float moveLeft;
+        /// <summary>What it gets back each round: 8, or 10 for a drone bought at the shop.</summary>
+        public float moveMax = 8f;
+        /// <summary>It marks the enemy gadgets it finds (the shop's drone, and the AI's; not the player's basic one).</summary>
+        public bool revealsGadgets = true;
         public Blindside.Data.OperatorTeam team = Blindside.Data.OperatorTeam.Attack;   // d.team is always 'atk'
         public Blindside.Abilities.IAbilityUnit owner;                                   // d.owner — the operator that deployed it
     }
@@ -49,7 +53,7 @@ namespace Blindside.Drones
         public void ResetMoveBudget()
         {
             foreach (var d in drones)
-                if (d.alive) d.moveLeft = 8f;
+                if (d.alive) d.moveLeft = d.moveMax;
         }
 
         /// <summary>

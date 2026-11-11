@@ -254,6 +254,32 @@ namespace Blindside.MapEditor
             return path;
         }
 
+        /// <summary>Editor only: a saved map that a quest was exported from (MapCatalog.Entry.sourceStem == `stem`) goes straight into that quest's
+        /// data, so the game, its scene and the hologram play it. Returns the quest's name (null: no quest uses this file);
+        /// `rejected`: the map can't be played yet (required errors), so the quest keeps its last good version.</summary>
+        public static string SyncCatalog(string stem, out bool rejected)
+        {
+            rejected = false;
+#if UNITY_EDITOR
+            var cat = Blindside.Flow.MapCatalog.Instance;
+            if (cat == null) return null;
+            foreach (var e in cat.entries)
+            {
+                if (e == null || e.mapJson == null || !string.Equals(e.sourceStem, stem, StringComparison.OrdinalIgnoreCase)) continue;
+                string name = string.IsNullOrEmpty(e.displayName) ? e.id : e.displayName;
+                var data = ReadFile(PathFor(stem)).BuildGameData();
+                if (data == null || data.Validate().Count > 0) { rejected = true; return name; }
+                string asset = UnityEditor.AssetDatabase.GetAssetPath(e.mapJson);
+                File.WriteAllText(asset, File.ReadAllText(PathFor(stem), Encoding.UTF8), new UTF8Encoding(false));
+                UnityEditor.AssetDatabase.ImportAsset(asset, UnityEditor.ImportAssetOptions.ForceUpdate);
+                return name;
+            }
+            return null;
+#else
+            return null;
+#endif
+        }
+
         public static void Delete(string stem)
         {
             string path = PathFor(stem);

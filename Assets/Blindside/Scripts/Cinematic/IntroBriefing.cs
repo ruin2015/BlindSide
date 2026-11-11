@@ -68,7 +68,7 @@ namespace Blindside.Cinematic
             int foes = (d.defenderStarts != null ? d.defenderStarts.Length : 0) + (d.terrorists != null ? d.terrorists.Length : 0);
             int captives = d.rescueIntro ? d.RescueRoster().Count : 0;
             int civilians = d.CivilianCells().Count;
-            int squad = captives > 0 ? Mathf.Clamp(5 - captives, 1, 5) : 5;
+            int squad = captives > 0 ? Mathf.Clamp(5 - captives, 1, 5) : d.squadKeys != null && d.squadKeys.Length > 0 ? d.squadKeys.Length : 5;
             string threat = $"武装勢力 推定{foes}名";
             if (captives > 0) threat += $" · 捕虜{captives}名";
             if (civilians > 0) threat += $" · 人質{civilians}名";

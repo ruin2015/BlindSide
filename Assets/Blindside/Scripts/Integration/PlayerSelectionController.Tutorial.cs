@@ -35,11 +35,25 @@ namespace Blindside.Integration
         /// <summary>Where a demonstration's "hand" is (grid): the drawn path's tip / the aim's end; null outside a demonstration.</summary>
         public Vector2? DemoCursorGrid { get; private set; }
 
+        /// <summary>The attack forecast of `u` on `e`, put up for the tutorial to explain (TutorialCloseForecast takes it away).</summary>
+        public EngagePreview TutorialOpenForecast(SimUnit u, SimUnit e)
+        {
+            if (engagePreview == null) engagePreview = EngagePreview.Build(transform);
+            Forecast(u, e, false, out var a, out var b);
+            engagePreview.OpenAim(a, b, true, "TutorialGuide_Canvas");
+            return engagePreview;
+        }
+
+        public void TutorialCloseForecast() { if (engagePreview != null) engagePreview.Close(); }
+
+        /// <summary>An item is being aimed (the throw's arc follows the mouse).</summary>
+        public bool InThrowMode => mode == Mode.Throw;
+
         /// <summary>ABILITY is picking its target (the valid walls glow).</summary>
         public bool InAbilityMode => mode == Mode.Ability;
         /// <summary>VIEW / the end-of-action facing prompt is up.</summary>
         public bool InFacingMode => mode == Mode.Facing;
-        /// <summary>A button of the hint bar (e.g. "lock" — 視界固定 [F]) while it is shown, else null.</summary>
+        /// <summary>A button of the hint bar (e.g. "lock" — 視界固定 解除) while it is shown, else null.</summary>
         public RectTransform HintButtonRect(string id) => hintView != null ? hintView.ButtonRect(id) : null;
 
         /// <summary>

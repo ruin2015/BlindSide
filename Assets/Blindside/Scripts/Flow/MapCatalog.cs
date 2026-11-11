@@ -7,6 +7,17 @@ using UnityEngine;
 
 namespace Blindside.Flow
 {
+    /// <summary>What an operation's challenge asks (Progress.Challenges).</summary>
+    public enum ChallengeKind { NoLosses = 0, WithinRounds = 1, AllCameras = 2, AllEnemies = 3 }
+
+    [System.Serializable]
+    public class MapChallenge
+    {
+        public ChallengeKind kind;
+        [Tooltip("WithinRounds: how many rounds.")]
+        public int value;
+    }
+
     [CreateAssetMenu(menuName = "Blindside/Map Catalog", fileName = "BlindsideMapCatalog")]
     public class MapCatalog : ScriptableObject
     {
@@ -50,6 +61,12 @@ namespace Blindside.Flow
             public string briefWeather, briefLocation, briefClock;
             [Tooltip("Night (moonlight, dark sky, the helicopter's searchlight) and rain (falling rain, wet surfaces) — MissionAtmosphere.")]
             public bool night, rain;
+            [Tooltip("The operation's challenges: all cleared S, one missed A, two B, more C. Empty: no losses / 10 rounds / every enemy down.")]
+            public MapChallenge[] challenges;
+            [Tooltip("Who the player fields here, by operator key (empty: the whole squad).")]
+            public string[] squad;
+            [Tooltip("The operators' abilities are off on this operation.")]
+            public bool noAbilities;
         }
 
         /// <summary>The entry's operation settings onto map data built from its JSON (the rescue operation).</summary>
@@ -60,7 +77,17 @@ namespace Blindside.Flow
             d.operationCode = e.operationCode; d.operationNameJa = e.operationNameJa;
             d.briefWeather = e.briefWeather; d.briefLocation = e.briefLocation; d.briefClock = e.briefClock;
             d.night = e.night; d.rain = e.rain;
+            d.squadKeys = e.squad; d.noAbilities = e.noAbilities;
             return d;
+        }
+
+        /// <summary>The entry's map as a match reads it, its operation settings on (null, logged, when it can't be played).</summary>
+        public static Blindside.Map.MapData DataOf(Entry e)
+        {
+            if (e == null || e.mapJson == null) return null;
+            if (!Blindside.MapEditor.MapFile.TryParse(e.mapJson.text, out var file, out var why)) { Debug.LogError("[MapCatalog] " + e.id + ": " + why); return null; }
+            try { return Apply(e, file.ToModel().BuildGameData()); }
+            catch (System.Exception ex) { Debug.LogError("[MapCatalog] " + e.id + ": " + ex.Message); return null; }
         }
 
         public List<Entry> entries = new List<Entry>();

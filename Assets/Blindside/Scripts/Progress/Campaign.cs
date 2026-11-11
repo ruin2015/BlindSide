@@ -6,7 +6,7 @@
 //             it, the HQ sends the squad out on it (HubScreen)
 //   co-op     FLARE (the protagonist, Commander) and each operator: bond points growing a co-op rank 1 … 10 (CoopNeed), the way a
 //             confidant grows; between two other operators only a light bond (points, no rank). What gives how much: Coop*
-//   rank      S … E from the damage the squad took, how much of the enemy fell and the rounds used (RankRules); it scales the reward
+//   rank      S … C from the map's challenges (Challenges, RankRules): all cleared S, one missed A, two B, more C; it scales the reward
 //             and S / A earn 褒賞休暇 (leave days, spent at the HQ with an operator)
 using System.Collections.Generic;
 using UnityEngine;
@@ -52,8 +52,9 @@ namespace Blindside.Progress
         {
             var list = new List<Quest>();
             var house = StageRewards.For("");
-            list.Add(new Quest { stem = "", name = string.IsNullOrEmpty(house.label) ? "基本邸宅" : house.label, kind = QuestKind.Main, order = 1,
-                                 money = house.money, contribution = house.contribution });
+            if (HouseIsQuest)
+                list.Add(new Quest { stem = "", name = string.IsNullOrEmpty(house.label) ? "基本邸宅" : house.label, kind = QuestKind.Main, order = 1,
+                                     money = house.money, contribution = house.contribution });
             var cat = MapCatalog.Instance;
             if (cat != null)
                 foreach (var e in cat.entries)
@@ -70,6 +71,26 @@ namespace Blindside.Progress
                     });
                 }
             return list;
+        }
+
+        /// <summary>The built-in house opens the story until a catalog map is main quest 1.</summary>
+        public static bool HouseIsQuest
+        {
+            get
+            {
+                var cat = MapCatalog.Instance;
+                if (cat != null)
+                    foreach (var e in cat.entries)
+                        if (e != null && e.listed && e.mapJson != null && e.questKind == (int)QuestKind.Main && e.mainOrder == 1) return false;
+                return true;
+            }
+        }
+
+        /// <summary>The story's first operation (null: there is none).</summary>
+        public static Quest FirstMain()
+        {
+            var m = Mains();
+            return m.Count > 0 ? m[0] : null;
         }
 
         public static List<Quest> Mains()
@@ -203,35 +224,31 @@ namespace Blindside.Progress
     }
 
     // ---- the rank -----------------------------------------------------------------------------------------------------------------
-    public enum QuestRank { S, A, B, C, D, E }
+    public enum QuestRank { S, A, B, C }
 
     public class RankResult
     {
-        public QuestRank rank = QuestRank.E;
-        public float score, damage, elimination, speed;
-        public int rounds, killed, enemies, taken, maxHp, down;
+        public QuestRank rank = QuestRank.C;
+        public int rounds, killed, enemies, down;
+        /// <summary>The map's challenges as they turned out, in order.</summary>
+        public List<ChallengeOutcome> challenges = new List<ChallengeOutcome>();
     }
 
     public static class RankRules
     {
-        // the parts' weights and the score each rank needs
-        public const float WDamage = .35f, WElimination = .35f, WSpeed = .30f;
-        static readonly float[] Need = { .88f, .76f, .62f, .48f, .34f };   // S A B C D (below: E)
-        public const int ParRounds = 4, WorstRounds = 12;
-        public const float DownPenalty = .15f;
-
         public static string Letter(QuestRank r) => r.ToString();
 
         /// <summary>The reward's scale (money, contribution, experience).</summary>
         public static float Multiplier(QuestRank r)
         {
-            switch (r) { case QuestRank.S: return 1.5f; case QuestRank.A: return 1.25f; case QuestRank.B: return 1f; case QuestRank.C: return .85f; case QuestRank.D: return .7f; default: return .5f; }
+            switch (r) { case QuestRank.S: return 1.5f; case QuestRank.A: return 1.25f; case QuestRank.B: return 1f; default: return .85f; }
         }
 
         /// <summary>褒賞休暇 earned: S 3 days, A 1.</summary>
         public static int LeaveDays(QuestRank r) => r == QuestRank.S ? 3 : r == QuestRank.A ? 1 : 0;
 
-        public static RankResult Evaluate(MatchRecord rec, OperatorTeam side, int rounds, bool win)
+        /// <summary>The rank of the map `stem`'s match: how many of its challenges were cleared (a lost match: C).</summary>
+        public static RankResult Evaluate(MatchRecord rec, OperatorTeam side, int rounds, bool win, string stem)
         {
             var res = new RankResult { rounds = rounds };
             if (rec == null) return res;
@@ -239,9 +256,7 @@ namespace Blindside.Progress
             {
                 if (r.team == side)
                 {
-                    if (r.captive) continue;
-                    res.taken += r.damageTaken; res.maxHp += Mathf.Max(1, r.maxHp);
-                    if (!r.alive) res.down++;
+                    if (!r.captive && !r.alive) res.down++;
                 }
                 else
                 {
@@ -249,13 +264,8 @@ namespace Blindside.Progress
                     if (!r.alive) res.killed++;
                 }
             }
-            res.damage = Mathf.Clamp01(1f - (res.maxHp > 0 ? res.taken / (float)res.maxHp : 0f) - res.down * DownPenalty);
-            res.elimination = res.enemies > 0 ? res.killed / (float)res.enemies : 1f;
-            res.speed = Mathf.Clamp01(1f - (rounds - ParRounds) / (float)(WorstRounds - ParRounds));
-            res.score = WDamage * res.damage + WElimination * res.elimination + WSpeed * res.speed;
-            res.rank = QuestRank.E;
-            if (win)
-                for (int i = 0; i < Need.Length; i++) if (res.score >= Need[i]) { res.rank = (QuestRank)i; break; }
+            int missed = Challenges.Judge(stem, res, rec.CamerasLeft);
+            res.rank = !win || missed >= 3 ? QuestRank.C : (QuestRank)missed;
             return res;
         }
     }

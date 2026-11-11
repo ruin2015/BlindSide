@@ -16,7 +16,9 @@
 //     Reward   報酬 ¥ counting up 2.4 → 3.2s (bottom left)
 //     Rank     貢献度 +N and the rank bar filling from the old points to the new ones 2.6 → 3.8s (bottom centre); a promotion lights
 //              「昇進」 and the new rank's name
-//     Button   「本部へ戻る」 (TacticalButton 300×52, bottom right) fades in at 4.0s; a click before that skips the counting
+//     Button   「次へ」 (TacticalButton 300×52, bottom right) fades in at 4.0s; a click before that skips the counting
+//   then, on 次へ, the rank screen (its own clock from the click): 作戦評価, the map's challenges one by one (○ / ×), the big rank letter
+//   slamming in with a glitch (S / A / B / C), the reward's scale and leave, and 「本部へ戻る」 — which fades to black and goes to the HQ
 // The numbers are the report's (MatchAward, already in the save): the screen only plays them back. No allocation per frame (texts change
 // through SetText with numbers, or a char buffer for the yen).
 using System;
@@ -37,6 +39,9 @@ namespace Blindside.UI
         public const float CardW = 232f, CardGap = 14f, CardY = 108f, PhotoH = 186f, NameH = 54f;
         public const float CardIn = .5f, CardStep = .08f, FillFrom = .9f, FillTo = 2.4f, MoneyFrom = 2.4f, MoneyTo = 3.2f, RankFrom = 2.6f, RankTo = 3.8f, ButtonAt = 4.0f;
         public const string RadioLine = "作戦完了。みんな、ご苦労だった。";
+        // the rank screen, from the 次へ click
+        public const float RankFadeOut = .3f, RankIn = .3f, RowsFrom = .55f, RowStep = .42f, RowIn = .25f, LetterAt = 2.0f, LetterIn = .3f, RankInfoAt = 2.9f, RankButtonAt = 3.3f, RankEnd = 3.8f;
+        public const float RankRowX = 112f, RankRowY = 250f, RankRowW = 640f, RankRowH = 74f, RankRowGap = 12f, LetterSize = 340f, LetterBoxW = 520f, LetterBoxH = 460f, LetterCx = 1050f, LetterCy = 370f;
         static readonly Color DimC = new Color(4f / 255f, 6f / 255f, 9f / 255f, .97f);   // (linear blending: .97 reads as the mockup's deep dim)
         static readonly Color Gold = UIPalette.Hex("#FFC81E");
         static readonly Color StatC = UIPalette.Hex("#9AA3AD");
@@ -72,8 +77,18 @@ namespace Blindside.UI
         int shownMoney = -1, shownRank = -1, shownPoints = -1;
         string[] rankNames;
 
+        // the rank screen
+        RectTransform rankRoot, letterBox;
+        CanvasGroup rankGroup, letterGroup, rankInfoGroup, rankButtonGroup;
+        UIGlitchText letterGlitch;
+        RectTransform[] rankRows = new RectTransform[0];
+        CanvasGroup[] rankRowGroups = new CanvasGroup[0];
+        float rankStart = -1f;
+        int rowsSounded;
+        bool letterHit, leaving;
+
         public bool Visible => canvas != null && canvas.gameObject.activeSelf;
-        public float Duration => ResultStart + ButtonAt + .4f;
+        public float Duration => rankStart >= 0f ? rankStart + RankEnd : ResultStart + ButtonAt + .4f;
 
         // ---- flow --------------------------------------------------------------------------------------------------------------
         /// <summary>Plays the ending of `report` (a won match of `side`); 本部へ戻る calls `onHq`.</summary>
@@ -100,6 +115,32 @@ namespace Blindside.UI
             Evaluate(t);
         }
 
+        /// <summary>Previews (edit mode): `t` seconds into the rank screen.</summary>
+        public void PoseRank(AwardReport report, float t)
+        {
+            Build(report, null);
+            rankStart = 0f; clock = t; running = false;
+            if (letterGlitch != null && t >= LetterAt) { letterGlitch.previewSeed = 7; letterGlitch.Burst(100f); letterGlitch.Evaluate(Time.unscaledTime); }
+            Evaluate(t);
+        }
+
+        /// <summary>次へ: from the experience to the rank.</summary>
+        void ShowRank()
+        {
+            if (rankStart >= 0f) return;
+            rankStart = clock; rowsSounded = 0; letterHit = false;
+            running = Application.isPlaying;
+            Evaluate(clock);
+        }
+
+        /// <summary>本部へ戻る: the fade, then the HQ.</summary>
+        void LeaveToHq()
+        {
+            if (leaving) return;
+            leaving = true;
+            SceneFade.Out(SceneFade.DefaultOut, () => { Hide(); onHq?.Invoke(); });
+        }
+
         public void Hide()
         {
             running = false;
@@ -119,6 +160,15 @@ namespace Blindside.UI
 
         public void OnPointerClick(PointerEventData e)
         {
+            // the rank screen: a click shows it all at once
+            if (rankStart >= 0f)
+            {
+                if (clock >= rankStart + RankButtonAt) return;
+                clock = rankStart + RankButtonAt;
+                if (!running && Application.isPlaying) running = true;
+                Evaluate(clock);
+                return;
+            }
             // a click skips: the radio to the banner, the banner to the result, the result's counting to its end
             if (clock < BannerFrom) clock = BannerFrom;
             else if (clock < ResultStart) clock = ResultStart;
@@ -133,6 +183,8 @@ namespace Blindside.UI
         {
             if (root == null) return;
             bool reduce = UIMotionSettings.reduceMotion;
+            if (rankStart >= 0f) { EvaluateRank(t - rankStart, reduce); return; }
+            if (rankRoot.gameObject.activeSelf) rankRoot.gameObject.SetActive(false);
 
             // the banner
             float tb = t - BannerFrom;
@@ -200,6 +252,59 @@ namespace Blindside.UI
             if (buttonGroup.blocksRaycasts != clickable) { buttonGroup.blocksRaycasts = clickable; buttonGroup.interactable = clickable; }
         }
 
+        // the rank screen `k` seconds after 次へ
+        void EvaluateRank(float k, bool reduce)
+        {
+            if (bannerBand.gameObject.activeSelf) bannerBand.gameObject.SetActive(false);
+            var dc = DimC; dc.a = Mathf.Lerp(DimC.a, 1f, Mathf.Clamp01(k / RankFadeOut));   // (fully dark: nothing of the HUD behind the rank)
+            if (dim.color != dc) dim.color = dc;
+
+            // the experience screen goes
+            float gone = reduce ? 1f : Mathf.Clamp01(k / RankFadeOut);
+            bool showResult = gone < 1f;
+            if (resultRoot.gameObject.activeSelf != showResult) resultRoot.gameObject.SetActive(showResult);
+            if (showResult) { resultGroup.alpha = 1f - gone; buttonGroup.alpha = 1f - gone; }
+            if (buttonGroup.blocksRaycasts) { buttonGroup.blocksRaycasts = false; buttonGroup.interactable = false; }
+
+            if (!rankRoot.gameObject.activeSelf) rankRoot.gameObject.SetActive(true);
+            float a = reduce ? 1f : UIEase.Tactical(Mathf.Clamp01((k - RankFadeOut * .6f) / RankIn));
+            if (rankGroup.alpha != a) rankGroup.alpha = a;
+
+            // the challenges, one by one
+            for (int i = 0; i < rankRows.Length; i++)
+            {
+                float at = RowsFrom + i * RowStep;
+                float e = reduce ? (k >= at ? 1f : 0f) : UIEase.Tactical(Mathf.Clamp01((k - at) / RowIn));
+                if (rankRowGroups[i].alpha != e) rankRowGroups[i].alpha = e;
+                float s = Mathf.Lerp(1.06f, 1f, e);
+                var sc = new Vector3(s, s, 1f);
+                if (rankRows[i].localScale != sc) rankRows[i].localScale = sc;
+                if (Application.isPlaying && k >= at && i >= rowsSounded) { rowsSounded = i + 1; Sfx.Ui(); }
+            }
+
+            // the letter slams in
+            float le = reduce ? (k >= LetterAt ? 1f : 0f) : Mathf.Clamp01((k - LetterAt) / LetterIn);
+            float eased = 1f - (1f - le) * (1f - le);
+            if (letterGroup.alpha != le) letterGroup.alpha = le;
+            float ls = reduce ? 1f : Mathf.Lerp(2.2f, 1f, eased);
+            var lsc = new Vector3(ls, ls, 1f);
+            if (letterBox.localScale != lsc) letterBox.localScale = lsc;
+            if (!letterHit && k >= LetterAt && Application.isPlaying)
+            {
+                letterHit = true;
+                Sfx.Alert();
+                if (letterGlitch != null) letterGlitch.Burst(1.4f);
+            }
+
+            float ie = reduce ? (k >= RankInfoAt ? 1f : 0f) : UIEase.Tactical(Mathf.Clamp01((k - RankInfoAt) / .3f));
+            if (rankInfoGroup.alpha != ie) rankInfoGroup.alpha = ie;
+
+            float be = reduce ? (k >= RankButtonAt ? 1f : 0f) : UIEase.Tactical(Mathf.Clamp01((k - RankButtonAt) / .3f));
+            bool clickable = be >= 1f;
+            if (rankButtonGroup.alpha != be) rankButtonGroup.alpha = be;
+            if (rankButtonGroup.blocksRaycasts != clickable) { rankButtonGroup.blocksRaycasts = clickable; rankButtonGroup.interactable = clickable; }
+        }
+
         // one card's level and mastery at fraction `p` of the experience gained
         void PoseBar(Card c, float p)
         {
@@ -259,6 +364,7 @@ namespace Blindside.UI
             canvas.gameObject.SetActive(true);
             if (root != null) HudKit.DestroySafe(root.gameObject);
             shownMoney = shownRank = shownPoints = -1;
+            rankStart = -1f; leaving = false;
             var theme = UITheme.Current;
             if (rankNames == null) { rankNames = new string[RankTable.Count]; for (int i = 0; i < rankNames.Length; i++) rankNames[i] = RankTable.Name(i); }
 
@@ -271,6 +377,99 @@ namespace Blindside.UI
 
             BuildBanner(theme);
             BuildResult(theme);
+            BuildRankScreen(theme);
+        }
+
+        static readonly Color DoneC = UIPalette.Hex("#5DFFA2");
+
+        void BuildRankScreen(UITheme theme)
+        {
+            var rr = report.rank ?? new RankResult();
+            Color rc = rr.rank == QuestRank.S ? Gold : rr.rank == QuestRank.A ? theme.blue : rr.rank == QuestRank.B ? Color.white : StatC;
+
+            rankRoot = HudKit.NewRect("RankScreen", root);
+            HudKit.Stretch(rankRoot);
+            rankGroup = rankRoot.gameObject.AddComponent<CanvasGroup>();
+            rankGroup.blocksRaycasts = false;   // (the dim under it takes the clicks; the button has its own group)
+
+            var en = HudKit.AddText(rankRoot, "OPERATION RANK", 12f, theme.blue, true, TextAlignmentOptions.TopLeft, "HeadEn", UITheme.TextRole.Display);
+            en.characterSpacing = 14f;
+            UILayout.Place(en.rectTransform, RankRowX, 34f, 400f, 16f);
+            var head = HudKit.AddText(rankRoot, "作戦評価", 30f, Color.white, true, TextAlignmentOptions.TopLeft, "Head", UITheme.TextRole.Title);
+            UILayout.Place(head.rectTransform, RankRowX, 50f, 240f, 40f);
+            if (!string.IsNullOrEmpty(report.mapLabel))
+            {
+                var map = HudKit.AddText(rankRoot, report.mapLabel, 14f, StatC, false, TextAlignmentOptions.BottomLeft, "Stage", UITheme.TextRole.Body);
+                UILayout.Place(map.rectTransform, RankRowX + 150f, 58f, 400f, 28f);
+            }
+
+            var label = HudKit.AddText(rankRoot, "達成目標", 18f, StatC, true, TextAlignmentOptions.BottomLeft, "RowsLabel", UITheme.TextRole.Title);
+            UILayout.Place(label.rectTransform, RankRowX, RankRowY - 40f, 300f, 30f);
+
+            int n = rr.challenges.Count;
+            rankRows = new RectTransform[n];
+            rankRowGroups = new CanvasGroup[n];
+            for (int i = 0; i < n; i++)
+            {
+                var c = rr.challenges[i];
+                var row = HudKit.NewRect("Challenge" + i, rankRoot);
+                UILayout.Place(row, RankRowX, RankRowY + i * (RankRowH + RankRowGap), RankRowW, RankRowH);
+                rankRows[i] = row;
+                rankRowGroups[i] = row.gameObject.AddComponent<CanvasGroup>();
+                rankRowGroups[i].blocksRaycasts = false;
+                var bg = HudKit.NewRect("DecoRow", row);
+                HudKit.Stretch(bg);
+                HudKit.AddImage(bg, new Color(theme.ink2.r, theme.ink2.g, theme.ink2.b, .95f));
+                bg.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 14f);
+                var bar = HudKit.NewRect("DecoBar", row);
+                UILayout.Place(bar, 14f, 0f, 6f, RankRowH);
+                HudKit.AddImage(bar, c.done ? DoneC : theme.foe);
+                var mark = HudKit.AddText(row, c.done ? "○" : "×", 36f, c.done ? DoneC : theme.foe, true, TextAlignmentOptions.Center, "Mark", UITheme.TextRole.Body);
+                UILayout.Place(mark.rectTransform, 30f, 8f, 60f, RankRowH - 16f);
+                var text = HudKit.AddText(row, c.text, 24f, c.done ? Color.white : StatC, true, TextAlignmentOptions.MidlineLeft, "Text", UITheme.TextRole.Body);
+                text.textWrappingMode = TextWrappingModes.NoWrap;
+                UILayout.Place(text.rectTransform, 100f, 8f, RankRowW - 130f, RankRowH - 16f);
+            }
+
+            // the letter
+            var rankEn = HudKit.AddText(rankRoot, "RANK", 20f, StatC, true, TextAlignmentOptions.Center, "RankEn", UITheme.TextRole.Display);
+            rankEn.characterSpacing = 24f;
+            UILayout.Place(rankEn.rectTransform, LetterCx - 150f, 110f, 300f, 26f);
+            letterBox = HudKit.NewRect("LetterBox", rankRoot);
+            UILayout.Place(letterBox, LetterCx - LetterBoxW * .5f, LetterCy - LetterBoxH * .5f, LetterBoxW, LetterBoxH);
+            letterBox.pivot = new Vector2(.5f, .5f);
+            letterBox.anchoredPosition = new Vector2(LetterCx, -LetterCy);
+            letterGroup = letterBox.gameObject.AddComponent<CanvasGroup>();
+            letterGroup.blocksRaycasts = false;
+            var letter = HudKit.AddText(letterBox, RankRules.Letter(rr.rank), LetterSize, rc, true, TextAlignmentOptions.Center, "Letter", UITheme.TextRole.Display);
+            letter.textWrappingMode = TextWrappingModes.NoWrap;
+            letter.overflowMode = TextOverflowModes.Overflow;
+            HudKit.Stretch(letter.rectTransform);
+            letterGlitch = letter.gameObject.AddComponent<UIGlitchText>();
+            letterGlitch.source = letter; letterGlitch.loop = true; letterGlitch.period = 2.2f; letterGlitch.maxOffset = 22f;
+
+            // what it earned
+            var info = HudKit.NewRect("RankInfo", rankRoot);
+            UILayout.Place(info, LetterCx - 240f, 610f, 480f, 34f);
+            rankInfoGroup = info.gameObject.AddComponent<CanvasGroup>();
+            rankInfoGroup.blocksRaycasts = false;
+            string bonus = "報酬 ×" + report.rankScale.ToString("0.##");
+            if (report.leaveGained > 0) bonus += "  ·  褒賞休暇 +" + report.leaveGained + "日";
+            var b = HudKit.AddText(info, bonus, 20f, report.leaveGained > 0 ? Gold : Color.white, true, TextAlignmentOptions.Center, "Bonus", UITheme.TextRole.Body);
+            b.textWrappingMode = TextWrappingModes.NoWrap;
+            HudKit.Stretch(b.rectTransform);
+
+            // 本部へ戻る
+            var bRow = HudKit.NewRect("HqRow", rankRoot);
+            UILayout.Place(bRow, ScreenW - 112f - 300f + 12f, 684f, 300f, 52f);
+            rankButtonGroup = bRow.gameObject.AddComponent<CanvasGroup>();
+            rankButtonGroup.ignoreParentGroups = true;   // (the rank screen's own group lets clicks through to the dim)
+            rankButtonGroup.alpha = 0f; rankButtonGroup.blocksRaycasts = false; rankButtonGroup.interactable = false;
+            var btn = TacticalButton.Create(bRow, "ReturnToHq", "➜", "本部へ戻る", "RETURN TO HQ", null, new Vector2(300f, 52f));
+            UILayout.Place((RectTransform)btn.transform, 0f, 0f, 300f, 52f);
+            btn.onClick.AddListener(LeaveToHq);
+
+            rankRoot.gameObject.SetActive(false);
         }
 
         void BuildBanner(UITheme theme)
@@ -322,7 +521,7 @@ namespace Blindside.UI
                 UILayout.Place(map.rectTransform, hx + 150f, 58f, 400f, 28f);
             }
 
-            BuildRankBadge(theme);
+            BuildBench();
 
             // cards
             cards = new Card[report.lines.Count];
@@ -331,37 +530,9 @@ namespace Blindside.UI
             BuildBottom(theme, hx);
         }
 
-        /// <summary>The operation's rank (S … E), top right: the big letter in a slanted plate, what it was made of (被害 / 殲滅 / ラウンド),
-        /// the reward's scale and the 褒賞休暇 it earned.</summary>
-        void BuildRankBadge(UITheme theme)
+        /// <summary>The members left at the HQ who still earned a share (co-op). (The old rank plate: UI/Legacy/OperationResultRankBadge.cs.txt.)</summary>
+        void BuildBench()
         {
-            var rr = report.rank;
-            if (rr == null) return;
-            float w = 360f, h = 76f, x = ScreenW - 112f - w, y = 26f;
-            Color rc = rr.rank == QuestRank.S ? Gold : rr.rank == QuestRank.A ? theme.blue : rr.rank <= QuestRank.C ? Color.white : StatC;
-            var plate = HudKit.NewRect("RankPlate", resultRoot);
-            UILayout.Place(plate, x, y, w, h);
-            HudKit.AddImage(plate, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .92f));
-            plate.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 14f);
-            var band = HudKit.NewRect("DecoRankBand", plate);
-            UILayout.Place(band, 0f, 0f, 8f, h);
-            HudKit.AddImage(band, rc);
-            var en = HudKit.AddText(plate, "RANK", 11f, StatC, true, TextAlignmentOptions.TopLeft, "RankEn", UITheme.TextRole.Display);
-            en.characterSpacing = 12f;
-            UILayout.Place(en.rectTransform, 22f, 8f, 80f, 14f);
-            var letter = HudKit.AddText(plate, RankRules.Letter(rr.rank), 54f, rc, true, TextAlignmentOptions.MidlineLeft, "RankLetter", UITheme.TextRole.Display);
-            UILayout.Place(letter.rectTransform, 22f, 14f, 70f, 60f);
-            string parts = $"被害 {Mathf.RoundToInt((1f - rr.damage) * 100f)}%  ·  殲滅 {rr.killed}/{rr.enemies}  ·  {rr.rounds}ラウンド";
-            var p = HudKit.AddText(plate, parts, 13f, Color.white, true, TextAlignmentOptions.TopLeft, "RankParts", UITheme.TextRole.Body);
-            p.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(p.rectTransform, 96f, 14f, w - 110f, 20f);
-            string bonus = "報酬 ×" + report.rankScale.ToString("0.##");
-            if (report.leaveGained > 0) bonus += $"  ·  褒賞休暇 +{report.leaveGained}日";
-            var b = HudKit.AddText(plate, bonus, 13f, report.leaveGained > 0 ? Gold : StatC, true, TextAlignmentOptions.TopLeft, "RankBonus", UITheme.TextRole.Body);
-            b.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(b.rectTransform, 96f, 40f, w - 110f, 20f);
-
-            // the members left at the HQ who still earned a share (co-op)
             if (report.bench.Count > 0)
             {
                 var sb = new System.Text.StringBuilder("待機組  ");
@@ -565,16 +736,16 @@ namespace Blindside.UI
             HudKit.AddImage(rankFill, Gold);
             promoted.SetActive(false);
 
-            // 本部へ戻る
-            var bRow = HudKit.NewRect("HqRow", resultRoot);
+            // 次へ (the rank screen)
+            var bRow = HudKit.NewRect("NextRow", resultRoot);
             UILayout.Place(bRow, ScreenW - 112f - 300f + 12f, y + 18f, 300f, 52f);
             buttonGroup = bRow.gameObject.AddComponent<CanvasGroup>();
             // the result's own group lets clicks through to the skipping dim (blocksRaycasts off), and a parent group's "off" also
             // switches off every group under it — so the button's group stands on its own (its fade follows the result's by hand)
             buttonGroup.ignoreParentGroups = true;
-            var b = TacticalButton.Create(bRow, "ReturnToHq", "➜", "本部へ戻る", "RETURN TO HQ", null, new Vector2(300f, 52f));
+            var b = TacticalButton.Create(bRow, "NextToRank", "➜", "次へ", "NEXT", null, new Vector2(300f, 52f));
             UILayout.Place((RectTransform)b.transform, 0f, 0f, 300f, 52f);
-            b.onClick.AddListener(() => { Hide(); onHq?.Invoke(); });
+            b.onClick.AddListener(ShowRank);
         }
 
         /// <summary>Clicks on the dim go to the screen (skipping).</summary>

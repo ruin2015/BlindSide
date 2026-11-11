@@ -118,6 +118,9 @@ namespace Blindside.Map
         public string operationCode, operationNameJa, briefWeather, briefLocation, briefClock;
         /// <summary>The operation's weather (MissionAtmosphere): night, rain.</summary>
         public bool night, rain;
+        /// <summary>Who the player fields on this operation (empty: the whole squad), and whether the operators' abilities are off. Not in the map's own data.</summary>
+        public string[] squadKeys;
+        public bool noAbilities;
         /// <summary>Where the captured operators are held (the rescue intro's markers; `hostage` is the first). Empty: only `hostage`.</summary>
         public Vector2Int[] rescueHostages;
 
@@ -138,7 +141,11 @@ namespace Blindside.Map
         public int winRule;
         public const int WinEither = 0, WinWipe = 1, WinExtract = 2;
 
-        /// <summary>The defense's gadgets placed in the editor (on top of the ones the defense AI sets up itself).</summary>
+        /// <summary>Played exactly as laid out in the map editor: the defense AI's preparation (DefensePrep — reinforcing walls, adding fields,
+        /// cameras and a mirror, sending defenders to ambush posts) is skipped. Off on the built-in house.</summary>
+        public bool exactPlacement;
+
+        /// <summary>The defense's gadgets placed in the editor.</summary>
         public MapGadget[] gadgets;
         public const string GadgetElectric = "ELECTRIC", GadgetMine = "MINE", GadgetSensor = "SENSOR";
         public static readonly string[] GadgetKinds = { GadgetElectric, GadgetMine, GadgetSensor };

@@ -76,6 +76,9 @@ namespace Blindside.Abilities
     /// <summary>A single active gas cloud. Port of an entry in G.gases.</summary>
     public class GasCloud { public float x, y, r; public float ttl; }
 
+    /// <summary>A smoke screen: lasts until its thrower's side's next phase.</summary>
+    public class SmokeCloud { public float x, y, r; public Blindside.Data.OperatorTeam team; }
+
     /// <summary>A single active shock-wire field. Port of an entry in G.electrics.</summary>
     public class ElectricField { public float x, y, r; public bool discovered; public int disabledLeft; }   // disabledLeft > 0: knocked out (SILENCE)
 
@@ -99,6 +102,8 @@ namespace Blindside.Abilities
         public VisionSystem Vision;
         public DroneController Drones;
         public List<GasCloud> Gases = new List<GasCloud>();
+        /// <summary>Smoke screens thrown by the player (スモーク弾).</summary>
+        public List<SmokeCloud> Smokes = new List<SmokeCloud>();
         public List<ElectricField> Electrics = new List<ElectricField>();
         public List<SurveillanceCamera> Cameras = new List<SurveillanceCamera>();
         public IReadOnlyList<IAbilityUnit> Units;   // all units, both teams, incl. hostage-side escort checks elsewhere

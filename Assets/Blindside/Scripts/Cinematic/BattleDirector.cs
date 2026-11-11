@@ -347,6 +347,7 @@ namespace Blindside.Cinematic
                                 stage.Kia = p => { if (!skipping) ShowKia(p); };
                                 stage.Headshot = (u, label, head, dmg) => { if (!skipping) HeadshotUi?.Invoke(u, label, head, dmg); };
                                 stage.IsAlly = IsPlayer;   // the player's critical rounds open on the shooter's face
+                                stage.Support = ShowSupportBadge;
                             }
                         }
                         catch (Exception e) { Debug.LogException(e); CleanupStage(); }
@@ -449,6 +450,16 @@ namespace Blindside.Cinematic
             Safe(HideKia);
             Safe(CleanupStage);
             Safe(() => SetFade(0f));
+        }
+
+        KitSupportBadge supportBadge;
+
+        // 支援射撃: who is joining in, across the screen while its face is up
+        void ShowSupportBadge(ICombatUnit u)
+        {
+            if (skipping || !(u is Blindside.Integration.SimUnit su) || su.Op == null) return;
+            if (supportBadge == null) supportBadge = KitSupportBadge.Build(transform);
+            supportBadge.Play(su.Op.key, su.Op.DisplayName, su.Op.kr, su.Op.color);
         }
 
         void CleanupStage()

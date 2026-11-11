@@ -449,7 +449,7 @@ namespace Blindside.UI
                 case "frag": return "✹";
                 case "smoke": return "◎";
                 case "flash": return "✦";
-                case "drone": return "⌖";
+                case HubCatalog.ReconDroneKey: return "⌖";
                 default: return "✚";
             }
         }

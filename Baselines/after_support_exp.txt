@@ -1,0 +1,10 @@
+# mode=AIvsAI
+seed=1001 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=4 deaths=[ARGUS,WRAITH,OBSIDIAN,VOLT,atk2,MIASMA]
+seed=1002 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=4 deaths=[ARGUS,WRAITH,OBSIDIAN,VOLT,atk2,MIASMA]
+seed=1003 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=4 deaths=[ARGUS,WRAITH,OBSIDIAN,VOLT,atk2,MIASMA]
+# attackWins=3 defenseWins=0 exceptions=0
+# mode=AIvsAI+DefensePrep+RandomAttackerSpawn
+seed=1001 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=6 deaths=[atk3,MIASMA,VOLT,ARGUS,atk2,atk4,atk1,atk5]
+seed=1002 winner=AttackWins reason="防衛チームが全員制圧されました。" rounds=5 deaths=[MIASMA,VOLT,ARGUS,atk3,atk2,WRAITH,atk4,atk1,OBSIDIAN]
+seed=1003 winner=DefenseWins reason="攻撃チームが全員制圧されました。" rounds=6 deaths=[WRAITH,atk1,MIASMA,atk4,atk3,atk2,VOLT,atk5]
+# attackWins=1 defenseWins=2 exceptions=0

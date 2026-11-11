@@ -335,7 +335,11 @@ namespace Blindside.MapEditor
             RefreshDirty();
             string renamed = stem != Model.Data.name ? $" (ファイル名に使えない文字を置き換えました: {stem}.json)" : "";
             int errors = Validation != null ? Validation.ErrorCount : 0;
-            Toast($"保存しました: {path}{renamed}" + (errors > 0 ? $" — 必須エラーが{errors}件あるため、ゲーム開始には使えません" : ""));
+            string quest = null; bool rejected = false;
+            try { quest = MapStore.SyncCatalog(stem, out rejected); }
+            catch (Exception ex) { UnityEngine.Debug.LogError("[MapStore] " + stem + ": " + ex.Message); rejected = true; }
+            string synced = quest == null ? "" : rejected ? $" — エラーがあるため、クエスト「{quest}」には反映していません" : $" — クエスト「{quest}」に反映しました";
+            Toast($"保存しました: {path}{renamed}" + (errors > 0 ? $" — 必須エラーが{errors}件あるため、ゲーム開始には使えません" : "") + synced);
             after?.Invoke();
         }
 

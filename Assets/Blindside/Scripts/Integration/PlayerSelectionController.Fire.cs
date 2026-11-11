@@ -197,9 +197,11 @@ namespace Blindside.Integration
             facingEndAfter = endAfter; facingBackup = bk;
             HideMenu();
             NotifySelection();
-            SetHint(endAfter ? "行動終了前に視野角を設定してください" : "視野角を調整してください",
-                "マウスで方向を指定 · 左クリックで確定 · ESC " + (endAfter ? "現在の向きで終了" : "キャンセル"),
-                ("lock", $"視界固定 {(u.LockFacing ? "ON" : "OFF")} [F]", u.LockFacing), ("cancel", "ESC", false));
+            string head = endAfter ? "行動終了前に視野角を設定してください" : "視野角を調整してください";
+            string how = endAfter ? "マウスで方向を指定 · 左クリックで確定 · ESC 現在の向きで終了" : "マウスで方向を指定 · 左クリックで視界固定 · ESC キャンセル";
+            // 視界変更's left click fixes the view; while it is fixed, the bar offers to release it
+            if (u.LockFacing) SetHint(head, how, ("lock", "視界固定 解除", true), ("cancel", "ESC", false));
+            else SetHint(head, how, ("cancel", "ESC", false));
         }
 
         /// <summary>Port of endUnit(u).</summary>
@@ -243,7 +245,8 @@ namespace Blindside.Integration
             if (mode == Mode.Facing)
             {
                 var u = uiUnit;
-                if (facingEndAfter) EndUnit(u); else SelectUnit(u);
+                if (facingEndAfter) EndUnit(u);
+                else { u.LockFacing = true; SelectUnit(u); }   // (視界変更: the click fixes the view)
                 return true;
             }
             if (mode == Mode.Fire)

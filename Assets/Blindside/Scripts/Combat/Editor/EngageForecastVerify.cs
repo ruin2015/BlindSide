@@ -19,8 +19,11 @@ namespace Blindside.Combat.Editor
     {
         const int W = 16, H = 14, Trials = 600;   // (each shot writes a [Log] line: kept modest)
 
-        sealed class Unit : ICombatUnit, ICombatModifiers
+        sealed class Unit : ICombatUnit, ICombatModifiers, IItemEffects
         {
+            public bool Flashed { get; set; }
+            public int ReviveHp { get; set; }
+            public void Revive() { HP = ReviveHp; ReviveHp = 0; }
             public float X { get; set; }
             public float Y { get; set; }
             public float Facing { get; set; }
@@ -99,7 +102,7 @@ namespace Blindside.Combat.Editor
 
             var prevMap = MapLibrary.Current;
             int prevFloor = CombatSystem.FloorHP;
-            int bad = 0, fired1 = 0, fired2 = 0, crits = 0, kills = 0, blockedN = 0, gearN = 0;
+            int bad = 0, fired1 = 0, fired2 = 0, crits = 0, kills = 0, blockedN = 0, gearN = 0, pursuitN = 0;
             try
             {
                 var data = MakeMap();
@@ -125,14 +128,38 @@ namespace Blindside.Combat.Editor
                     if (pick.Next(8) == 0) b.ShieldUp = true;                  // a raised shield (blocks in front, no return fire)
                     if (pick.Next(10) == 0) a.ShieldUp = true;                 // the opener behind its shield: no opening volley
                     if (pick.Next(12) == 0) b.IsHostage = true;
+                    // the HQ's items: a flashed target, a 除細動器 on either side, a smoke screen across the map
+                    if (pick.Next(6) == 0) b.Flashed = true;
+                    if (pick.Next(6) == 0) a.Flashed = true;
+                    if (pick.Next(5) == 0) b.ReviveHp = pick.Next(20, 70);
+                    if (pick.Next(5) == 0) a.ReviveHp = pick.Next(20, 70);
+                    map.SmokeCells.Clear();
+                    if (pick.Next(4) == 0) for (int sx = 0; sx < W; sx++) for (int sy = 3; sy < 9; sy++) map.SmokeCells.Add(sy * MapGrid.Width + sx);
                     bool preempt = pick.Next(3) != 0;
                     bool sure = preempt && pick.Next(2) == 0;                  // an encounter's first strike (always hits)
                     CombatSystem.FloorHP = pick.Next(6) == 0 ? 1 : 0;          // the tutorial's floor
                     GameRng.Seed(pick.Next());
 
                     // ---- the forecast ----
+                    // 追撃: up to three allies, some out of line or range; the pursuit list is what the match's PursuitAllies would give
+                    var allies = new List<Unit>();
+                    int allyN = pick.Next(3) == 0 ? pick.Next(1, 4) : 0;
+                    for (int n = 0; n < allyN; n++)
+                    {
+                        var c = new Unit { Team = OperatorTeam.Attack, Weapon = weapons[pick.Next(weapons.Length)], HP = 100, X = F(1, W - 2), Y = F(1, H - 2) };
+                        if (pick.Next(5) == 0) c.ShieldUp = true;
+                        if (pick.Next(4) == 0) c.DamageScale = F(.8, 1.4);
+                        allies.Add(c);
+                    }
+                    System.Action<ICombatUnit, ICombatUnit, List<ICombatUnit>> pursuit = (at, tg, into) =>
+                    {
+                        if (at.Team != OperatorTeam.Attack || tg.IsHostage) return;
+                        foreach (var c in allies) if (into.Count < CoopRules.MaxPursuers) into.Add(c);
+                    };
+                    var forecastPursuits = new List<CombatSystem.PursuitOutcome>();
+
                     double before = GameRng.Peek().NextDouble();
-                    CombatSystem.ForecastExchange(map, a, b, preempt, out var v1, out var v2, out int aHp, out int bHp, sure);
+                    CombatSystem.ForecastExchange(map, a, b, preempt, out var v1, out var v2, out int aHp, out int bHp, sure, pursuit, forecastPursuits);
                     bool untouched = GameRng.Peek().NextDouble() == before;
 
                     // ---- the fight ----
@@ -141,14 +168,22 @@ namespace Blindside.Combat.Editor
                     cs.OnResolved += (at, tg, r) => res.Add((at, r));
                     cs.OnKill += (tg, by) => { ((Unit)tg).Alive = false; kills++; };
                     cs.NextSureHit = sure;
+                    cs.PursuitAllies = pursuit;
+                    var actualPursuits = new List<ShotEvent>();
+                    cs.OnShot += e => { if (allies.Contains(e.Attacker as Unit)) actualPursuits.Add(e); };
                     RunNow(cs.Exchange(a, b, preempt));
+                    bool pursuitsSame = actualPursuits.Count == forecastPursuits.Count;
+                    for (int n = 0; pursuitsSame && n < actualPursuits.Count; n++)
+                        pursuitsSame = actualPursuits[n].Attacker == forecastPursuits[n].who && actualPursuits[n].Hit == forecastPursuits[n].hit
+                                       && actualPursuits[n].Headshot == forecastPursuits[n].crit && actualPursuits[n].Damage == forecastPursuits[n].damage;
+                    pursuitN += actualPursuits.Count;
 
                     ShotResult? r1 = null, r2 = null;
                     foreach (var (at, r) in res) { if (at == a) r1 = r; else r2 = r; }
                     bool Same(CombatSystem.VolleyOutcome v, ShotResult? r) =>
                         v.fired == r.HasValue && (!v.fired || (v.hits == r.Value.Hits && v.crits == r.Value.Headshots && v.total == r.Value.TotalDamage
                                                                && v.shots == r.Value.Shots && v.blocked == r.Value.Blocked));
-                    bool okT = untouched && Same(v1, r1) && Same(v2, r2) && aHp == a.HP && bHp == b.HP;
+                    bool okT = untouched && pursuitsSame && Same(v1, r1) && Same(v2, r2) && aHp == a.HP && bHp == b.HP;
                     if (v1.fired) fired1++;
                     if (v2.fired) fired2++;
                     crits += v1.crits + v2.crits;
@@ -168,7 +203,7 @@ namespace Blindside.Combat.Editor
             }
             ok = bad == 0;
             sb.Insert(0, $"[EngageForecastVerify] {(ok ? "PASS" : "FAIL")} — {Trials - bad}/{Trials} trials identical " +
-                         $"(opening volleys {fired1}, return fire {fired2}, headshots {crits}, kills {kills}, shield blocks {blockedN}, with gear {gearN})\n");
+                         $"(opening volleys {fired1}, return fire {fired2}, headshots {crits}, kills {kills}, shield blocks {blockedN}, with gear {gearN}, pursuit rounds {pursuitN})\n");
             return sb.ToString();
         }
     }

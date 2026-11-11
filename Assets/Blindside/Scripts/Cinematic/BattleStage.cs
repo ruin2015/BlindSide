@@ -129,7 +129,13 @@ namespace Blindside.Cinematic
             return a != null ? a.Label : (Vector3?)null;
         }
 
-        BattleActor ActorOf(ICombatUnit u) => leftActor != null && leftActor.Unit == u ? leftActor : rightActor != null && rightActor.Unit == u ? rightActor : null;
+        BattleActor ActorOf(ICombatUnit u)
+        {
+            if (leftActor != null && leftActor.Unit == u) return leftActor;
+            if (rightActor != null && rightActor.Unit == u) return rightActor;
+            foreach (var a in supporters) if (a.Unit == u) return a;
+            return null;
+        }
 
         /// <summary>`delay` seconds (unscaled) from now, run `act`.</summary>
         public void After(float delay, Action act) => timeline.Add((Time.unscaledTime + delay, act));
@@ -185,6 +191,7 @@ namespace Blindside.Cinematic
         public float PlayShot(ShotEvent e)
         {
             var s = ActorOf(e.Attacker); var t = ActorOf(e.Target);
+            if (t != null && e.Attacker != leftActor?.Unit && e.Attacker != rightActor?.Unit) return PlaySupport(e, t);   // 支援射撃: not one of the two fighters
             if (s == null || t == null) return 0f;
             float now = Time.unscaledTime;
             if (s != volleyShooter || e.Index == 0)
@@ -212,6 +219,48 @@ namespace Blindside.Cinematic
             Land(e);
             busyUntil = Mathf.Max(busyUntil, now + ImpactTime(e));
             return ImpactTime(e);
+        }
+
+        // ---- 支援射撃: an ally joins the fight — it steps in beside the shooter, its face in close-up with the badge, then it fires ----
+        /// <summary>The 支援射撃 badge for this unit (set by the director).</summary>
+        public Action<ICombatUnit> Support;
+        const float SupportFace = .55f, SupportAim = .2f, SupportFly = .32f, SupportForward = .9f, SupportSide = 1.25f, SupportStep = 1.05f;
+        readonly List<BattleActor> supporters = new List<BattleActor>(2);
+
+        // beside the fighter who isn't being shot at, a step ahead of it (clear of the cover behind), in a row on the far side of the
+        // street: the cuts' cameras stand on the near side of each, so on the near side of the street they would end up inside the buildings
+        BattleActor SupporterFor(ICombatUnit u, BattleActor target)
+        {
+            foreach (var a in supporters) if (a.Unit == u) return a;
+            if (!(u?.View is Component c) || c == null) return null;
+            var mate = target == rightActor ? leftActor : rightActor;
+            float side = SupportSide + supporters.Count * SupportStep;
+            var made = BattleActor.Create(u, transform, mate.Home + new Vector3(mate.Dir * SupportForward, 0f, side), mate.Dir);
+            supporters.Add(made);
+            return made;
+        }
+
+        /// <summary>One 支援射撃 round, after whatever is still playing; returns how long it needs on screen.</summary>
+        float PlaySupport(ShotEvent e, BattleActor t)
+        {
+            float now = Time.unscaledTime, wait = Mathf.Max(0f, busyUntil - now);
+            float lead = SupportFace + SupportAim + SupportFly;
+            float total = wait + lead + (CritCut(e) ? HeadshotSeconds : ImpactSeconds);
+            busyUntil = now + total;
+            After(wait, () =>
+            {
+                var s = SupporterFor(e.Attacker, t);
+                if (s == null) { Impact(e); return; }
+                if (volleyShooter != null && volleyShooter != s) volleyShooter.Advance(false);
+                volleyShooter = s; volleyTarget = t; targetUp = true;
+                pendingImpacts.Clear();
+                Cut(Shot.Face, s);
+                Support?.Invoke(e.Attacker);
+                After(SupportFace, () => { s.Advance(true); Cut(Shot.Shooter, s); });
+                After(SupportFace + SupportAim, () => { if (CritCut(e)) CritRound(s, t); else MuzzleBurst(s, t); });
+                After(lead, () => { Cut(Shot.Target, t); Impact(e); });
+            });
+            return total;
         }
 
         void FlushImpacts()
@@ -325,6 +374,7 @@ namespace Blindside.Cinematic
             }
             leftActor?.Tick(now, dt);
             rightActor?.Tick(now, dt);
+            foreach (var a in supporters) a.Tick(now, dt);
             var camRot = CameraPose().rotation;
             for (int i = fx.Count - 1; i >= 0; i--)
                 if (!fx[i].Tick(now, dt, camRot)) { if (fx[i].go != null) Destroy(fx[i].go); fx.RemoveAt(i); }
@@ -335,6 +385,7 @@ namespace Blindside.Cinematic
             foreach (var f in fx) { f.Release(); if (f.go != null) Destroy(f.go); }
             leftActor?.DestroyMaterials();
             rightActor?.DestroyMaterials();
+            foreach (var a in supporters) a.DestroyMaterials();
             foreach (var m in ownMaterials) if (m != null) Destroy(m);
         }
 

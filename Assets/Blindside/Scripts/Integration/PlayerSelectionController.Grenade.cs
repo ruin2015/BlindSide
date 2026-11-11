@@ -1,4 +1,4 @@
-// The HQ item in the match — for now the 破片手榴弾 (frag grenade), the player's operators only (SimUnit.Item, from the save):
+// Throwing an HQ item (破片手榴弾, and the aiming and flight shared with スモーク弾 / 閃光弾 — their effects and every item command: .Items.cs), the player's operators only:
 //   command   「破片手榴弾」 (FRAG, ✹) in the unit's menu while it carries one, has not used it this match, can still act (not Acted)
 //             and the squad still holds one (SaveData stock). Not in the deploy / prep phases.
 //   aiming    Mode.Throw: the pointer gives the direction and how far (MinThrow … MaxThrow from the unit, clamped). The flight is
@@ -32,25 +32,12 @@ namespace Blindside.Integration
         const int MaxBounces = 3;
         static readonly Color FragOrange = new Color32(0xff, 0xb1, 0x3b, 0xff);
 
-        // ---- the command -------------------------------------------------------------------------------------------------------
-        static int ItemStock(string key)
-        {
-            var d = Blindside.Save.SaveSystem.Current;
-            return d != null && !string.IsNullOrEmpty(key) ? d.GadgetOf(key).count : 0;
-        }
-
-        void AddItemCommand(SimUnit u, List<Command> L, bool prep)
-        {
-            if (u.Item != FragKey || u.ItemSpent || turns == null) return;
-            if (prep || turns.Phase == MatchPhase.Deploy) return;
-            L.Add(new Command
-            {
-                id = "item", kr = "破片手榴弾", en = "FRAG", ic = "✹",
-                ok = !u.Acted && !u.Shield && ItemStock(u.Item) > 0, sub = "1個",
-            });
-        }
+        // (the commands, and what smoke and flash do where they land: .Items.cs)
 
         // ---- aiming ------------------------------------------------------------------------------------------------------------
+        string throwItem = FragKey;   // what is being thrown
+        float ThrowBlastR => throwItem == SmokeKey ? SmokeR : throwItem == FlashKey ? FlashR : BlastR;
+        float ThrowFuse => throwItem == FragKey ? FuseSeconds : throwItem == FlashKey ? 1.5f : 1f;
         float throwAngle, throwDist = 4f;
         readonly List<Vector2> throwPlan = new List<Vector2>(256);   // grid points along the flight
         readonly List<float> throwHeight = new List<float>(256);     // the height at each
@@ -58,13 +45,15 @@ namespace Blindside.Integration
         Vector2 throwLand;
         bool hasThrow;
 
-        void StartThrow(SimUnit u)
+        void StartThrow(SimUnit u, string key)
         {
+            throwItem = key;
             mode = Mode.Throw; uiUnit = u; panelUnit = u;
             throwAngle = u.Facing; throwDist = 4f;
             PlanThrow(u);
             NotifySelection();
-            SetHint("投げる方向と距離を選択してください", "マウスの位置まで投げる (最大 " + MaxThrow.ToString("0") + "m) · 壁で跳ね返る · 3秒後に爆発 · 左クリックで投擲",
+            string after = key == SmokeKey ? "着弾後に煙幕" : key == FlashKey ? "着弾後に炸裂" : "3秒後に爆発";
+            SetHint("投げる方向と距離を選択してください", "マウスの位置まで投げる (最大 " + MaxThrow.ToString("0") + "m) · 壁で跳ね返る · " + after + " · 左クリックで投擲",
                 ("cancel", "ESC キャンセル", false));
         }
 
@@ -183,7 +172,8 @@ namespace Blindside.Integration
                 BuildArcMesh(throwArcMesh, throwPlan, throwHeight, .07f, .22f, .12f);
             }
             var land = GridSpace.GridToWorld(throwLand.x, throwLand.y, .06f);
-            throwBlastGo.transform.position = land; throwBlastGo.transform.localScale = Vector3.one * BlastR;
+            throwBlastGo.transform.position = land; throwBlastGo.transform.localScale = Vector3.one * ThrowBlastR;
+            if (throwKillGo.activeSelf != (throwItem == FragKey)) throwKillGo.SetActive(throwItem == FragKey);   // (only the grenade kills outright)
             throwKillGo.transform.position = land; throwKillGo.transform.localScale = Vector3.one * KillR;
             float s = 1f + .2f * Mathf.Sin(Time.unscaledTime * 9f);
             throwDotGo.transform.position = land; throwDotGo.transform.localScale = new Vector3(s, s, s);
@@ -219,15 +209,11 @@ namespace Blindside.Integration
         {
             float t0 = Time.unscaledTime;
             u.Facing = throwAngle;
-            u.Acted = true;
-            u.ItemSpent = true;
-            string spentKey = u.Item;
-            var d = Blindside.Save.SaveSystem.Current;
-            if (d != null) { var line = d.GadgetOf(spentKey); line.count = Mathf.Max(0, line.count - 1); }
-            // the next slot's item comes out (co-op item slots)
-            if (u.ItemQueue.Count > 0) { u.Item = u.ItemQueue[0]; u.ItemQueue.RemoveAt(0); u.ItemSpent = false; }
+            string thrown = throwItem;
+            float fuse = ThrowFuse;
+            SpendItem(u, thrown);
             u.View?.PlayAbility("frag");
-            Log(KrOf(u) + ": 破片手榴弾を投げた", "a");
+            Log(KrOf(u) + ": " + ItemName(thrown) + "を投げた", "a");
             UnitsChanged?.Invoke();
 
             // the flight (a copy: the plan is the aiming's)
@@ -261,10 +247,10 @@ namespace Blindside.Integration
             }
             g.transform.position = GridSpace.GridToWorld(land.x, land.y, .1f);
             // on the floor: it blinks faster and faster until the fuse runs out
-            while (Time.unscaledTime - t0 < FuseSeconds)
+            while (Time.unscaledTime - t0 < fuse)
             {
-                float left = FuseSeconds - (Time.unscaledTime - t0);
-                float rate = Mathf.Lerp(16f, 4f, left / FuseSeconds);
+                float left = fuse - (Time.unscaledTime - t0);
+                float rate = Mathf.Lerp(16f, 4f, left / fuse);
                 bool hot = Mathf.Sin(Time.unscaledTime * rate * Mathf.PI) > 0f;
                 var c = hot ? new Color(1f, .2f, .2f) : dark;
                 mat.SetColor("_BaseColor", c); mat.SetColor("_Color", c);
@@ -272,12 +258,15 @@ namespace Blindside.Integration
             }
             Destroy(g); Destroy(mat);
 
-            Explode(u, land);
+            if (thrown == SmokeKey) DropSmoke(u, land);
+            else if (thrown == FlashKey) DetonateFlash(u, land);
+            else Explode(u, land);
             UnitsChanged?.Invoke();
             turns?.CheckWin();
             busy = false;
             if (turns == null || turns.Over) yield break;
             AfterAction(u);
+            TutorialGate.RaiseThrowFinished(u, land);
         }
 
         void Explode(SimUnit thrower, Vector2 at)

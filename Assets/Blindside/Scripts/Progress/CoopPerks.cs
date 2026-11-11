@@ -1,6 +1,6 @@
 // What FLARE's co-op rank with an operator unlocks (Campaign.Rank), rank by rank:
 //   1  経験値共有 I     an operator left out of a sortie still earns 1/3 of the squad's experience (MatchAward)
-//   2  追撃           an ally fires: this operator joins in when the target is in its sight (extra damage)
+//   2  支援射撃        an ally fires: this operator joins in when the target is in its sight (extra damage)
 //   3  経験値共有 II    … 1/2 — and the operator's own upgrade (Unique3: CRUSHER's three-panel breach, SERUM's 75 heal …)
 //   4  ガジェット枠 2    two gadgets carried
 //   5  経験値共有 III   … the whole share
@@ -52,7 +52,7 @@ namespace Blindside.Progress
             return new List<CoopPerk>
             {
                 new CoopPerk { rank = 1, name = "経験値共有 I", text = "出撃しなくても経験値の1/3を得る", live = true },
-                new CoopPerk { rank = 2, name = "追撃", text = "味方の射撃時、狙われた敵が視界にいれば一緒に撃って追加ダメージ", live = true },
+                new CoopPerk { rank = 2, name = "支援射撃", text = "味方の射撃時、狙われた敵が視界にいれば一緒に撃って追加ダメージ", live = true },
                 new CoopPerk { rank = 3, name = "経験値共有 II", text = "出撃しなくても経験値の1/2を得る", live = true },
                 new CoopPerk { rank = 3, name = u3.name, text = u3.text, live = true },
                 new CoopPerk { rank = 4, name = "ガジェット枠 II", text = "装備できるガジェットが2個に", live = true },

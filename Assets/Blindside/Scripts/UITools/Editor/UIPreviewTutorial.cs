@@ -34,7 +34,7 @@ namespace Blindside.UITools.EditorTools
             var r = TutorialRadio.Build(canvas.transform, canvas);
             r.enabled = false;
             r.SetSpeaker(true);
-            r.Say(TutorialDirector.LRadio, true);
+            r.Say(string.Format(TutorialDirector.LRadio, 5), true);
             r.Evaluate(6f);
             var sr = TutorialSiren.Build(canvas.transform);
             sr.enabled = false;
@@ -84,7 +84,7 @@ namespace Blindside.UITools.EditorTools
             var canvas = s.NewCanvas("TutorialOperatorCard_Stage", UITheme.CanvasKind.Hud, 0);
             var r = TutorialRadio.Build(canvas.transform, canvas);
             r.enabled = false;
-            r.Say(TutorialDeployGuide.Intros[1].line, true);
+            r.Say("この隊員はイグニス。\n強化壁を一度で破壊できる。", true);
             r.Evaluate(6f);
             var op = UnityEditor.AssetDatabase.LoadAssetAtPath<Blindside.Data.OperatorData>("Assets/Blindside/Data/Operators/Operator_IGNIS.asset");
             var c = TutorialOperatorCard.Build(canvas.transform);
@@ -99,7 +99,7 @@ namespace Blindside.UITools.EditorTools
             var r = TutorialRadio.Build(canvas.transform, canvas);
             r.enabled = false;
             r.SetSpeaker(true);
-            r.Say(TutorialDirector.LRadio, true);
+            r.Say(string.Format(TutorialDirector.LRadio, 5), true);
             r.Evaluate(6f);
         }
 
@@ -135,7 +135,51 @@ namespace Blindside.UITools.EditorTools
             g.mouseChip.anchoredPosition = new Vector2(1000f, 460f);
         }
 
-        public const string Forecast = "engage_forecast", ForecastAllyDown = "engage_forecast_ally_down";
+        public const string Forecast = "engage_forecast", ForecastAllyDown = "engage_forecast_ally_down", ForecastPursuit = "engage_forecast_pursuit";
+
+        public const string SupportBadge = "support_fire_badge";
+
+        /// <summary>The battle stage's 支援射撃 badge, CRUSHER joining in, settled.</summary>
+        public static void BuildSupportBadge(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("SupportBadge_Stage", UITheme.CanvasKind.Hud, 0);
+            var b = KitSupportBadge.Build(canvas.transform, canvas);
+            b.enabled = false;
+            b.PoseAt("CRUSHER", "CRUSHER", "クラッシャー", TutorialRadio.CrusherColor, KitSupportBadge.InTime + .2f);
+        }
+
+        public const string ForecastTour = "tutorial_forecast_tour";
+
+        /// <summary>The walk round the attack forecast, on the HP step.</summary>
+        public static void BuildForecastTour(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("EngageForecastTour_Stage", UITheme.CanvasKind.Hud, 0);
+            var p = EngagePreview.Build(canvas.transform, canvas);
+            p.enabled = false;
+            var a = new EngagePreview.Side { key = "FLARE", en = "FLARE", kr = "フレア", weapon = "M24", color = UIPalette.Hex("#F8594F"), ally = true, hp = 100, maxHp = 100, after = 64,
+                                             dmg = "50", hit = "94%", hs = "12%", shots = "×1", result = "1/1", resultTotal = 50 };
+            var b = new EngagePreview.Side { key = "CRUSHER", en = "CRUSHER", kr = "クラッシャー", weapon = "AR15", color = TutorialRadio.CrusherColor, ally = false, hp = 120, maxHp = 120, after = 70,
+                                             dmg = "18", hit = "76%", hs = "8%", shots = "×3", result = "2/3", resultTotal = 36 };
+            p.OpenAim(a, b, false);
+            p.Evaluate(EngagePreview.XTo + .2f);
+            var tour = TutorialForecastTour.Build(canvas.transform, canvas);
+            tour.enabled = false;
+            tour.Pose(p, 2);
+        }
+
+        /// <summary>The forecast with two allies joining in with 支援射撃: CRUSHER's round a headshot, SERUM's a miss.</summary>
+        public static void BuildForecastPursuit(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("EngageForecastPursuit_Stage", UITheme.CanvasKind.Hud, 0);
+            var p = EngagePreview.Build(canvas.transform, canvas);
+            p.enabled = false;
+            var a = new EngagePreview.Side { key = "FLARE", en = "FLARE", kr = "フレア", weapon = "M24", color = UIPalette.Hex("#F8594F"), ally = true, hp = 100, maxHp = 100, after = 100,
+                                             dmg = "38", hit = "78%", hs = "32%", shots = "×1", preempt = true, result = "1/1", resultTotal = 38,
+                                             pursuers = new[] { new EngagePreview.Pursuer { key = "CRUSHER", hit = true, crit = true, damage = 48 }, new EngagePreview.Pursuer { key = "SERUM" } } };
+            var b = new EngagePreview.Side { key = "VOLT", en = "UNKNOWN", kr = "テロリスト", weapon = "M870", color = UIPalette.Hex("#EF8202"), ally = false, hp = 120, maxHp = 120, after = 34 };
+            p.Open(a, b, null, null, false);
+            p.Evaluate(EngagePreview.XTo + .2f);
+        }
 
         /// <summary>The preemptive attack's forecast: FLARE on VOLT — VOLT expected to fall (grey, X) or, `allyDown`, FLARE the one
         /// expected to fall to the return fire. Posed at the end of its entrance.</summary>
