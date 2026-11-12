@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-12 22:16
+Screen 1440x810 · 0 issues · generated 2026-11-12 23:32
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -57,6 +57,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_armory_gun | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory_part | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory_gadget | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_armory_gadget_held | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_armory_swap | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_sortie_squad5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_sortie_squad3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_bench | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -150,7 +152,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 78종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 79종)
 
 - Brighten ×6
 - Chip ×575
@@ -160,14 +162,14 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - EngagePreview ×5
 - ExpGainPopup ×2
 - HazardStripe ×203
-- HubArmoryScreen ×5
+- HubArmoryScreen ×7
 - HubHover ×75
 - HubListPanel ×5
 - HubLoadoutScreen ×3
 - HubMenu ×2
 - HubMinimap ×1
 - HubPointer ×54
-- HubScreen ×28
+- HubScreen ×30
 - HubShopScreen ×5
 - HubSquadScreen ×2
 - HubStationScreen ×5
@@ -178,7 +180,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×41
-- KitBrighten ×135
+- KitBrighten ×137
 - KitChoice ×5
 - KitCommandMenu ×16
 - KitDialogue ×2
@@ -199,15 +201,16 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitTextButton ×65
 - KitTint ×325
 - KitTitleLeft ×6
-- LintIgnoreClip ×903
+- LintIgnoreClip ×901
 - LintIgnoreOverlap ×331
 - MainMenuScreen ×6
 - OperationResultScreen ×5
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×317
-- SlantedGraphic ×3323
+- SlantedGraphic ×3333
 - SlantedMask ×311
+- StageClick ×2
 - TacticalPanel ×1231
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
@@ -277,6 +280,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_armory_gun | 1440x810 | 本部 — ロードアウト (銃) |
 | hub_armory_part | 1440x810 | 本部 — ロードアウト (パーツ選択) |
 | hub_armory_gadget | 1440x810 | 本部 — ロードアウト (ガジェット) |
+| hub_armory_gadget_held | 1440x810 | 本部 — ロードアウト (ガジェット: 他の隊員が装備中) |
+| hub_armory_swap | 1440x810 | 本部 — ロードアウト (付け替え確認) |
 | hub_sortie_squad5 | 1440x810 | 本部 — 出撃メンバー編成 (5名) |
 | hub_sortie_squad3 | 1440x810 | 本部 — 出撃メンバー編成 (3名) |
 | hub_bench | 1440x810 | 本部 — ロードアウト (作業台) |

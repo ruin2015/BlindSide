@@ -70,7 +70,8 @@ namespace Blindside.UI
             var st = HudKit.NewRect("Stage", r);
             HudKit.Stretch(st);
             s.stageImage = st.gameObject.AddComponent<RawImage>();
-            s.stageImage.raycastTarget = true;   // (takes the clicks off the HQ under it)
+            s.stageImage.raycastTarget = true;   // (takes the clicks off the HQ under it; a click on a figure chooses its slot)
+            st.gameObject.AddComponent<StageClick>().owner = s;
 
             Band(r, "DecoTop", 0f, 200f, .8f, 0f, theme.ink);
             Band(r, "DecoBottom", 600f, 210f, 0f, .85f, theme.ink);
@@ -274,6 +275,33 @@ namespace Blindside.UI
         }
 
         // ---- choosing ------------------------------------------------------------------------------------------------------------
+        /// <summary>A click on the lineup: the slot whose figure is under it (between its feet and its head, within FigureHalfW of it).</summary>
+        class StageClick : MonoBehaviour, UnityEngine.EventSystems.IPointerClickHandler
+        {
+            public HubSquadScreen owner;
+            public void OnPointerClick(UnityEngine.EventSystems.PointerEventData e) { if (owner != null) owner.ClickStage(e); }
+        }
+
+        public const float FigureHalfW = 70f;
+
+        void ClickStage(UnityEngine.EventSystems.PointerEventData e)
+        {
+            if (stage == null || stage.View == null) return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(stageImage.rectTransform, e.position, e.pressEventCamera, out var lp)) return;
+            var rect = stageImage.rectTransform.rect;
+            var vp = new Vector2((lp.x - rect.xMin) / rect.width, (lp.y - rect.yMin) / rect.height);
+            int best = -1; float bestD = float.MaxValue;
+            for (int i = 0; i < size; i++)
+            {
+                var foot = stage.View.WorldToViewportPoint(stage.SlotFoot(i));
+                var top = stage.View.WorldToViewportPoint(stage.SlotHead(i));
+                if (vp.y < foot.y - .02f || vp.y > top.y + .02f) continue;
+                float dx = Mathf.Abs(vp.x - (foot.x + top.x) * .5f) * rect.width;
+                if (dx <= FigureHalfW && dx < bestD) { bestD = dx; best = i; }
+            }
+            if (best >= 0) Choose(best);
+        }
+
         void Choose(int slot)
         {
             chosen = slot;

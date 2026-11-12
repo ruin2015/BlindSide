@@ -7,7 +7,7 @@
 //             through (it flies over them). The preview: the dashed arc (a parabola per leg, lower after each bounce), the landing
 //             point with the blast ring (BlastR) and the lethal ring (KillR), the reach ring around the unit. Left click throws,
 //             right click / ESC cancel (back to the menu).
-//   throw     the unit faces the throw, spends its action (Acted) and the item (one per match; one taken from the squad's
+//   throw     the unit faces the throw, spends its item for the phase (ItemUsed — it can still fire after) and the item (one per match; one taken from the squad's
 //             stock). The grenade flies the arc (unscaled time) and lands; it blinks and goes off 3 s after it left the hand.
 //   blast     every living enemy within BlastR with a clear line from the blast: inside KillR dead outright, else 80 → 30 damage
 //             by distance (× its 被ダメージ). Kills go through CombatSystem.ReportKill (counted, K.I.A, the win check as a shot

@@ -313,9 +313,23 @@ namespace Blindside.Integration
         void PointerUp(Vector2 pos)
         {
             downActive = false;
-            if (downButton == 2) { if (!downMoved) CancelMode(); return; }
+            if (downButton == 2) { if (!downMoved && !ReleaseFacingLock()) CancelMode(); return; }
             if (downPath) { downPath = false; StartCoroutine(OnMoveRelease(pos)); return; }
             if (!downMoved && downOnWorld && !PointerOverVisibleUI(pos)) OnClick(pos);
+        }
+
+        /// <summary>A right-click (no drag) on a unit with its view locked (視界固定) releases the lock — while it is selected (its menu, the
+        /// move or the facing prompt) or walking; aiming / throwing / an ability keep the right-click's cancel. True when it did.</summary>
+        bool ReleaseFacingLock()
+        {
+            var u = uiUnit;
+            if (u == null || !u.LockFacing || modal) return false;
+            if (mode != Mode.Menu && mode != Mode.Move && mode != Mode.Facing && mode != Mode.Idle && mode != Mode.Busy) return false;
+            u.LockFacing = false;
+            if (mode == Mode.Facing && !busy) EnterFacing(u, facingEndAfter, facingBackup);
+            RefreshUnitPanel();   // the panel's "視界固定" tag
+            WorldPopup.Show(u.X, u.Y, "視界固定 解除", new Color32(0x9a, 0xd8, 0xff, 0xff));
+            return true;
         }
 
         // Q: cycle through this side's living, not-yet-ended units.
@@ -432,6 +446,7 @@ namespace Blindside.Integration
             }
             if (mode == Mode.Menu || mode == Mode.Idle || mode == Mode.Deploy) { Deselect(); return; }   // ui.mode==='menu'||'deploy'
             if (mode == Mode.Fire && uiUnit != null) { uiUnit.Facing = fireBackup; HideTip(); }
+            if (healShot) EndHealAim(true);   // (SERUM's heal shot: the pistol away, the facing back)
             if (uiUnit != null && uiUnit.Alive && !uiUnit.Ended) SelectUnit(uiUnit); else Deselect();
         }
 
@@ -441,6 +456,7 @@ namespace Blindside.Integration
         public void SelectUnit(SimUnit u)
         {
             if (u == null || !u.Alive) return;
+            if (healShot && mode != Mode.Busy) EndHealAim(true);   // (another unit / back to the menu while aiming the heal shot)
             if (turns != null && turns.Phase == MatchPhase.Deploy) { EnterDeploy(u); return; }   // selectUnit → enterDeploy
             bool changed = uiUnit != u;
             mode = Mode.Menu; uiUnit = u; panelUnit = u;

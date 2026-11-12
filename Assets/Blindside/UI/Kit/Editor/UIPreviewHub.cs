@@ -131,6 +131,18 @@ namespace Blindside.UI.EditorTools
         public static void BuildArmoryGadget(UIPreview.Stage s) => Screen(s).Armory.PoseGadget(1, 0);
         public const string ArmoryGadget = "hub_armory_gadget";
 
+        /// <summary>hub_armory_gadget_held: SERUM's item slot 1 — both frag grenades carried (FLARE and CRUSHER): the row says who has it,
+        /// 所持 0; hub_armory_swap: SERUM taking one — 付け替えますか？</summary>
+        public const string ArmoryGadgetHeld = "hub_armory_gadget_held", ArmorySwap = "hub_armory_swap";
+        static HubScreen HeldScreen(UIPreview.Stage s)
+        {
+            var hs = Screen(s);
+            hs.previewData.OperatorOf("CRUSHER").gadget = "frag";
+            return hs;
+        }
+        public static void BuildArmoryGadgetHeld(UIPreview.Stage s) => HeldScreen(s).Armory.PoseGadget(3, 0);
+        public static void BuildArmorySwap(UIPreview.Stage s) { var a = HeldScreen(s).Armory; a.PoseGadget(3, 0); a.PoseTake("frag"); }
+
         /// <summary>hub_sortie_squad5: 出撃メンバー編成 for the third main quest (5 to go: the wedge, slot 2 chosen, the roster open);
         /// hub_sortie_squad3: the second (3 to go, its captives left out).</summary>
         public const string SortieSquad5 = "hub_sortie_squad5", SortieSquad3 = "hub_sortie_squad3";

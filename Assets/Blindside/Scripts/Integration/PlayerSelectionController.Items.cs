@@ -1,5 +1,5 @@
-// The HQ's items in the match, the player's operators only (SimUnit.Items, from the save). One menu command per kind carried; each use
-// spends the unit's action and one from the squad's stock. No GameRng draw is made here.
+// The HQ's items in the match, the player's operators only (SimUnit.Items, from the save). One menu command per kind carried; one use
+// per phase (SimUnit.ItemUsed — the shot is left: it can still fire after) and one from the squad's stock. No GameRng draw is made here.
 //   破片手榴弾 / スモーク弾 / 閃光弾   thrown (Mode.Throw, .Grenade.cs); what happens where they land is here for smoke and flash
 //     smoke    a screen of SmokeR: sight stops at it, shots through it are SmokePenalty harder, until the thrower's side's next phase
 //     flash    everyone in FlashR with a clear line, friend or foe: hit chance −FlashAcc and every hit on them a headshot — enemies
@@ -82,7 +82,7 @@ namespace Blindside.Integration
                 if (g == null) continue;
                 int n = 0;
                 foreach (var k in u.Items) if (k == key) n++;
-                bool usable = !u.Acted && !u.Shield && ItemStock(key) > 0 && !(g.heal > 0 && u.HP >= u.MaxHP);
+                bool usable = !u.Acted && !u.ItemUsed && !u.Shield && ItemStock(key) > 0 && !(g.heal > 0 && u.HP >= u.MaxHP);
                 L.Add(new Command { id = ItemPrefix + key, kr = g.name, en = ItemEn(key), ic = ItemIcon(key), ok = usable, sub = n + "個" });
             }
         }
@@ -99,10 +99,10 @@ namespace Blindside.Integration
             return true;
         }
 
-        /// <summary>The action and one item are spent.</summary>
+        /// <summary>One item is spent, and the unit's item for this phase — not its shot: it can still fire after (one item per phase).</summary>
         void SpendItem(SimUnit u, string key)
         {
-            u.Acted = true;
+            u.ItemUsed = true;
             u.Items.Remove(key);
             ItemEffects.Spend(key);
         }

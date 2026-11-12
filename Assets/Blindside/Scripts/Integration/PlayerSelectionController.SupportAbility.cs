@@ -54,6 +54,16 @@ namespace Blindside.Integration
             }
             if (sp.Kind == AbilityTargetKind.Ally)
             {
+                // SERUM's stim: a heal shot at an ally (.HealShot.cs) — the pistol up and aimed, SERUM itself always a target
+                if (IsHealShot(u))
+                {
+                    HealShotTargets(u, sp);
+                    BeginHealAim(u);
+                    SetHint("回復弾を撃つ味方を選択してください",
+                        (sp.Range > 100f ? "どこにいる味方でも" : HealShotRange.ToString("0") + "m以内・射線が通る味方") + " (自分をクリックで投与) · 回復 " + StimAbility.Heal(u),
+                        ("cancel", "ESC キャンセル", false));
+                    return true;
+                }
                 foreach (var a in units) if (sp.ValidAlly(a)) validAllies.Add(a);
                 if (validAllies.Count == 0) { Log("対象の味方がいません", "w"); SelectUnit(u); return true; }
             }
@@ -91,6 +101,13 @@ namespace Blindside.Integration
             {
                 var a = PickUnit(screenPos);
                 if (a == null || !validAllies.Contains(a)) { SfxNoise.Click(); return true; }
+                if (healShot)
+                {
+                    busy = true; HideHint();
+                    mode = Mode.Busy;
+                    StartCoroutine(HealShotRoutine(u, a));
+                    return true;
+                }
                 target = AbilityTarget.FromAlly(a);
             }
             else if (abilitySpec.Kind == AbilityTargetKind.Point)
@@ -117,6 +134,7 @@ namespace Blindside.Integration
 
         void SyncSupportAbilityHelpers()
         {
+            SyncHealAim();
             bool abilityMode = mode == Mode.Ability && uiUnit != null;
             bool allyOn = abilityMode && abilitySpec.Kind == AbilityTargetKind.Ally && validAllies.Count > 0;
             bool pointOn = abilityMode && abilitySpec.Kind == AbilityTargetKind.Point && validCells.Count > 0;

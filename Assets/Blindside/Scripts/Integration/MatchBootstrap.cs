@@ -144,6 +144,8 @@ namespace Blindside.Integration
         // Remaining per-unit flags commands() reads (mkUnit defaults). Nothing sets them yet — the
         // gadget/facing systems aren't wired into this harness — but the menu's enable rules use them.
         public bool GadgetUsed { get; set; }
+        /// <summary>An HQ item was used this phase (one per phase; it doesn't spend the shot — PlayerSelectionController.SpendItem).</summary>
+        public bool ItemUsed { get; set; }
         /// <summary>The items carried from the HQ and not yet used (HubCatalog.Gadgets keys, one per item slot) — the player's operators
         /// in a real match only (Progress.ProgressBonus).</summary>
         public readonly List<string> Items = new List<string>(3);
@@ -792,7 +794,7 @@ namespace Blindside.Integration
             turns.OnPhaseBegin += phase =>
             {
                 var acting = TurnManager.ActingTeam(phase);
-                foreach (var u in units) if (u.Team == acting) u.GadgetUsed = false;
+                foreach (var u in units) if (u.Team == acting) { u.GadgetUsed = false; u.ItemUsed = false; }
                 if (acting == OperatorTeam.Attack) abilityCtx.Drones.ResetMoveBudget();
             };
             // the battle music: once the placing is over — the first attack phase (after the attack side's deployment, or the defense

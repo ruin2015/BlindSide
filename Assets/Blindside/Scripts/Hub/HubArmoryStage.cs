@@ -205,9 +205,27 @@ namespace Blindside.Hub
                 gadgetPose = false; lookBack = null; lookBackOn = null;
                 figure.SetCombatReady(aiming);
                 figureKey = op.key;
+                Settle(FirstPoseTime);   // (the first pose, then still)
             }
             held = gun;
             if (figure != null) figure.SetWeapon(gun);
+        }
+
+        // ---- the figure held still: it moves only while it changes pose (raising / lowering the gun, turning for the gadgets), then
+        // stops in the pose it reached (UnitAnimator.SetFrozen) — no idle breathing on the screen ----
+        public const float FirstPoseTime = .15f, AimSettleTime = .9f, TurnSettleTime = 1.2f;
+        float freezeAt = -1f;
+
+        /// <summary>Lets the figure move for `seconds` (a change of pose), then holds it still.</summary>
+        void Settle(float seconds)
+        {
+            Freeze(false);
+            freezeAt = Time.unscaledTime + seconds;
+        }
+
+        void Freeze(bool on)
+        {
+            if (figure != null && figure.UnitAnimator != null) figure.UnitAnimator.SetFrozen(on);
         }
 
         // ---- the gun (stage 2): the figure aims to the right (+X), the camera at its right side; a slot's shot frames its point -------
@@ -226,7 +244,11 @@ namespace Blindside.Hub
             if (figure == null) return;
             figure.SetCombatReady(on);
             figure.SetFacing(on ? 0f : idleFacing);
+            Settle(AimSettleTime);
         }
+
+        /// <summary>A new gun put in the hands (the gun list): the figure moves a moment, then stills again.</summary>
+        public void GunChanged() { if (figure != null && !gadgetPose) Settle(AimSettleTime); }
 
         public void IdleShot(float time) => SetShot(IdleEye, IdleLook, time);
 
@@ -300,6 +322,9 @@ namespace Blindside.Hub
             var fwd = Quaternion.Euler(0f, GadgetTurn, 0f) * toCam.normalized;   // facing away, the camera off its left shoulder
             if (figure != null)
             {
+                // turning: free to move (the look-back holds it still once turned; back to the idle: still again after the turn)
+                Freeze(false);
+                freezeAt = on ? -1f : Time.unscaledTime + TurnSettleTime;
                 figure.SetCombatReady(false);
                 figure.SetFacing(on ? Mathf.Atan2(-fwd.z, fwd.x) : idleFacing);
                 if (BindLookBack(figure.gameObject, figure.ModelRoot != null ? figure.ModelRoot.GetComponentInChildren<Animator>() : null)) lookBack.Turn(on);
@@ -461,6 +486,7 @@ namespace Blindside.Hub
 
         void Update()
         {
+            if (freezeAt > 0f && Time.unscaledTime >= freezeAt) { freezeAt = -1f; if (!gadgetPose) Freeze(true); }
             if (clock >= moveTime) return;
             clock += Time.unscaledDeltaTime;
             Evaluate(clock);

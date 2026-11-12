@@ -167,6 +167,7 @@ namespace Blindside.UI
 
         public void Close()
         {
+            CloseAsk();
             ClosePicker();
             if (stage != null) stage.SetLive(false);
             if (panelCanvas != null) panelCanvas.gameObject.SetActive(false);
@@ -253,7 +254,7 @@ namespace Blindside.UI
             if (Covered) { wasCovered = true; return; }
             if (wasCovered) { wasCovered = false; Refresh(); }   // back from the item list: what changed shows
             var kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame && !EscapeGate.Consumed) { EscapeGate.Consume(); Back(); }
+            if (kb != null && kb.escapeKey.wasPressedThisFrame && !EscapeGate.Consumed) { EscapeGate.Consume(); if (Asking) CloseAsk(); else Back(); }
         }
 
         /// <summary>ESC / 戻る: the picker, then the gun / the gadgets, then the screen.</summary>
@@ -313,22 +314,122 @@ namespace Blindside.UI
             BuildItemPicker();
         }
 
-        /// <summary>Puts gadget `g` (null: none) in the open slot — one copy carried per one owned.</summary>
+        /// <summary>Puts gadget `g` (null: none) in the open slot — one copy carried per one owned, across the whole squad. Every copy
+        /// already carried: the one an ally carries can be taken over (asked first: 付け替えますか？).</summary>
         void PutItem(HubCatalog.Gadget g)
         {
             var op = Op;
             if (op == null || itemSlot < 0 || !screen.Editable) return;
             var p = D.OperatorOf(op.key);
-            if (g != null)
+            int slot = itemSlot;
+            if (g != null && p.Slot(slot) != g.key && GadgetFree(g.key, op.key, slot) <= 0)
             {
-                int slots = Blindside.Progress.CoopPerks.GadgetSlots(D, op.key), carried = 0;
-                for (int s = 0; s < slots; s++) if (s != itemSlot && p.Slot(s) == g.key) carried++;
-                if (D.GadgetOf(g.key).count <= carried) return;
+                if (!GadgetHolder(g.key, op.key, slot, out var holder, out var hs)) return;
+                Ask(Name(holder) + "が装備中です", g.name + "を" + Name(holder) + "から外して、" + op.DisplayName + "に付け替えますか？", () =>
+                {
+                    D.OperatorOf(holder).SetSlot(hs, "");
+                    p.SetSlot(slot, g.key);
+                    SaveSystem.Write(false);
+                    BuildLeft(); BuildItemPicker();
+                });
+                return;
             }
-            p.SetSlot(itemSlot, g != null ? g.key : "");
+            p.SetSlot(slot, g != null ? g.key : "");
             SaveSystem.Write(false);
             BuildLeft();
             BuildItemPicker();
+        }
+
+        // ---- who carries what (the squad shares the stock: a gadget / a part on one is not free for another) ---------------------
+        /// <summary>Copies of gadget `key` left to carry, `op`'s slot `slot` not counted (stock − every open slot of the squad holding it).</summary>
+        int GadgetFree(string key, string op, int slot)
+        {
+            int carried = 0;
+            foreach (var o in D.operators)
+            {
+                if (o == null) continue;
+                int slots = Blindside.Progress.CoopPerks.GadgetSlots(D, o.key);
+                for (int s = 0; s < slots; s++) if (o.Slot(s) == key && !(o.key == op && s == slot)) carried++;
+            }
+            return D.GadgetOf(key).count - carried;
+        }
+
+        /// <summary>Another operator (or another slot) carrying gadget `key`.</summary>
+        bool GadgetHolder(string key, string op, int slot, out string holder, out int holderSlot)
+        {
+            holder = null; holderSlot = -1;
+            // another operator first (taking a copy off one's own other slot is just moving it)
+            for (int pass = 0; pass < 2; pass++)
+                foreach (var o in D.operators)
+                {
+                    if (o == null || (pass == 0) == (o.key == op)) continue;
+                    int slots = Blindside.Progress.CoopPerks.GadgetSlots(D, o.key);
+                    for (int s = 0; s < slots; s++)
+                        if (o.Slot(s) == key && !(o.key == op && s == slot)) { holder = o.key; holderSlot = s; return true; }
+                }
+            return false;
+        }
+
+        /// <summary>A gun of the squad with part `key` fitted (not `op`'s `weapon` at `slot`): its operator and gun.</summary>
+        bool PartHolder(string key, string op, string weapon, int slot, out string holder, out string holderWeapon, out int holderSlot)
+        {
+            holder = holderWeapon = null; holderSlot = -1;
+            for (int pass = 0; pass < 2; pass++)
+                foreach (var o in D.operators)
+                {
+                    if (o == null || o.fits == null || (pass == 0) == (o.key == op)) continue;
+                    foreach (var f in o.fits)
+                        if (f != null && f.parts != null)
+                            for (int s = 0; s < f.parts.Length; s++)
+                                if (f.parts[s] == key && !(o.key == op && f.weapon == weapon && s == slot)) { holder = o.key; holderWeapon = f.weapon; holderSlot = s; return true; }
+                }
+            return false;
+        }
+
+        static string Name(string key) { var o = BuildAssetRegistry.Operator(key); return o != null ? o.DisplayName : key; }
+
+        /// <summary>Who holds it, for the picker's row: 「CRUSHER 装備中」 (another of one's own guns: 「SCAR に装着中」).</summary>
+        static string HeldBy(string holder, string holderWeapon, string self, bool part)
+        {
+            if (holder == self && holderWeapon != null)
+            {
+                string wn = holderWeapon;
+                foreach (var o in Squad) foreach (var w in HubCatalog.GunsOf(o)) if (w != null && w.key == holderWeapon) wn = w.weaponName;
+                return wn + " に装着中";
+            }
+            return Name(holder) + (part ? " 装着中" : " 装備中");
+        }
+
+        // ---- the confirmation (付け替えますか？) ----------------------------------------------------------------------------------
+        DialogView dialog;
+        System.Action pendingYes;
+
+        void Ask(string head, string body, System.Action yes)
+        {
+            if (dialog == null)
+            {
+                // in the angled panels' canvas (flat on the camera's plane): it is clicked through the same raycaster, over the panels
+                dialog = DialogView.Build(panelRoot != null ? (Transform)panelRoot : root, () => { var y = pendingYes; CloseAsk(); y?.Invoke(); }, CloseAsk);
+            }
+            pendingYes = yes;
+            dialog.transform.SetAsLastSibling();
+            dialog.Open(head, "SWAP", body, "付け替える", "キャンセル");
+        }
+
+        void CloseAsk()
+        {
+            pendingYes = null;
+            if (dialog != null) dialog.Close();
+        }
+
+        bool Asking => dialog != null && dialog.Root.gameObject.activeSelf;
+
+        /// <summary>Previews: the open item slot asked to take gadget `key` (an ally carries every copy: the 付け替え dialog, at rest).</summary>
+        public void PoseTake(string key)
+        {
+            PutItem(HubCatalog.GadgetOf(key));
+            if (dialog != null) dialog.Evaluate(99f);
+            if (stage != null) stage.RenderNow();
         }
 
         void BuildGadgetColumn(float y)
@@ -405,7 +506,12 @@ namespace Blindside.UI
             var theme = UITheme.Current;
             var row = HudKit.NewRect(g != null ? "Pick_" + g.key : "Pick_None", picker);
             UILayout.Place(row, 8f, y, PickerW - 16f, PickRowH - 4f);
-            var baseC = on ? Color.Lerp(theme.ink2, theme.blue, .45f) : theme.ink2;
+            // every copy carried: by an ally — marked with who (amber), 所持 0, a click asks to take it over
+            var op = Op;
+            int free = g != null && op != null ? GadgetFree(g.key, op.key, itemSlot) : 0;
+            string holder = null;
+            bool heldElsewhere = g != null && !on && free <= 0 && op != null && GadgetHolder(g.key, op.key, itemSlot, out holder, out _);
+            var baseC = on ? Color.Lerp(theme.ink2, theme.blue, .45f) : heldElsewhere ? Color.Lerp(theme.ink2, theme.acc, .12f) : theme.ink2;
             var img = HudKit.AddImage(row, baseC, raycast: true);
             var b = row.gameObject.AddComponent<Button>();
             b.transition = Selectable.Transition.None; b.targetGraphic = img;
@@ -415,16 +521,35 @@ namespace Blindside.UI
             hv.target = row; hv.graphic = img; hv.baseColor = baseC; hv.hoverColor = Color.Lerp(baseC, theme.blue, .3f);
             hv.shift = new Vector2(6f, 0f); hv.scale = 1.01f;
             hv.SetBase(row.anchoredPosition);
+            float x = 12f;
+            if (g != null)
+            {
+                // the item's picture, as the parts have
+                var f = HudKit.NewRect("Art", row);
+                UILayout.Place(f, 6f, 6f, 46f, 46f);
+                HudKit.AddImage(f, new Color(.82f, .85f, .88f, .95f));
+                var ar = HudKit.NewRect("Photo", f); HudKit.Stretch(ar);
+                var ai = ar.gameObject.AddComponent<Image>(); ai.sprite = HubCatalog.ArtOf(g); ai.preserveAspect = true; ai.raycastTarget = false;
+                ai.enabled = ai.sprite != null;
+                x = 60f;
+            }
             var n = HudKit.AddText(row, g != null ? g.name : "なし (外す)", 14f, Color.white, true, TextAlignmentOptions.TopLeft, "Name", UITheme.TextRole.Body);
             n.textWrappingMode = TextWrappingModes.NoWrap; n.overflowMode = TextOverflowModes.Ellipsis;
-            UILayout.Place(n.rectTransform, 12f, 6f, PickerW - 16f - 12f - 90f, 20f);
-            var v = HudKit.AddText(row, on ? "装備中" : g != null ? "所持 " + D.GadgetOf(g.key).count : "", 12f, on ? theme.blue : theme.dim, true, TextAlignmentOptions.TopRight, "Count", UITheme.TextRole.Body);
-            UILayout.Place(v.rectTransform, PickerW - 16f - 96f, 6f, 86f, 18f);
+            UILayout.Place(n.rectTransform, x, 6f, PickerW - 16f - x - 122f, 20f);
+            string state = on ? "装備中" : heldElsewhere ? HeldBy(holder, null, op.key, false) : g != null ? "所持 " + Mathf.Max(0, free) : "";
+            var v = HudKit.AddText(row, state, 12f, on ? theme.blue : heldElsewhere ? theme.acc : theme.dim, true, TextAlignmentOptions.TopRight, "Count", UITheme.TextRole.Body);
+            v.textWrappingMode = TextWrappingModes.NoWrap; v.overflowMode = TextOverflowModes.Ellipsis;
+            UILayout.Place(v.rectTransform, PickerW - 16f - 128f, 6f, 118f, 18f);
+            if (heldElsewhere)
+            {
+                var z = HudKit.AddText(row, "所持 0", 11f, theme.dim, false, TextAlignmentOptions.TopRight, "Free", UITheme.TextRole.Body);
+                UILayout.Place(z.rectTransform, PickerW - 16f - 128f, 24f, 118f, 16f);
+            }
             if (g != null)
             {
                 var e = HudKit.AddText(row, g.note + (g.medical ? " (医務室)" : ""), 11f, Color.Lerp(theme.dim, Color.white, .3f), false, TextAlignmentOptions.TopLeft, "Note", UITheme.TextRole.Body);
                 e.textWrappingMode = TextWrappingModes.Normal;
-                UILayout.Place(e.rectTransform, 12f, 27f, PickerW - 16f - 20f, 30f);
+                UILayout.Place(e.rectTransform, x, 27f, PickerW - 16f - x - (heldElsewhere ? 70f : 8f), 30f);
             }
         }
 
@@ -483,6 +608,7 @@ namespace Blindside.UI
             if (HubCatalog.Owns(D, guns[i]) && screen.Editable) Loadout.SetChoice(op, i);   // the gun in the hands is carried
             ClosePicker();
             stage.ShowOperator(op, guns[i]);
+            stage.GunChanged();
             stage.GunShot(ToSlotTime);
             BuildLeft();
             if (!Application.isPlaying) stage.RenderNow();
@@ -510,11 +636,25 @@ namespace Blindside.UI
             var w = ShownGun; var op = Op;
             if (w == null || op == null || !screen.Editable || pickSlot < 0) return;
             var fit = D.OperatorOf(op.key).FitOf(w.key);
-            if (a == null) fit.parts[pickSlot] = "";
-            else if (fit.parts[pickSlot] != a.key)
+            int slot = pickSlot;
+            if (a == null) fit.parts[slot] = "";
+            else if (fit.parts[slot] != a.key)
             {
-                if (D.AttachmentsFree(a.key) <= 0) return;
-                fit.parts[pickSlot] = a.key;   // (the slot's old part goes back to the stock: counts come from the fits)
+                if (D.AttachmentsFree(a.key) <= 0)
+                {
+                    // every copy is on a gun: the one an ally (or another gun) has can be moved here, asked first
+                    if (!PartHolder(a.key, op.key, w.key, slot, out var holder, out var hw, out var hs)) return;
+                    Ask(HeldBy(holder, hw, op.key, true), a.name + "を外して、" + op.DisplayName + "の" + w.weaponName + "に付け替えますか？", () =>
+                    {
+                        var hf = D.OperatorOf(holder).FitOf(hw);
+                        if (hf != null && hs >= 0 && hs < hf.parts.Length && hf.parts[hs] == a.key) hf.parts[hs] = "";
+                        fit.parts[slot] = a.key;
+                        SaveSystem.Write(false);
+                        BuildLeft(); BuildPicker();
+                    });
+                    return;
+                }
+                fit.parts[slot] = a.key;   // (the slot's old part goes back to the stock: counts come from the fits)
             }
             SaveSystem.Write(false);
             BuildLeft();
@@ -643,8 +783,12 @@ namespace Blindside.UI
             UILayout.Place(row, 8f, y, PickerW - 16f, PickRowH - 4f);
             // a part with no free copy (none bought, or every copy on other guns) is listed but can't be fitted
             int free = a != null ? D.AttachmentsFree(a.key) : 0;
-            bool usable = a == null || on || free > 0;
-            var baseC = on ? Color.Lerp(theme.ink2, theme.blue, .45f) : usable ? theme.ink2 : new Color(theme.ink2.r, theme.ink2.g, theme.ink2.b, .45f);
+            // every copy fitted: on an ally's gun (or another of this operator's) — marked with where, a click asks to take it over
+            var w = ShownGun; var op = Op;
+            string holder = null, holderWeapon = null;
+            bool heldElsewhere = a != null && !on && free <= 0 && w != null && op != null && PartHolder(a.key, op.key, w.key, pickSlot, out holder, out holderWeapon, out _);
+            bool usable = a == null || on || free > 0 || heldElsewhere;
+            var baseC = on ? Color.Lerp(theme.ink2, theme.blue, .45f) : heldElsewhere ? Color.Lerp(theme.ink2, theme.acc, .12f) : usable ? theme.ink2 : new Color(theme.ink2.r, theme.ink2.g, theme.ink2.b, .45f);
             var img = HudKit.AddImage(row, baseC, raycast: true);
             var b = row.gameObject.AddComponent<Button>();
             b.transition = Selectable.Transition.None; b.targetGraphic = img;
@@ -668,15 +812,21 @@ namespace Blindside.UI
             }
             var n = HudKit.AddText(row, a != null ? a.name : "なし (外す)", 14f, Color.white, true, TextAlignmentOptions.TopLeft, "Name", UITheme.TextRole.Body);
             n.textWrappingMode = TextWrappingModes.NoWrap; n.overflowMode = TextOverflowModes.Ellipsis;
-            UILayout.Place(n.rectTransform, x, 6f, PickerW - 16f - x - 80f, 20f);
-            string state = on ? "装着中" : a == null ? "" : free > 0 ? "残り " + free : D.AttachmentsFitted(a.key) > 0 ? "在庫なし" : "未所持";
-            var v = HudKit.AddText(row, state, 12f, on ? theme.blue : theme.dim, true, TextAlignmentOptions.TopRight, "Count", UITheme.TextRole.Body);
-            UILayout.Place(v.rectTransform, PickerW - 16f - 86f, 6f, 76f, 18f);
+            UILayout.Place(n.rectTransform, x, 6f, PickerW - 16f - x - 122f, 20f);
+            string state = on ? "装着中" : a == null ? "" : free > 0 ? "残り " + free : heldElsewhere ? HeldBy(holder, holderWeapon, op.key, true) : D.AttachmentsFitted(a.key) > 0 ? "在庫なし" : "未所持";
+            var v = HudKit.AddText(row, state, 12f, on ? theme.blue : heldElsewhere ? theme.acc : theme.dim, true, TextAlignmentOptions.TopRight, "Count", UITheme.TextRole.Body);
+            v.textWrappingMode = TextWrappingModes.NoWrap; v.overflowMode = TextOverflowModes.Ellipsis;
+            UILayout.Place(v.rectTransform, PickerW - 16f - 128f, 6f, 118f, 18f);
+            if (heldElsewhere)
+            {
+                var z = HudKit.AddText(row, "残り 0", 11f, theme.dim, false, TextAlignmentOptions.TopRight, "Free", UITheme.TextRole.Body);
+                UILayout.Place(z.rectTransform, PickerW - 16f - 128f, 24f, 118f, 16f);
+            }
             if (a != null)
             {
                 var e = HudKit.AddText(row, a.Summary, 11f, Color.Lerp(theme.dim, Color.white, .3f), false, TextAlignmentOptions.TopLeft, "Effect", UITheme.TextRole.Body);
                 e.textWrappingMode = TextWrappingModes.Normal;
-                UILayout.Place(e.rectTransform, x, 27f, PickerW - 16f - x - 8f, 30f);
+                UILayout.Place(e.rectTransform, x, 27f, PickerW - 16f - x - (heldElsewhere ? 70f : 8f), 30f);
             }
         }
 

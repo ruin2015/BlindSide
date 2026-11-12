@@ -34,6 +34,8 @@ namespace Blindside.Hub
         readonly string[] keys = new string[MaxSlots];
         readonly Renderer[] edges = new Renderer[MaxSlots];
         Material edgeOn, edgeOff;
+        Light pick;
+        const float PickIntensity = 22f;
         float clock = 99f;
         Vector3 eye, look;
 
@@ -204,34 +206,38 @@ namespace Blindside.Hub
                     foreach (var r in t.GetComponents<Renderer>()) r.enabled = false;
             uv.SetFacing(FacingOf(slot) + StanceTurn * Mathf.Deg2Rad);
             figures[slot] = uv;
-            groundAt[slot] = 2;   // (stood on its plate once its idle has posed it: Ground)
+            groundAt[slot] = GroundFrames;   // (stood on its plate once its idle has posed it, then held still: Ground)
         }
 
-        // the battle's figure stands a little above its root (the battle floor's height): once its idle has run a couple of frames, its
-        // lowest skinned vertex is put on the plate (measured once per figure, into one reused mesh)
+        // the battle's figure stands a little above its root (the battle floor's height): once its idle has run a few frames, its feet
+        // (the lowest foot / toe bone, less the sole) are put on the plate — the move kept within GroundLimit (a figure not posed yet is
+        // never thrown up into the air) — and the figure is held still there (the first frame's pose, no idle motion)
         readonly int[] groundAt = new int[MaxSlots];
+        const int GroundFrames = 40;   // (the turn to its facing eased in first)
+        const float PlateTop = .05f, Sole = .06f, GroundLimit = .35f;
         // the battle idle stands bladed (the rifle across, the chest to its left of the facing): turned this much more so it squares up
         const float StanceTurn = 40f;
-        Mesh bake;
-        const float PlateTop = .05f;
+        static readonly HumanBodyBones[] Feet = { HumanBodyBones.LeftToes, HumanBodyBones.RightToes, HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot };
 
         void Ground(int slot)
         {
             var uv = figures[slot];
             if (uv == null || uv.ModelRoot == null) return;
-            if (bake == null) bake = new Mesh();
+            var a = uv.ModelRoot.GetComponentInChildren<Animator>();
+            if (a == null || !a.isHuman) return;
             float min = float.MaxValue;
-            foreach (var s in uv.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>())
+            foreach (var b in Feet)
             {
-                s.BakeMesh(bake, true);
-                var vs = bake.vertices;
-                var m = s.transform.localToWorldMatrix;
-                for (int i = 0; i < vs.Length; i++) { float y = m.MultiplyPoint3x4(vs[i]).y; if (y < min) min = y; }
+                var t = a.GetBoneTransform(b);
+                if (t != null) min = Mathf.Min(min, t.position.y - transform.position.y);
             }
             if (min == float.MaxValue) return;
+            float lift = Mathf.Clamp(min - Sole - PlateTop, -GroundLimit, GroundLimit);
             var p = uv.transform.localPosition;
-            p.y -= (min - transform.position.y) - PlateTop;
+            p.y = Spots[slot].y - (lift - (p.y - Spots[slot].y));
+            p.y = Mathf.Clamp(p.y, Spots[slot].y - GroundLimit, Spots[slot].y + .05f);
             uv.transform.localPosition = p;
+            if (uv.UnitAnimator != null) uv.UnitAnimator.SetFrozen(true);
         }
 
         /// <summary>The chosen slot's plate lit (−1: none).</summary>
@@ -239,6 +245,20 @@ namespace Blindside.Hub
         {
             chosen = slot;
             for (int i = 0; i < MaxSlots; i++) edges[i].sharedMaterial = i == chosen ? edgeOn : edgeOff;
+            // the chosen one stands in a cool spotlight from above (the model itself shows the choice, not only its plate)
+            if (pick == null)
+            {
+                pick = AddLight("PickSpot", LightType.Spot, Vector3.zero, new Color(.55f, .8f, 1f), 0f, 7f);
+                pick.spotAngle = 32f; pick.innerSpotAngle = 14f;
+            }
+            pick.enabled = slot >= 0 && slot < slots;
+            if (pick.enabled)
+            {
+                var p = Spots[slot];
+                pick.transform.localPosition = p + new Vector3(0f, 4.2f, -1.4f);
+                pick.transform.LookAt(transform.TransformPoint(p + Vector3.up * 1f));
+                pick.intensity = PickIntensity;
+            }
         }
 
         // each one turned to the camera, a little outward (the wedge opens toward it)
@@ -357,7 +377,6 @@ namespace Blindside.Hub
         void OnDestroy()
         {
             if (rt != null) { rt.Release(); Kill(rt); }
-            if (bake != null) Kill(bake);
         }
     }
 }
