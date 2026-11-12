@@ -27,7 +27,7 @@ namespace Blindside.Integration
         Transform root;
         Material unlitTemplate;
 
-        class FieldGo { public GameObject go; public LineRenderer spark; }
+        class FieldGo { public GameObject go; public LineRenderer spark; public Material ring; public FxShortCircuit shorted; public bool off; }
         readonly Dictionary<ElectricField, FieldGo> fieldGos = new Dictionary<ElectricField, FieldGo>();
         readonly List<ElectricField> gone = new List<ElectricField>();
         readonly Dictionary<Vector2Int, Renderer> bands = new Dictionary<Vector2Int, Renderer>();
@@ -61,7 +61,18 @@ namespace Blindside.Integration
                 if (!fieldGos.TryGetValue(e, out var f)) { f = BuildField(e); fieldGos[e] = f; }
                 bool shown = show || e.discovered;   // o.visible = G.side==='def' || e.discovered
                 f.go.SetActive(shown);
-                if (shown && Random.value < .35f) RollSpark(f.spark, e.r);
+                // knocked out (SILENCE's EMP): no field — its ring goes dim, the arcs stop, the node shorts out until it comes back on
+                bool off = e.disabledLeft > 0;
+                if (f.off != off)
+                {
+                    f.off = off;
+                    f.spark.enabled = !off;
+                    var rc = new Color(Zap.r, Zap.g, Zap.b, off ? .2f : .8f);
+                    if (f.ring.HasProperty("_BaseColor")) f.ring.SetColor("_BaseColor", rc);
+                    if (f.ring.HasProperty("_Color")) f.ring.SetColor("_Color", rc);
+                }
+                f.shorted.SetOn(off);
+                if (shown && !off && Random.value < .35f) RollSpark(f.spark, e.r);
             }
             // a field shot out (DroneOps.DestroyGadget took it off the list): its disc and ring go too
             if (fieldGos.Count > fields.Count)
@@ -135,7 +146,8 @@ namespace Blindside.Integration
             lr.receiveShadows = false;
             lr.sharedMaterial = UnlitMat(Spark, 3003);
             RollSpark(lr, e.r);
-            return new FieldGo { go = go, spark = lr };
+            var shorted = FxShortCircuit.Attach(go.transform, new Vector3(0f, .14f, 0f), 1.1f, e.GetHashCode());
+            return new FieldGo { go = go, spark = lr, ring = ring.GetComponent<MeshRenderer>().sharedMaterial, shorted = shorted };
         }
 
         // pts: a=random angle; for i<6: r=i/5*e.r → (cos a·r, .12+rand·.25, sin a·r); a+=(rand-.5)*.8

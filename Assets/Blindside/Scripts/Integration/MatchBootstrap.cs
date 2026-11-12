@@ -369,7 +369,8 @@ namespace Blindside.Integration
         static void SyncView(IUnitView view, float x, float y, float facing, bool alive, int hp, int maxHp)
         {
             if (view == null) return;
-            if (!alive) { view.PlayDeath(); return; }
+            // (while the battle stage acts a fight out, a fall there is its own; the director lays the map figure down after)
+            if (!alive) { if (!Blindside.Cinematic.BattleDirector.StageActive) view.PlayDeath(); return; }
             view.SetPosition(x, y);
             view.SetFacing(facing);
             view.SetHealth(hp, maxHp);
@@ -570,6 +571,9 @@ namespace Blindside.Integration
             // the player's operators grow (levels' stat points, weapon mastery) — a real match with a save session only
             if (playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest)
                 foreach (var u in units) if (u.Team == playerTeam.Value) Blindside.Progress.ProgressBonus.Apply(u);
+            // (editor debug: no save session — the co-op ranks set in Blindside > Debug > Co-op Ranks)
+            if (playerTeam.HasValue && !tutorialMode && Blindside.Save.SaveSystem.Current == null)
+                foreach (var u in units) if (u.Team == playerTeam.Value) Blindside.Progress.ProgressBonus.ApplyDebugCoop(u);
 
             // startGame() (attack side): `for(const a of G.units) if(a.team==='atk') a.placed=false` — the squad is
             // still aboard the helicopter: not in the scene, no sight, until it is dropped in the deploy phase.

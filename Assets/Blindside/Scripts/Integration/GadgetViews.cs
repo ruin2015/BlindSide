@@ -34,7 +34,7 @@ namespace Blindside.Integration
         Transform root;
         Material unlitTemplate, mirrorMat;
 
-        class CamGo { public GameObject go; public Transform head; public GameObject led; }
+        class CamGo { public GameObject go; public Transform head; public GameObject led; public FxShortCircuit shorted; }
         readonly Dictionary<SurveillanceCamera, CamGo> cams = new Dictionary<SurveillanceCamera, CamGo>();
         readonly Dictionary<GasCloud, GameObject> gases = new Dictionary<GasCloud, GameObject>();
         readonly Dictionary<Vector2Int, GameObject> mirrorStrips = new Dictionary<Vector2Int, GameObject>();
@@ -67,39 +67,17 @@ namespace Blindside.Integration
             SyncMirrors();
         }
 
-        // ---------------- smoke screens (スモーク弾) ----------------
-        static readonly Color SmokeGrey = new Color32(0xb8, 0xbe, 0xc6, 0xff);
-        readonly Dictionary<SmokeCloud, GameObject> smokes = new Dictionary<SmokeCloud, GameObject>();
+        // ---------------- smoke screens (スモーク弾): a particle cloud (FxSmokeCloud) that thins away when the screen ends ----------------
+        readonly Dictionary<SmokeCloud, FxSmokeCloud> smokes = new Dictionary<SmokeCloud, FxSmokeCloud>();
 
         void SyncSmoke(float t)
         {
             foreach (var s in ctx.Smokes)
-            {
-                if (!smokes.TryGetValue(s, out var o)) { o = BuildSmoke(s); smokes[s] = o; }
-                o.transform.rotation = Quaternion.Euler(0f, -(t / 6000f) * Mathf.Rad2Deg, 0f);
-            }
+                if (!smokes.ContainsKey(s)) smokes[s] = FxSmokeCloud.Create(root, GridSpace.GridToWorld(s.x, s.y, 0f), s.r);
             if (smokes.Count == ctx.Smokes.Count) return;
             List<SmokeCloud> gone = null;
             foreach (var kv in smokes) if (!ctx.Smokes.Contains(kv.Key)) (gone ??= new List<SmokeCloud>()).Add(kv.Key);
-            if (gone != null) foreach (var s in gone) { Destroy(smokes[s]); smokes.Remove(s); }
-        }
-
-        GameObject BuildSmoke(SmokeCloud c)
-        {
-            var o = new GameObject("SmokeCloud");
-            o.transform.SetParent(root, false);
-            o.transform.position = GridSpace.GridToWorld(c.x, c.y, 0f);
-            var mat = Unlit(new Color(SmokeGrey.r, SmokeGrey.g, SmokeGrey.b, .3f), 3005);
-            for (int i = 0; i < 16; i++)
-            {
-                var s = Prim(PrimitiveType.Sphere, "Puff", o.transform, mat);
-                float a = i / 16f * 6.28f * 2f, r = c.r * (i < 8 ? .35f : .75f);
-                s.transform.localPosition = new Vector3(Mathf.Cos(a) * r, .6f + Random.value * .7f, -Mathf.Sin(a) * r);
-                float sc = (1f + Random.value * .5f) * 1.9f;
-                s.transform.localScale = new Vector3(sc, sc * .8f, sc);
-                s.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            }
-            return o;
+            if (gone != null) foreach (var s in gone) { if (smokes[s] != null) smokes[s].Dissipate(); smokes.Remove(s); }
         }
 
         // ---------------- cams ----------------
@@ -112,6 +90,10 @@ namespace Blindside.Integration
                 bool show = c.alive && (def || c.discovered || CellSeenByAttack(c.x, c.y));
                 if (o.go.activeSelf != show) o.go.SetActive(show);
                 if (!show) continue;
+                // knocked out (SILENCE's EMP): it stops sweeping, the LED goes dark and the head shorts out until it comes back on
+                bool dead = c.disabledLeft > 0;
+                o.shorted.SetOn(dead);
+                if (dead) { if (o.led.activeSelf) o.led.SetActive(false); continue; }
                 o.go.transform.rotation = Quaternion.Euler(0f, -Mathf.Sin(t / 1500f + c.x) * .8f * Mathf.Rad2Deg, 0f);
                 o.led.SetActive(Mathf.Sin(t / 200f) > 0f);
             }
@@ -147,7 +129,8 @@ namespace Blindside.Integration
                 ring.transform.localPosition = new Vector3(0f, .05f, 0f);
                 ring.transform.localScale = new Vector3(3.2f, 3.2f, 3.2f);
             }
-            return new CamGo { go = go, head = head.transform, led = led };
+            var shorted = FxShortCircuit.Attach(go.transform, new Vector3(0f, .95f, 0f), 1f, c.GetHashCode());
+            return new CamGo { go = go, head = head.transform, led = led, shorted = shorted };
         }
 
         // ---------------- gas ----------------

@@ -72,6 +72,20 @@ namespace Blindside.Progress
             }
         }
 
+        /// <summary>Editor debug, a match with no save session: the co-op rank set by hand (Campaign.DebugRank) and what it gives at
+        /// setup (BASTION's move 2, the second gun). Nothing when none is set.</summary>
+        public static void ApplyDebugCoop(SimUnit u)
+        {
+            if (u == null || u.Op == null || !Campaign.DebugRank(u.Op.key, out int r)) return;
+            u.CoopRank = r;
+            if (u.Op.key == "BASTION" && r >= CoopPerks.Unique3 && u.Mv < 2) u.Mv = 2;
+            if (r >= CoopPerks.TwoGuns && u.Weapon2 == null)
+            {
+                var w2 = Blindside.Data.Loadout.Second(u.Op);
+                if (w2 != null && w2 != u.Weapon) u.Weapon2 = w2;
+            }
+        }
+
         /// <summary>What depends on the gun in hand: the growth's damage and accuracy with it (its mastery) and its fitted attachments.
         /// Again after 持ち替え.</summary>
         public static void ApplyWeapon(SimUnit u)

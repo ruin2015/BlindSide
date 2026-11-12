@@ -92,6 +92,7 @@ namespace Blindside.Cinematic
             combat.OnShotStart += HandleShotStart;
             combat.OnShot += HandleShot;
             combat.OnKill += HandleKill;
+            combat.HoldDeath = HoldDeath;
             EnsureUi();
             EnsureVolume();
             RefreshOptionButton();
@@ -104,6 +105,7 @@ namespace Blindside.Cinematic
                 combat.OnShotStart -= HandleShotStart;
                 combat.OnShot -= HandleShot;
                 combat.OnKill -= HandleKill;
+                if (combat.HoldDeath == (Func<ICombatUnit, bool>)HoldDeath) combat.HoldDeath = null;
                 if (ReferenceEquals(combat.Director, this)) combat.Director = null;
             }
             combat = null; allUnits = null; playerTeam = null;
@@ -180,6 +182,17 @@ namespace Blindside.Cinematic
         public static bool StageHandlesHeadshots
             => stageOwner != null && stageOwner.stage != null && stageOwner.stagePhase != StagePhase.None;
 
+        /// <summary>True while a staged engagement shows the damage itself: the #combat panel's HP bar is not set when a round is rolled
+        /// but dropped by <see cref="StageHit"/> when it lands on the stage (false once skipped: the bar then follows the rolls).</summary>
+        public static bool StageHoldsHp
+            => stageOwner != null && stageOwner.stage != null && !stageOwner.skipping && !stageOwner.degraded;
+
+        /// <summary>A battle stage is built for the running engagement (its falls are shown there; the map figures are laid down after).</summary>
+        public static bool StageActive => stageOwner != null && stageOwner.stage != null;
+
+        /// <summary>A round landed on the battle stage: the unit hit and the damage it took (set by GameplayUIBridge).</summary>
+        public static Action<ICombatUnit, int> StageHit;
+
         /// <summary>Plays the headshot UI: unit, label point, head point, damage (set by GameplayUIBridge).</summary>
         public static Action<ICombatUnit, Vector3, Vector3, int> HeadshotUi;
 
@@ -193,15 +206,9 @@ namespace Blindside.Cinematic
             // the combat system's hint for this engagement (read once)
             bool mutual = combat != null && combat.NextMutual;
             if (combat != null) combat.NextMutual = false;
-            // an encounter's first strike (a sure hit) that kills: the fight never starts — no battle stage, it plays on the map
+            // an encounter's first strike (a sure hit) is staged like any other, a killing one too (the stage replays it, then the fall)
             noStage = false;
-            bool sure = combat != null && combat.ExchangeSureHit;
             if (combat != null) combat.ExchangeSureHit = false;
-            if (sure && combat.Map != null)
-            {
-                CombatSystem.ForecastExchange(combat.Map, first, second, true, out _, out _, out _, out int secondAfter, true);
-                noStage = secondAfter <= 0;
-            }
             if (engagement == null || Directing || !isActiveAndEnabled) return engagement;
             // AI-vs-AI (no player unit on either side): no staging, no waits.
             if (!IsPlayer(first) && !IsPlayer(second)) return Run(Kind.Instant, first, second, engagement);
@@ -348,6 +355,7 @@ namespace Blindside.Cinematic
                                 stage.Headshot = (u, label, head, dmg) => { if (!skipping) HeadshotUi?.Invoke(u, label, head, dmg); };
                                 stage.IsAlly = IsPlayer;   // the player's critical rounds open on the shooter's face
                                 stage.Support = ShowSupportBadge;
+                                stage.Landed = e => { if (e.Damage > 0 && !skipping) Safe(() => StageHit?.Invoke(e.Target, e.Damage)); };
                             }
                         }
                         catch (Exception e) { Debug.LogException(e); CleanupStage(); }
@@ -435,6 +443,20 @@ namespace Blindside.Cinematic
             shooter = target = null; basePose = null; bcam = null;
             focus = baseFocus = null;
             skipping = false; closeupActive = false;
+            // the falls the stage showed: back on the map those figures are already down (not felled a second time)
+            foreach (var u in heldDeaths)
+                Safe(() => { if (!HasView(u)) return; if (u.View is UnitView uv) uv.ShowDead(); else u.View.PlayDeath(); });
+            heldDeaths.Clear();
+        }
+
+        // Units killed while the battle stage acts the fight out: their map figures fall when it ends (End), not when the round is rolled.
+        readonly List<ICombatUnit> heldDeaths = new List<ICombatUnit>(2);
+
+        bool HoldDeath(ICombatUnit u)
+        {
+            if (u == null || stage == null || degraded || kind != Kind.Full) return false;
+            if (!heldDeaths.Contains(u)) heldDeaths.Add(u);
+            return true;
         }
 
         void RestoreVisuals()

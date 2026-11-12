@@ -91,6 +91,7 @@ namespace Blindside.Integration
         public void Show(ICombatUnit a, ICombatUnit t, int chance, int dmg, int shots, bool preempt, int walls, bool blocked, int hsChance)
         {
             VolleyShown?.Invoke(a, t, preempt);
+            shownTarget = t; shownHp = t.HP;
             if (combatPanel == null) return;
             Color ca = a.Team == side ? UIPalette.Blue : UIPalette.Foe;
             Color ct = t.IsHostage ? HostCol : t.Team == side ? UIPalette.Blue : UIPalette.Foe;
@@ -100,7 +101,24 @@ namespace Blindside.Integration
                              chance, dmg, shots, preempt, walls, blocked, hsChance);
         }
 
-        public void UpdateHp(ICombatUnit t) { if (combatPanel != null) combatPanel.UpdateTarget(t.HP, MaxHpOf(t)); }
+        // the volley's target and the HP its bar shows (on the battle stage the bar trails the rolls until the rounds land)
+        ICombatUnit shownTarget;
+        int shownHp;
+
+        public void UpdateHp(ICombatUnit t)
+        {
+            // on the battle stage the bar drops when the round lands there (BattleDirector.StageHit), not when it is rolled
+            if (Blindside.Cinematic.BattleDirector.StageHoldsHp) return;
+            shownHp = t.HP;
+            if (combatPanel != null) combatPanel.UpdateTarget(t.HP, MaxHpOf(t));
+        }
+
+        void StageHit(ICombatUnit t, int damage)
+        {
+            if (t == null || t != shownTarget) return;
+            shownHp = Mathf.Max(t.HP, shownHp - damage);   // (never below where the rolls left it: a revive, a floor)
+            if (combatPanel != null) combatPanel.UpdateTarget(shownHp, MaxHpOf(t));
+        }
         public void Crit(int headshots) { if (combatPanel != null) combatPanel.Crit(); }
         public void Result(int hits, int shots, int total, bool blocked, int headshots) { if (combatPanel != null) combatPanel.Result(hits, shots, total, blocked, headshots); }
         public void Hide() { if (combatPanel != null) combatPanel.Hide(); }
@@ -149,6 +167,7 @@ namespace Blindside.Integration
             // on the battle stage only the HP bars of the #combat panel stay
             // on the battle stage only the HP bars of the #combat panel stay
             Blindside.Cinematic.BattleDirector.StageUi = on => { if (combatPanel != null) combatPanel.SetHpOnly(on); };
+            Blindside.Cinematic.BattleDirector.StageHit = StageHit;
             Blindside.Cinematic.BattleDirector.HeadshotUi = (target, label, head, amount) =>
             {
                 if (headshotBadge != null && worldCamera != null) headshotBadge.Play(label, worldCamera, amount, target.Team == side, head);

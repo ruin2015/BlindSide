@@ -599,6 +599,15 @@ namespace Blindside.MapEditor
             return why;
         }
 
+        /// <summary>Terrorist `i` carries `weapon` (one of MapData.TerroristWeapons). False when nothing changed.</summary>
+        public bool SetTerroristWeapon(int i, string weapon)
+        {
+            if (i < 0 || i >= Objects.terrorists.Count || System.Array.IndexOf(MapData.TerroristWeapons, weapon) < 0) return false;
+            if (Objects.terrorists[i].weapon == weapon) return false;
+            Commit(o => { var t = o.terrorists[i]; t.weapon = weapon; o.terrorists[i] = t; });
+            return true;
+        }
+
         /// <summary>The next gun (MapData.TerroristWeapons, round) for terrorist `i`. Returns its key, or null.</summary>
         public string CycleTerroristWeapon(int i)
         {

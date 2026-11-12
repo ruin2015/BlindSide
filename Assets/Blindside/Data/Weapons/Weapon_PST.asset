@@ -14,8 +14,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
   key: PST
   weaponName: "P-12 \u62F3\u9283"
+  weaponClass: 
   damage: 22
   shots: 2
   accuracy: 74
   range: 6
+  mobility: 0
   breach: 0
+  accuracyFalloffPerTile: 12
+  damageFalloffStart: 99
+  damageFalloffPerTile: 0
+  minDamagePercent: 100
+  model: {fileID: 6245805913091078272, guid: e04fe81b23a19824a97d15a16ea71cbe, type: 3}
+  modelForwardSign: 1
+  modelLength: 0.26
+  gripFromRear: 0.17
+  gripHeight: 0.38
+  foregripFromRear: 0.3
+  foregripHeight: 0.25
+  foregripRoll: 80
+  sightHeight: 0.98
+  buttHeight: 0.55
+  handgun: 1
+  handgunReach: 0.5

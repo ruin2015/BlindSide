@@ -15,6 +15,8 @@ namespace Blindside.Rendering
         public readonly Vector3[] axis = new Vector3[30];
         public readonly bool[] has = new bool[30];
         public Vector3 leftForearm, rightForearm;   // hand space: elbow → wrist with a straight wrist
+        public Vector3 rightFinger, rightThumb, rightPalm;   // right-hand space: toward the middle finger / the thumb side / the palm's face
+        public bool hasRight;
 
         /// <summary>Reads the hands of `a`'s model, which must still be in its rest pose. Null without a humanoid hand.</summary>
         public static HandRest Read(Animator a)
@@ -35,6 +37,13 @@ namespace Blindside.Rendering
                 var f = (middle.position - hand.position).normalized;
                 var t = thumb.position - hand.position; t -= f * Vector3.Dot(t, f);
                 var palm = Vector3.Cross(f, t).normalized * (side == 0 ? -1f : 1f);
+                if (side == 1)
+                {
+                    r.rightFinger = hand.InverseTransformDirection(f);
+                    r.rightThumb = hand.InverseTransformDirection(t.normalized);
+                    r.rightPalm = hand.InverseTransformDirection(palm);
+                    r.hasRight = true;
+                }
                 int first = side == 0 ? (int)HumanBodyBones.LeftThumbProximal : (int)HumanBodyBones.RightThumbProximal;
                 for (int i = 0; i < 15; i++)
                 {
@@ -60,8 +69,8 @@ namespace Blindside.Rendering
         }
 
         // ---- grips: curl per finger and joint, degrees (thumb, index, middle, ring, little × proximal, intermediate, distal)
-        /// <summary>Right hand on a pistol grip: three fingers wrapped, the index finger along the trigger guard.</summary>
-        public static readonly float[] PistolGrip = { 22f, 28f, 20f,  28f, 32f, 14f,  72f, 85f, 45f,  76f, 85f, 45f,  80f, 82f, 45f };
+        /// <summary>Right hand on a pistol grip: three fingers wrapped, the thumb round the far side, the index finger hooked on the trigger.</summary>
+        public static readonly float[] PistolGrip = { 30f, 32f, 24f,  10f, 50f, 22f,  72f, 85f, 45f,  76f, 85f, 45f,  80f, 82f, 45f };
         /// <summary>Left hand under a handguard: the fingers cupped round its side, the thumb along it.</summary>
         public static readonly float[] Handguard = { 10f, 14f, 10f,  38f, 42f, 22f,  42f, 46f, 25f,  46f, 46f, 25f,  50f, 46f, 25f };
         /// <summary>Left hand round a vertical grip: every finger wrapped.</summary>

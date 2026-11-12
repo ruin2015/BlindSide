@@ -275,6 +275,10 @@ namespace Blindside.Rendering
             gripCalibrated = true;
         }
 
+        // The right hand on the pistol grip: the grip's rake back from vertical (degrees), how far the knuckles turn round
+        // its front (0 straight along the right side), and the grip's distance in front of the palm's bone line (metres, 1.7 m figure).
+        public static float GripRake = 16f, GripWrap = .35f, GripPalmOffset = .028f;
+
         // A 1.7 m person's arm (shoulder to wrist) is about .56 m; WeaponData.modelLength is for that.
         const float ReferenceArm = .56f;
 
@@ -334,8 +338,24 @@ namespace Blindside.Rendering
                 t.SetParent(gripHand, false);
                 float ls = s / Mathf.Max(1e-4f, gripHand.lossyScale.x);
                 t.localScale = Vector3.one * ls;
-                t.localRotation = Quaternion.LookRotation(gripBarrel, gripUp) * Quaternion.Inverse(Quaternion.LookRotation(gunFwd, Vector3.up));
-                t.localPosition = gripPalm - t.localRotation * (grip * ls);
+                // where the aim clip's hand carries the gun (the grip at the palm, the barrel straight ahead) …
+                var carryRot = Quaternion.LookRotation(gripBarrel, gripUp) * Quaternion.Inverse(Quaternion.LookRotation(gunFwd, Vector3.up));
+                var carryPos = gripPalm - carryRot * (grip * ls);
+                bool wrap = gripHands != null && gripHands.hasRight;
+                if (wrap)
+                {
+                    // … and how the hand really holds it: the palm against the grip's right side, the knuckles along the
+                    // (raked) grip, the fingers wrapping round its front, the thumb over the far side; the grip runs just
+                    // in front of the palm, not through the hand's bones. GunRig puts the hand there.
+                    float rake = GripRake * Mathf.Deg2Rad;
+                    var finger = new Vector3(-GripWrap, -Mathf.Sin(rake), Mathf.Cos(rake)).normalized;
+                    var thumb = new Vector3(-.3f, Mathf.Cos(rake), Mathf.Sin(rake)).normalized;
+                    var handInBarrel = Quaternion.LookRotation(finger, thumb) * Quaternion.Inverse(Quaternion.LookRotation(gripHands.rightFinger, gripHands.rightThumb));
+                    t.localRotation = Quaternion.Inverse(Quaternion.LookRotation(gunFwd, Vector3.up) * handInBarrel);
+                    var palm = gripPalm + gripHands.rightPalm * (GripPalmOffset * (modelHeight / 1.7f) / Mathf.Max(1e-4f, gripHand.lossyScale.x));
+                    t.localPosition = palm - t.localRotation * (grip * ls);
+                }
+                else { t.localRotation = carryRot; t.localPosition = carryPos; }
 
                 // the left hand on the foregrip, raised to the eye when aiming (UnitAnimator runs it after the pose)
                 var p = gripProfile;
@@ -356,6 +376,8 @@ namespace Blindside.Rendering
                     lean = p != null ? p.adsLean : 0f,
                     gripLocal = grip,
                     figure = modelHeight / 1.7f,
+                    carryRot = carryRot, carryPos = carryPos, hasCarry = wrap,
+                    handReach = w.handgun ? Mathf.Max(.2f, w.handgunReach) : 0f,
                 };
                 GunSetup = setup;
                 GunObjectName = gunInstance.name;
@@ -622,6 +644,17 @@ namespace Blindside.Rendering
             SetSelected(false);
             // with a death clip the figure falls first (OnDeathClipFinished fades it, or keeps the body)
             if (unitAnimator != null && unitAnimator.PlayDeath()) return;
+            StartCoroutine(FadeOutAndDeactivate());
+        }
+
+        /// <summary>Already down: the body lies as at the end of its fall (the battle stage showed the fall itself). Without a death clip
+        /// it fades like PlayDeath.</summary>
+        public void ShowDead()
+        {
+            if (dying || !gameObject.activeSelf) return;
+            dying = true;
+            SetSelected(false);
+            if (unitAnimator != null && unitAnimator.ShowDead()) return;
             StartCoroutine(FadeOutAndDeactivate());
         }
 

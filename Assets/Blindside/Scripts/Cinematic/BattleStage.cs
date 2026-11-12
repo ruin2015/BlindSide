@@ -28,6 +28,8 @@ namespace Blindside.Cinematic
         public Action<Vector3> Kia;
         /// <summary>Headshot UI: unit, label point, head point, damage.</summary>
         public Action<ICombatUnit, Vector3, Vector3, int> Headshot;
+        /// <summary>A round lands on screen (hit, miss or blocked): the director drops the HP bar then, not when it was rolled.</summary>
+        public Action<ShotEvent> Landed;
 
         BattleActor leftActor, rightActor;
         readonly System.Random rng = new System.Random(0xB47);
@@ -311,6 +313,7 @@ namespace Blindside.Cinematic
         // ---- the target's cut: where each round lands ----
         void Impact(ShotEvent e)
         {
+            Landed?.Invoke(e);   // the HP bar drops now, as the round lands
             var s = ActorOf(e.Attacker); var t = ActorOf(e.Target);
             if (s == null || t == null) return;
             Vector3 from = s.Muzzle;

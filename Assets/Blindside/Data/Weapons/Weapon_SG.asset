@@ -14,8 +14,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
   key: SG
   weaponName: "M-870 \u6563\u5F3E\u9283"
+  weaponClass: 
   damage: 10
   shots: 6
   accuracy: 62
   range: 4
+  mobility: 0
   breach: 1
+  accuracyFalloffPerTile: 12
+  damageFalloffStart: 99
+  damageFalloffPerTile: 0
+  minDamagePercent: 100
+  model: {fileID: 919132149155446097, guid: b7f24db44b5ff68439c81c4775cd43ca, type: 3}
+  modelForwardSign: -1
+  modelLength: 1
+  gripFromRear: 0.22
+  gripHeight: 0.48
+  foregripFromRear: 0.6
+  foregripHeight: 0.55
+  foregripRoll: 0
+  sightHeight: 0.72
+  buttHeight: 0.4
+  handgun: 0
+  handgunReach: 0.5

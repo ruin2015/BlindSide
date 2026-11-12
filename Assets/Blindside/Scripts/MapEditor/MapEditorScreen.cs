@@ -440,6 +440,7 @@ namespace Blindside.MapEditor
                 kv.Value.bg.color = on ? Blue : Paper;
                 kv.Value.name.color = on ? Color.white : Ink;   // (the hotkey badge stays ink with paper text)
             }
+            if (Model != null) RefreshWeaponRow();
         }
 
         void UpdateBottom()
@@ -760,7 +761,7 @@ namespace Blindside.MapEditor
                 case EditTool.Gadget: return "ガジェット: 床をクリック (電気装置 · 地雷 · 動体センサー) · 選択して[種類を変更] · 次に置く種類も同じ · 右クリックで削除";
                 case EditTool.Camera: return "監視カメラ: 床のマスをクリック (最大8個) · 右クリックで削除";
                 case EditTool.Captive: return "捕虜: 屋内の床をクリック (捕まった隊員 · 救出すると分隊に合流) · 選択して[隊員を変更] · 人質がいなくても捕虜がいればOK · 右クリックで削除";
-                case EditTool.Terrorist: return "テロリスト: 屋内の床をクリック (5人の防衛隊員とは別に何人でも) · ドラッグ = 向く方向 · 選択して[武器を変更] · 右クリックで削除";
+                case EditTool.Terrorist: return "テロリスト: 屋内の床をクリック (5人の防衛隊員とは別に何人でも) · ドラッグ = 向く方向 · 右の武器ボタンで銃を選ぶ · 右クリックで削除";
                 case EditTool.Exfil: return "救出地点: 屋外の床でドラッグして四角形 (最大8個、A·B·C… のラベル) · 右クリックで削除";
                 case EditTool.Select: return "選択: オブジェクトをクリックでプロパティを表示 · 右クリックで削除 · カメラの下移動は↓方向キー";
                 default: return TerrainHint;
@@ -872,12 +873,54 @@ namespace Blindside.MapEditor
             }
             propTitle.text = title; propBody.text = body;
             RefreshWinRule();
+            RefreshWeaponRow();
             if (propWeapon != null)
             {
-                bool on = selected.kind == ObjKind.Terrorist || selected.kind == ObjKind.Captive || selected.kind == ObjKind.Gadget;
+                bool on = selected.kind == ObjKind.Captive || selected.kind == ObjKind.Gadget;
                 propWeapon.gameObject.SetActive(on);
                 var lbl = propWeapon.GetComponentInChildren<TMP_Text>();
                 if (on && lbl != null) lbl.text = selected.kind == ObjKind.Captive ? "隊員を変更" : selected.kind == ObjKind.Gadget ? "種類を変更" : "武器を変更";
+            }
+        }
+
+        // ---- the terrorist's gun ----
+        RectTransform weaponRow;
+        readonly List<(string key, Button button)> weaponButtons = new List<(string, Button)>(4);
+
+        static string TerroristWeaponLabel(string key)
+        {
+            switch (key)
+            {
+                case "AR": return "突撃銃";
+                case "SMG": return "短機関銃";
+                case "SG": return "散弾銃";
+                case "PST": return "拳銃";
+                default: return key;
+            }
+        }
+
+        // a selected terrorist takes the gun; with nothing selected (the Terrorist tool) it is the gun the next one placed carries
+        void PickTerroristWeapon(string key)
+        {
+            terroristWeapon = key;
+            if (selected.kind == ObjKind.Terrorist) Model.SetTerroristWeapon(selected.index, key);
+            RefreshProperties();
+        }
+
+        void RefreshWeaponRow()
+        {
+            if (weaponRow == null) return;
+            bool forSelected = selected.kind == ObjKind.Terrorist && selected.index >= 0 && selected.index < Model.Objects.terrorists.Count;
+            bool on = forSelected || Tool == EditTool.Terrorist;
+            if (weaponRow.gameObject.activeSelf != on) weaponRow.gameObject.SetActive(on);
+            if (!on) return;
+            string current = forSelected ? Model.Objects.terrorists[selected.index].weapon : terroristWeapon;
+            foreach (var (key, button) in weaponButtons)
+            {
+                bool lit = key == current;
+                button.targetGraphic.color = lit ? Blue : PaperDark;
+                var label = button.GetComponentInChildren<TMP_Text>();
+                if (label != null) label.color = lit ? Color.white : Ink;
             }
         }
 
@@ -1128,7 +1171,7 @@ namespace Blindside.MapEditor
 
             var props = NewImage("Properties", right.transform, Paper, false);
             props.rectTransform.anchorMin = new Vector2(0, 1); props.rectTransform.anchorMax = new Vector2(1, 1);
-            props.rectTransform.pivot = new Vector2(.5f, 1); props.rectTransform.sizeDelta = new Vector2(0, 172);
+            props.rectTransform.pivot = new Vector2(.5f, 1); props.rectTransform.sizeDelta = new Vector2(0, 206);
             VBox(props.transform, 6, new RectOffset(14, 14, 12, 8));
             NewText(props.transform, "PROPERTIES // プロパティ", 15, FontStyles.Bold, Blue).gameObject.AddComponent<LayoutElement>().preferredHeight = 24;
             propTitle = NewText(props.transform, "", 21, FontStyles.Bold, Ink, role: UITheme.TextRole.Title); Size(propTitle, -1, 30);
@@ -1144,6 +1187,17 @@ namespace Blindside.MapEditor
                 RefreshProperties();
             });
             propWeapon.gameObject.SetActive(false);
+            // the terrorist's gun: one button per gun, the current one lit — with the Terrorist tool it is the gun the next one placed carries
+            weaponRow = NewRect("WeaponRow", props.transform);
+            HBox(weaponRow, 4, new RectOffset(0, 0, 0, 0));
+            Size(weaponRow, -1, 28);
+            foreach (var key in MapData.TerroristWeapons)
+            {
+                string k = key;
+                var b = NewButton(weaponRow, TerroristWeaponLabel(k), 70, 28, PaperDark, Ink, 13, () => PickTerroristWeapon(k));
+                weaponButtons.Add((k, b));
+            }
+            weaponRow.gameObject.SetActive(false);
 
             var stats = NewImage("Stats", right.transform, new Color32(0xdd, 0xe1, 0xe6, 0xff), false);
             stats.rectTransform.anchorMin = new Vector2(0, 0); stats.rectTransform.anchorMax = new Vector2(1, 0);
@@ -1154,7 +1208,7 @@ namespace Blindside.MapEditor
 
             var val = NewImage("Validation", right.transform, Paper, false);
             val.rectTransform.anchorMin = Vector2.zero; val.rectTransform.anchorMax = Vector2.one;
-            val.rectTransform.offsetMin = new Vector2(0, 124); val.rectTransform.offsetMax = new Vector2(0, -172);
+            val.rectTransform.offsetMin = new Vector2(0, 124); val.rectTransform.offsetMax = new Vector2(0, -206);
             VBox(val.transform, 6, new RectOffset(14, 14, 10, 6));
             var sepTop = NewImage("Sep", val.transform, PaperDark, false); Size(sepTop, -1, 2);
             NewText(val.transform, "VALIDATION // 検証", 15, FontStyles.Bold, Blue).gameObject.AddComponent<LayoutElement>().preferredHeight = 24;

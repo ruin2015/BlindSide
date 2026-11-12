@@ -64,7 +64,9 @@ namespace Blindside.Integration
         void OnHoloScan(IAbilityUnit u, List<SurveillanceCamera> cams, List<ElectricField> fields)
         {
             if (!Mine(u)) return;
-            FxPulse.Scan(GridSpace.GridToWorld(u.X, u.Y), HoloCyan, HoloScanAbility.ScanRadius, 3);
+            // the EMP going off on SILENCE, out to the scan's reach (the knocked-out gadgets then short out: GadgetViews / ElectricFieldView)
+            FxEmp.Blast(GridSpace.GridToWorld(u.X, u.Y, .75f), HoloScanAbility.Radius(u));
+            if (BattlefieldCamera.Instance != null) BattlefieldCamera.Instance.Shake(.1f);
             SfxNoise.Ui();
             float d = .5f;
             foreach (var c in cams) { FxPulse.Heartbeat(GridSpace.GridToWorld(c.x, c.y), HoloCyan, 1, .8f, d); WorldPopup.Show(c.x, c.y, "無力化", HoloCyan); d += .08f; }

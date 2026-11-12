@@ -346,7 +346,7 @@ namespace Blindside.Combat
                     }
                 }
                 if (down) continue;
-                if (target.HP <= 0) { down = true; target.View?.PlayDeath(); }   // animation only (kill() itself follows the volley)
+                if (target.HP <= 0) { down = true; if (!Held(target)) target.View?.PlayDeath(); }   // animation only (kill() itself follows the volley)
                 if (hit && blocked) target.View?.PlayDodge(true);   // the shield takes it (animation only); a miss just flies wide
                 OnShotFired?.Invoke(attacker, target, hit, crit);
                 OnShot?.Invoke(new ShotEvent(attacker, target, i, shots, hit, crit, hit && blocked, dealt));
@@ -373,7 +373,7 @@ namespace Blindside.Combat
             OnResolved?.Invoke(attacker, target, new ShotResult(hits, shots, headshots, total, blocked, killed));
             if (killed)
             {
-                target.View?.PlayDeath();
+                if (!Held(target)) target.View?.PlayDeath();
                 OnKill?.Invoke(target, attacker);   // subscribers do kill()'s escort release (+ its log) first
                 // kill(): host → log(`人質が死亡しました！(${by.kr})`,'w'); else log(`${t.kr}が倒された`, t.team===G.side?'f':'a')
                 if (target.IsHostage) HudLog.Add($"人質が死亡しました！({Kr(attacker)})", HudLogType.Warn);
@@ -446,11 +446,16 @@ namespace Blindside.Combat
             yield return Sleep(.35f);
             if (t.HP <= 0)
             {
-                t.View?.PlayDeath();
+                if (!Held(t)) t.View?.PlayDeath();
                 OnKill?.Invoke(t, a);
                 HudLog.Add($"{Kr(t)}が倒された", t.Team == HudLog.Side ? HudLogType.Foe : HudLogType.Ally);
             }
         }
+
+        /// <summary>Presentation hook (the battle director): true while a unit's fall is shown somewhere else (the battle stage) — the
+        /// map figure is then not felled by the shot; the director lays it down when the stage ends. Null: never held.</summary>
+        public System.Func<ICombatUnit, bool> HoldDeath;
+        bool Held(ICombatUnit t) => HoldDeath != null && HoldDeath(t);
 
         /// <summary>u.kr — the operator's display name in katakana (人質 for the hostage).</summary>
         static string Kr(ICombatUnit u) => u is IOperatorNamed n && !string.IsNullOrEmpty(n.Kr) ? n.Kr : u.IsHostage ? "人質" : "?";

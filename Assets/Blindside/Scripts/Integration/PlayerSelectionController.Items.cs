@@ -169,7 +169,7 @@ namespace Blindside.Integration
         void DetonateFlash(SimUnit thrower, Vector2 at)
         {
             var white = new Color(1f, 1f, .92f);
-            CombatFx.Boom(GridSpace.GridToWorld(at.x, at.y, .3f), white, 8);
+            FxFlash.Bang(GridSpace.GridToWorld(at.x, at.y, .35f), FlashR);
             CombatFx.Ring(GridSpace.GridToWorld(at.x, at.y, .06f), white, .5f, FlashR);
             SfxNoise.Boom();
             if (BattlefieldCamera.Instance != null) BattlefieldCamera.Instance.Shake(.15f);

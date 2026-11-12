@@ -167,7 +167,7 @@ namespace Blindside.Rendering
             }
         }
 
-        static Gradient Fade(Color from, Color to)
+        internal static Gradient Fade(Color from, Color to)
         {
             var g = new Gradient();
             g.SetKeys(new[] { new GradientColorKey(from, 0f), new GradientColorKey(to, 1f) },
@@ -177,7 +177,7 @@ namespace Blindside.Rendering
 
         // One emitter, configured once: emission off (the burst emits), world space, unscaled time; sizes / speeds scale with the rig.
         // `grow` > 1 grows over the life, < 1 shrinks. `drag` slows the particles (the dust and the smoke settle).
-        static ParticleSystem Make(GameObject parent, string name, Material mat, ParticleSystemRenderMode mode,
+        internal static ParticleSystem Make(GameObject parent, string name, Material mat, ParticleSystemRenderMode mode,
             Vector2 life, Vector2 size, Vector2 speed, Color from, Color to, float grow,
             ParticleSystemShapeType shape = ParticleSystemShapeType.Sphere, float radius = 0f, float gravity = 0f,
             bool spin = false, bool spin3D = false, float drag = 0f)

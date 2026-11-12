@@ -26,6 +26,12 @@ namespace Blindside.Rendering
             public float blade, lean;                     // degrees the chest turns (left shoulder forward) / leans forward when aiming
             public Vector3 gripLocal;                     // the right hand's point (the left hand slides no further back)
             public HandRest hands;                        // rest-pose fingers / forearms (null: the clip's fingers, old elbows)
+            // where the clip's right hand carries the gun (hand space, the aim clip's calibration) when the gun's own local
+            // pose is the wrapped grip: the hand is then solved onto the gun instead of the gun following the clip's hand
+            public Quaternion carryRot;
+            public Vector3 carryPos;
+            public bool hasCarry;
+            public float handReach;                       // > 0: a handgun, its sights this far in front of the eye (m, 1.7 m figure), arms out
         }
 
         readonly Transform gun, rUpper, rLower, rHand, lUpper, lLower, lHand, head, chest, neck;
@@ -95,6 +101,14 @@ namespace Blindside.Rendering
             return r;
         }
 
+        // The gun's pose as the clip's right hand carries it (its own pose when there's no separate carry).
+        void Carry(out Vector3 pos, out Quaternion rot)
+        {
+            if (!s.hasCarry) { pos = gun.position; rot = gun.rotation; return; }
+            rot = rHand.rotation * s.carryRot;
+            pos = rHand.TransformPoint(s.carryPos);
+        }
+
         /// <summary>One round's recoil.</summary>
         public void Kick() => kick = 1f;
 
@@ -128,7 +142,7 @@ namespace Blindside.Rendering
                     // the body a long way): measure it, turn the chest the difference
                     var line = rUpper.position - lUpper.position; line.y = 0f;
                     float now = line.sqrMagnitude > 1e-6f ? Vector3.SignedAngle(right, line, Vector3.up) : 0f;
-                    float yawFix = Mathf.DeltaAngle(now, s.blade) * ads;
+                    float yawFix = Mathf.DeltaAngle(now, s.handReach > 0f ? s.blade * .3f : s.blade) * ads;
                     var turn = Quaternion.AngleAxis(s.lean * ads, right) * Quaternion.AngleAxis(yawFix, Vector3.up);
                     var neckRot = neck != null ? neck.rotation : Quaternion.identity;
                     chest.rotation = turn * chest.rotation;
@@ -151,9 +165,16 @@ namespace Blindside.Rendering
                     butt += (-fwd * .04f - Vector3.up * .03f) * (f * j);       // off the shoulder, back
                 }
                 var aimPos = butt - aimRot * (s.buttLocal * gs);
+                if (s.handReach > 0f)
+                {
+                    // a handgun: both arms out, the sights level with the eye in front of the face
+                    var eyeAt = head.position + (right * s.eyeOffset.x + Vector3.up * s.eyeOffset.y + fwd * s.eyeOffset.z) * f;
+                    var sightAt = eyeAt + fwd * (s.handReach * f) - Vector3.up * (.03f * f) - fwd * (.02f * f * k);
+                    aimPos = sightAt - aimRot * (s.sightLocal * gs);
+                }
 
                 // cheek weld: the head drops (and leans in) until the eye is just over the top of the stock
-                if (neck != null)
+                if (neck != null && s.handReach <= 0f)
                 {
                     var stockTop = aimPos + aimRot * (s.sightLocal * gs);
                     var eye = head.position + (right * s.eyeOffset.x + Vector3.up * s.eyeOffset.y + fwd * s.eyeOffset.z) * f;
@@ -163,14 +184,27 @@ namespace Blindside.Rendering
                     neck.rotation = Quaternion.AngleAxis(pitch * ads, right) * Quaternion.AngleAxis(-s.headRoll * ads, fwd) * neck.rotation;
                 }
 
-                var pos = Vector3.Lerp(gun.position, aimPos, ads);
-                var rot = Quaternion.Slerp(gun.rotation, aimRot, ads);
+                Vector3 cPos; Quaternion cRot;
+                Carry(out cPos, out cRot);
+                var pos = Vector3.Lerp(cPos, aimPos, ads);
+                var rot = Quaternion.Slerp(cRot, aimRot, ads);
                 // the hand that makes the gun land there (the gun is the hand's child)
                 var handRot = rot * Quaternion.Inverse(gun.localRotation);
                 var handPos = pos - handRot * (gun.localPosition * rHand.lossyScale.x);
                 var elbow = rUpper.position + (right * .25f - Vector3.up * .3f - fwd * .05f) * f;   // out to the side, down
                 if (s.hands != null) elbow = StraightWristElbow(handPos, handRot, s.hands.rightForearm, rightForearmLen, elbow);
                 TwoBone(rUpper, rLower, rHand, handPos, handRot, 1f, elbow, ads);
+            }
+            else if (s.hasCarry && hold > .001f)
+            {
+                // not aiming: the gun stays where the clip carries it, the hand wraps its grip
+                Vector3 cPos; Quaternion cRot;
+                Carry(out cPos, out cRot);
+                var handRot = cRot * Quaternion.Inverse(gun.localRotation);
+                var handPos = cPos - handRot * (gun.localPosition * rHand.lossyScale.x);
+                var elbow = rLower.position;
+                if (s.hands != null) elbow = StraightWristElbow(handPos, handRot, s.hands.rightForearm, rightForearmLen, elbow);
+                TwoBone(rUpper, rLower, rHand, handPos, handRot, hold, elbow, .5f);
             }
             Curl(1, HandRest.PistolGrip, HandRest.PistolGrip, 0f, hold);
 

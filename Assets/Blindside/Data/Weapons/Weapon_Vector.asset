@@ -28,10 +28,12 @@ MonoBehaviour:
   model: {fileID: 919132149155446097, guid: 4ed57c4f82ba63544ac6a4852e234f8e, type: 3}
   modelForwardSign: 1
   modelLength: 0.72
-  gripFromRear: 0.55
-  gripHeight: 0.45
+  gripFromRear: 0.4
+  gripHeight: 0.5
   foregripFromRear: 0.85
   foregripHeight: 0.4
   foregripRoll: 80
   sightHeight: 0.8
   buttHeight: 0.45
+  handgun: 0
+  handgunReach: 0.5

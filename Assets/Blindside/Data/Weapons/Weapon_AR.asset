@@ -14,8 +14,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Data.WeaponData
   key: AR
   weaponName: "K-417 \u7A81\u6483\u9283"
+  weaponClass: 
   damage: 18
   shots: 3
   accuracy: 76
   range: 9
+  mobility: 0
   breach: 0
+  accuracyFalloffPerTile: 12
+  damageFalloffStart: 99
+  damageFalloffPerTile: 0
+  minDamagePercent: 100
+  model: {fileID: 919132149155446097, guid: 8526720893ce7904f9e5055f789d4e7c, type: 3}
+  modelForwardSign: -1
+  modelLength: 0.9
+  gripFromRear: 0.27
+  gripHeight: 0.47
+  foregripFromRear: 0.62
+  foregripHeight: 0.52
+  foregripRoll: 60
+  sightHeight: 0.75
+  buttHeight: 0.5
+  handgun: 0
+  handgunReach: 0.5

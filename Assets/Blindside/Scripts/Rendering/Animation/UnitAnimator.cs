@@ -168,6 +168,16 @@ namespace Blindside.Rendering
             return true;
         }
 
+        /// <summary>The death clip's last frame at once (the fall already shown elsewhere — the battle stage). False without one.</summary>
+        public bool ShowDead()
+        {
+            dead = true;
+            if (Profile == null || Profile.death == null) return false;
+            PlayFull(Profile.death, 1f, true, true, Profile.death.length);
+            deathAt = Time.time + .4f;
+            return true;
+        }
+
         /// <summary>Seconds until the running dodge reaches its peak (the body furthest out of the line of fire); −1 when no
         /// dodge is running or it is already past the peak.</summary>
         public float DodgePeakIn

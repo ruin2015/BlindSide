@@ -204,6 +204,27 @@ namespace Blindside.Progress
         /// <summary>FLARE's co-op rank with `key` (0 … CoopNeed.Length).</summary>
         public static int Rank(SaveData d, string key) => d == null || key == Commander ? 0 : Level(Points(d, Commander, key));
 
+        /// <summary>Editor debug (Blindside > Debug > Co-op Ranks): "KEY=rank,KEY=rank" in PlayerPrefs, the ranks a match with no save
+        /// session plays with (a debug scene, a test play).</summary>
+        public const string DebugRanksPref = "Blindside.Debug.CoopRanks";
+
+        /// <summary>The rank set by hand for `key` in the editor's debug window (always false in a build).</summary>
+        public static bool DebugRank(string key, out int rank)
+        {
+            rank = 0;
+#if UNITY_EDITOR
+            if (string.IsNullOrEmpty(key)) return false;
+            string all = PlayerPrefs.GetString(DebugRanksPref, "");
+            foreach (var part in all.Split(','))
+            {
+                int eq = part.IndexOf('=');
+                if (eq <= 0 || part.Substring(0, eq) != key) continue;
+                return int.TryParse(part.Substring(eq + 1), out rank);
+            }
+#endif
+            return false;
+        }
+
         /// <summary>The share of the way from this rank to the next (1 at the top).</summary>
         public static float LevelProgress(int points)
         {

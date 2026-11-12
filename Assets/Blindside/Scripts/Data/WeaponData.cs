@@ -58,6 +58,10 @@ namespace Blindside.Data
         [Range(0f, 1f)] public float sightHeight = .82f;
         [Tooltip("Height of the butt's middle, 0 = bottom, 1 = top: aiming puts it in the right shoulder pocket.")]
         [Range(0f, 1f)] public float buttHeight = .55f;
+        [Tooltip("A handgun: aimed with both arms out in front of the eyes, not shouldered.")]
+        public bool handgun;
+        [Tooltip("Handgun: how far in front of the eyes the sights are held, metres for a 1.7 m figure.")]
+        public float handgunReach = .5f;
 
         public string ClassKey => string.IsNullOrEmpty(weaponClass) ? key : weaponClass;
 
