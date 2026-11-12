@@ -82,6 +82,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.ArmoryGun, label = "本部 — ロードアウト (銃)", build = UIPreviewHub.BuildArmoryGun },
             new State { name = UIPreviewHub.ArmoryPart, label = "本部 — ロードアウト (パーツ選択)", build = UIPreviewHub.BuildArmoryPart },
             new State { name = UIPreviewHub.ArmoryGadget, label = "本部 — ロードアウト (ガジェット)", build = UIPreviewHub.BuildArmoryGadget },
+            new State { name = UIPreviewHub.SortieSquad5, label = "本部 — 出撃メンバー編成 (5名)", build = UIPreviewHub.BuildSortieSquad5 },
+            new State { name = UIPreviewHub.SortieSquad3, label = "本部 — 出撃メンバー編成 (3名)", build = UIPreviewHub.BuildSortieSquad3 },
             new State { name = UIPreviewHub.Bench, label = "本部 — ロードアウト (作業台)", build = UIPreviewHub.BuildBench },
             new State { name = UIPreviewHub.BenchPick, label = "本部 — ロードアウト (パーツ選択)", build = UIPreviewHub.BuildBenchPick },
             new State { name = UIPreviewHub.BenchEnter, label = "本部 — ロードアウト (登場演出の途中)", build = UIPreviewHub.BuildBenchEnter },

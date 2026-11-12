@@ -47,6 +47,9 @@ namespace Blindside.Hub
 
         /// <summary>IGNIS's ロードアウト: the armoury screen.</summary>
         public void OpenLoadout(int operatorIndex = 0) => armory.Open(operatorIndex);
+        HubSquadScreen squadPick;
+        /// <summary>The sortie's squad (an operation with MapCatalog.Entry.squadSize): who goes, picked over the low-angle lineup.</summary>
+        public HubSquadScreen SquadPick => squadPick;
         HubMenu menu;
         public HubMenu Menu => menu;
         HubCoopScreen coop;
@@ -61,7 +64,7 @@ namespace Blindside.Hub
 
         public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
                                || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen) || (armory != null && armory.IsOpen)
-                               || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || (coop != null && coop.IsOpen) || leaving;
+                               || (squadPick != null && squadPick.IsOpen) || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || (coop != null && coop.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
         public KitGrowthPanel Growth => growth;
@@ -90,11 +93,12 @@ namespace Blindside.Hub
             s.shop = HubShopScreen.Build(s.root, s);
             s.armory = HubArmoryScreen.Build(s.root, s);
             s.loadout = HubLoadoutScreen.Build(s.root, s);
+            s.squadPick = HubSquadScreen.Build(s.root, s);
             s.squadC = new SquadInfoContent(s);
             s.coop = HubCoopScreen.Build(s.root, s);
             s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle, () => s.coop.Open());
             s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.coop.IsOpen;
-            s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.armory.IsOpen || s.shop.IsOpen;
+            s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.armory.IsOpen || s.shop.IsOpen || s.squadPick.IsOpen;
             s.shop.Closed = s.station.Reenter;
             s.RefreshTopbar();
             SaveSystem.Saved += s.OnSaved;

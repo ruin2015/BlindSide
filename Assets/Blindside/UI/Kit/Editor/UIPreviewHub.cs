@@ -131,6 +131,17 @@ namespace Blindside.UI.EditorTools
         public static void BuildArmoryGadget(UIPreview.Stage s) => Screen(s).Armory.PoseGadget(1, 0);
         public const string ArmoryGadget = "hub_armory_gadget";
 
+        /// <summary>hub_sortie_squad5: 出撃メンバー編成 for the third main quest (5 to go: the wedge, slot 2 chosen, the roster open);
+        /// hub_sortie_squad3: the second (3 to go, its captives left out).</summary>
+        public const string SortieSquad5 = "hub_sortie_squad5", SortieSquad3 = "hub_sortie_squad3";
+        public static void BuildSortieSquad5(UIPreview.Stage s) => Screen(s).SquadPick.Pose(MainQuest(3), 1);
+        public static void BuildSortieSquad3(UIPreview.Stage s) => Screen(s).SquadPick.Pose(MainQuest(2), 2);
+        static Blindside.Progress.Quest MainQuest(int order)
+        {
+            foreach (var q in Blindside.Progress.Campaign.Mains()) if (q.order == order) return q;
+            return null;
+        }
+
         // the station screens (settled: everything in, the line typed)
         public const string StationSerum = "hub_station_serum", StationIgnis = "hub_station_ignis", StationBastion = "hub_station_bastion",
             StationCrusher = "hub_station_crusher";

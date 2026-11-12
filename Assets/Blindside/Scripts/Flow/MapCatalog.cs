@@ -67,6 +67,12 @@ namespace Blindside.Flow
             public string[] squad;
             [Tooltip("The operators' abilities are off on this operation.")]
             public bool noAbilities;
+            [Tooltip("How many go out on this operation, picked before the sortie (HubSquadScreen; FLARE always among them). 0: the squad above (or the whole squad).")]
+            public int squadSize;
+            [Tooltip("The intro's first radio line (empty: the default).")]
+            public string briefOpening;
+            [Tooltip("The hostage situation is staged: an enemy beside the civilian holds it at gunpoint, and the standoff plays when the squad finds them.")]
+            public bool hostageStandoff;
         }
 
         /// <summary>The entry's operation settings onto map data built from its JSON (the rescue operation).</summary>
@@ -77,7 +83,8 @@ namespace Blindside.Flow
             d.operationCode = e.operationCode; d.operationNameJa = e.operationNameJa;
             d.briefWeather = e.briefWeather; d.briefLocation = e.briefLocation; d.briefClock = e.briefClock;
             d.night = e.night; d.rain = e.rain;
-            d.squadKeys = e.squad; d.noAbilities = e.noAbilities;
+            d.squadKeys = e.squadSize > 0 ? SquadPick.KeysFor(e) : e.squad; d.noAbilities = e.noAbilities;
+            d.briefOpening = e.briefOpening; d.hostageStandoff = e.hostageStandoff;
             return d;
         }
 

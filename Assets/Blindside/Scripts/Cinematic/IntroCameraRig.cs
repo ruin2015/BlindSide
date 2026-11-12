@@ -107,6 +107,16 @@ namespace Blindside.Cinematic
             (HoloStart + .9f, 4.9f, "テロリストは5人、民間人は1名。\nここが現在、人質が拘束されている位置だ。"),
             (CutAt + .5f, 5.2f, "敵を全員倒すか、\n目標地点まで人質を護送しろ。"),
         };
+        /// <summary>The civilian's lines for `d`: its own opening (MapData.briefOpening) and its terrorists counted (the house: 5).</summary>
+        static (float at, float seconds, string text)[] LinesFor(Blindside.Map.MapData d)
+        {
+            if (d == null) return Lines;
+            int foes = FoeCells(d).Count;
+            var l = (((float at, float seconds, string text)[])Lines.Clone());
+            if (!string.IsNullOrEmpty(d.briefOpening)) l[0].text = d.briefOpening;
+            if (foes > 0) l[1].text = "テロリストは" + foes + "人、民間人は" + Mathf.Max(1, d.CivilianCells().Count) + "名。\nここが現在、人質が拘束されている位置だ。";
+            return l;
+        }
         // ---- the rescue intro ----
         /// <summary>The next intro is the rescue one (set by whoever starts it: TitleSelectScreen from MapData.rescueIntro, the debug menu).</summary>
         public static bool RescueStyle;
@@ -187,7 +197,11 @@ namespace Blindside.Cinematic
             var prefab = mb != null ? mb.UnitPrefab : null;
             if (prefab == null || title == null) return;
             var squad = new System.Collections.Generic.List<OperatorData>();
-            title.GetSquad(OperatorTeam.Attack, squad);
+            // the operation's own squad (picked before the sortie: FLARE first), else the side's
+            var keys = Blindside.Map.MapLibrary.Current != null ? Blindside.Map.MapLibrary.Current.squadKeys : null;
+            if (keys != null && keys.Length > 0)
+                foreach (var k in keys) { var o = BuildAssetRegistry.Operator(k); if (o != null) squad.Add(o); }
+            else title.GetSquad(OperatorTeam.Attack, squad);
             var parent = introHouse != null ? introHouse.transform : transform;
             for (int i = 0; i < squad.Count && rappellers.Count < RappelCount; i++)
             {
@@ -432,7 +446,7 @@ namespace Blindside.Cinematic
             rescue = RescueStyle;
             var introMap = Blindside.Map.MapLibrary.Current;
             assault = !rescue && introMap != null && !introMap.HasCivilian;
-            lines = rescue ? RescueLinesFor(introMap) : assault ? AssaultLines(FoeCells(introMap).Count) : Lines;
+            lines = rescue ? RescueLinesFor(introMap) : assault ? AssaultLines(FoeCells(introMap).Count) : LinesFor(introMap);
             Blindside.Rendering.MissionAtmosphere.Apply(Blindside.Map.MapLibrary.Current);
             SetUpOwnWorld();
             lowCut = false; rollNow = 0f;

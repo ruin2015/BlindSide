@@ -121,6 +121,10 @@ namespace Blindside.Map
         /// <summary>Who the player fields on this operation (empty: the whole squad), and whether the operators' abilities are off. Not in the map's own data.</summary>
         public string[] squadKeys;
         public bool noAbilities;
+        /// <summary>The intro's first radio line (empty: the default 「緊張しろ、新入り。…」). Not in the map's own data.</summary>
+        public string briefOpening;
+        /// <summary>The hostage situation is staged (HostageStandoff: the captor's aim, the standoff when found). Not in the map's own data.</summary>
+        public bool hostageStandoff;
         /// <summary>Where the captured operators are held (the rescue intro's markers; `hostage` is the first). Empty: only `hostage`.</summary>
         public Vector2Int[] rescueHostages;
 

@@ -12,14 +12,16 @@
         "EngagePreview ×5",
         "ExpGainPopup ×2",
         "HazardStripe ×203",
-        "HubHover ×66",
+        "HubArmoryScreen ×5",
+        "HubHover ×75",
         "HubListPanel ×5",
         "HubLoadoutScreen ×3",
         "HubMenu ×2",
         "HubMinimap ×1",
         "HubPointer ×54",
-        "HubScreen ×21",
+        "HubScreen ×28",
         "HubShopScreen ×5",
+        "HubSquadScreen ×2",
         "HubStationScreen ×5",
         "HubTalkPanel ×1",
         "IntroBriefing ×3",
@@ -28,7 +30,7 @@
         "IntroSubtitle ×6",
         "IntroTitleAssemble ×2",
         "KitBannerStrip ×41",
-        "KitBrighten ×124",
+        "KitBrighten ×135",
         "KitChoice ×5",
         "KitCommandMenu ×16",
         "KitDialogue ×2",
@@ -49,14 +51,14 @@
         "KitTextButton ×65",
         "KitTint ×325",
         "KitTitleLeft ×6",
-        "LintIgnoreClip ×902",
-        "LintIgnoreOverlap ×332",
+        "LintIgnoreClip ×903",
+        "LintIgnoreOverlap ×331",
         "MainMenuScreen ×6",
         "OperationResultScreen ×5",
         "PauseMenu ×6",
         "ResultScreen ×3",
         "SegmentedBar ×317",
-        "SlantedGraphic ×3268",
+        "SlantedGraphic ×3323",
         "SlantedMask ×311",
         "TacticalPanel ×1231",
         "TitleSelectScreen ×6",
@@ -301,6 +303,48 @@
         {
             "state": "dialogue_choice",
             "label": "会話シーン — 選択肢",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_armory",
+            "label": "本部 — ロードアウト (隊員・装備)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_armory_op",
+            "label": "本部 — ロードアウト (隊員を選んだ後)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_armory_gun",
+            "label": "本部 — ロードアウト (銃)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_armory_part",
+            "label": "本部 — ロードアウト (パーツ選択)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_armory_gadget",
+            "label": "本部 — ロードアウト (ガジェット)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_sortie_squad5",
+            "label": "本部 — 出撃メンバー編成 (5名)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "hub_sortie_squad3",
+            "label": "本部 — 出撃メンバー編成 (3名)",
             "count": 0,
             "issues": []
         },

@@ -70,7 +70,19 @@ namespace Blindside.UI
         void SortieQuest(Quest q)
         {
             if (q == null) return;
+            bool deadline = forced;
             Close();
+            // an operation that lets the player pick who goes: the squad screen first (戻る: back to the 作戦室 / the deadline)
+            if (q.entry != null && q.entry.squadSize > 0 && screen.SquadPick != null)
+            {
+                screen.SquadPick.Open(q, _ => Launch(q), () => { if (deadline) OpenDeadline(); else Open("CRUSHER"); });
+                return;
+            }
+            Launch(q);
+        }
+
+        void Launch(Quest q)
+        {
             screen.Sortie(new HubCatalog.Operation { stem = q.stem, entry = q.entry, scene = q.scene, name = q.name, money = q.money, contribution = q.contribution });
         }
 

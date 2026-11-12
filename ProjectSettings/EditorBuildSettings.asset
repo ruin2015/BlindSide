@@ -20,5 +20,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Blindside/Scenes/Maps/map_b909c9d2.unity
     guid: 38416f921bac4d441b20485dbf618f7a
+  - enabled: 1
+    path: Assets/Blindside/Scenes/Maps/map_06433e50.unity
+    guid: 906b642e96f33124199c836549dd2965
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

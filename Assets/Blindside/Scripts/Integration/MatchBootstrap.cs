@@ -248,6 +248,7 @@ namespace Blindside.Integration
         SimHostage activeHostage;
         /// <summary>Every civilian hostage this match (the first is activeHostage), with its view and figure at the same index.</summary>
         readonly List<SimHostage> activeHostages = new List<SimHostage>();
+        HostageStandoff standoff;
         readonly List<IUnitView> hostageViews = new List<IUnitView>();
         readonly List<HostageAnimator> hostageFigures = new List<HostageAnimator>();
         MapGadgetRuntime mapGadgets;
@@ -345,7 +346,8 @@ namespace Blindside.Integration
                 if (u.View == null) continue;
                 u.View.SetHeight(u.RZ);
                 // revealT (set by a shot or an encounter) doubles as "in combat": the model keeps its aim pose meanwhile
-                u.View.SetCombatReady(u.Alive && Time.unscaledTime < u.RevealT);
+                // (a captor holding the hostage at gunpoint keeps its gun up too — HostageStandoff)
+                u.View.SetCombatReady(u.Alive && (Time.unscaledTime < u.RevealT || (standoff != null && standoff.Aims(u))));
                 // syncUnits: `show=u.alive&&u.placed!==false&&…` — the player's own not-yet-dropped units aren't in
                 // the scene (the enemy side is hidden by VisibilityController via the same Placed flag).
                 // (a captive: hidden until the squad's sight has found it, then where it is held)
@@ -612,6 +614,8 @@ namespace Blindside.Integration
                 if (tutorialMode && hv != null) hv.SetVisible(false);   // (the tutorial map walls the hostage cell in; nobody is to see it)
             }
             var hostageList = activeHostages.ConvertAll(h => (ITurnHostage)h);
+            // the hostage held at gunpoint (an enemy beside it): the captor's aim and the standoff when the squad first sees them
+            standoff = HostageStandoff.Bind(gameObject, units, activeHostages, visibility, playerTeam == OperatorTeam.Attack && !tutorialMode && mapData.hostageStandoff);
 
             // Let at least one real frame render with all 11 at their spawn poses before any AI/turn
             // logic (which used to run to completion inside the same synchronous call) touches them.

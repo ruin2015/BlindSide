@@ -34,3 +34,8 @@ MonoBehaviour:
     money: 30000
     contribution: 400
     expScale: 1
+  - map: '@map_06433e50'
+    label: "\u4F5C\u6226\u300C\u30F4\u30A7\u30F3\u30C7\u30C3\u30BF\u300D"
+    money: 70000
+    contribution: 800
+    expScale: 1.6
