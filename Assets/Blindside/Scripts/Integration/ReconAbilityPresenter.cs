@@ -1,6 +1,7 @@
 // GHOST's / SILENCE's abilities on screen and their per-phase countdown (ReconAbilities only change state and raise events):
-//   heartbeat  a purple heartbeat (FxPulse lub-dubs) at every enemy sensed, 「心拍」 over it, a Spotted mark for the user's side (MarkBoard:
-//              until its next turn), the log line (how many) — shown only for the player's side; the AI's side gets the marks alone
+//   heartbeat  switched on: a purple ping off GHOST, a shockwave ring at every enemy in the cone, 「感知」 over it, a Spotted mark for the
+//              user's side (MarkBoard), the log line — shown only for the player's side (the AI's side gets the marks alone); for the rest
+//              of the turn GhostSense keeps sensing
 //   holo       a cyan scan sweeping out from SILENCE to the scan radius, a ping and 「無力化」 on every gadget it knocked out, the log line
 //   per phase  HoloScanAbility.Tick: knocked-out gadgets count down and come back on (「…が復旧した」 when they do)
 using System.Collections.Generic;
@@ -48,16 +49,17 @@ namespace Blindside.Integration
         {
             foreach (var e in found) marks?.Add(u.Team, e.X, e.Y, MarkKind.Spotted);
             if (!Mine(u)) return;
-            FxPulse.Scan(GridSpace.GridToWorld(u.X, u.Y), GhostPurple, HeartbeatAbility.HeartbeatRange, 1);
+            // switched on: a ping off GHOST, then a shockwave where each enemy in the cone stands (GhostSense keeps sensing for the turn)
+            FxPulse.Scan(GridSpace.GridToWorld(u.X, u.Y), GhostPurple, 1.6f, 1);
             SfxNoise.Ui();
-            float d = .25f;
+            float d = .2f;
             foreach (var e in found)
             {
-                FxPulse.Heartbeat(GridSpace.GridToWorld(e.X, e.Y), GhostPurple, 3, 1f, d);
-                WorldPopup.Show(e.X, e.Y, "心拍", GhostPurple);
-                d += .1f;
+                FxPulse.Scan(GridSpace.GridToWorld(e.X, e.Y), GhostPurple, GhostSense.RingSize, 2, d);
+                WorldPopup.Show(e.X, e.Y, "感知", GhostPurple);
+                d += .08f;
             }
-            HudLog.Add(found.Count > 0 ? $"{Kr(u)}: 心拍センサー — 敵 {found.Count} 名の心拍を感知" : $"{Kr(u)}: 心拍センサー — 反応なし",
+            HudLog.Add($"{Kr(u)}: 心拍センサー起動 — 1ターンの間、視界の方向の敵を壁越しに感知" + (found.Count > 0 ? $" (現在 {found.Count} 名)" : ""),
                 found.Count > 0 ? HudLogType.Ally : HudLogType.Normal);
         }
 

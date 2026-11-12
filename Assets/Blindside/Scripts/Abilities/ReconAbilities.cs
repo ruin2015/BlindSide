@@ -1,7 +1,9 @@
 // GHOST's and SILENCE's abilities (both instant, no target to pick). They only change game state and raise events; the presentation
 // (pulses, the scan, popups, log, marks) and the per-phase countdown are ReconAbilityPresenter's (Integration).
-//   heartbeat  心拍センサー (GHOST, 3 uses)  every living enemy inside GHOST's view (the cone up to HeartbeatRange, or the always-seen
-//              circle) is sensed through walls: its heartbeat is shown where it stands and marked for his side (MarkBoard, until his next turn)
+//   heartbeat  心拍センサー (GHOST, 3 uses)  switched on for a turn (until his side's next turn): every living enemy inside his view cone —
+//              the normal cone's width, 1.3 × its length (Range), or the always-seen circle — is sensed through walls, again and again as he
+//              moves and turns (Integration.GhostSense): a shockwave where it stands, a mark for his side (MarkBoard). Use raises the first
+//              sweep (OnHeartbeat: the record's assists, the co-op exposure).
 //   holo       ホロスキャン (SILENCE, 2 uses)  every enemy electronic gadget within ScanRadius — surveillance cameras, shock-wire fields — is
 //              found (discovered: shown on the map from now on) and knocked out for DisableTurns phases: a camera sees nothing, a field
 //              neither fries drones nor keeps its reinforced walls electrified. They come back on by themselves (the presenter).
@@ -15,7 +17,9 @@ namespace Blindside.Abilities
 {
     public class HeartbeatAbility : IAbility
     {
-        public const float HeartbeatRange = 7f, HeartbeatRangeCoop = 10f;
+        /// <summary>The sensed cone: the view cone's width (VisionConfig.Half), 1.3 × its length; co-op rank 3 (逃さない) 1.5 ×.</summary>
+        public const float LengthScale = 1.3f, LengthScaleCoop = 1.5f;
+        public const float HeartbeatRange = VisionConfig.Range * LengthScale, HeartbeatRangeCoop = VisionConfig.Range * LengthScaleCoop;
 
         /// <summary>The sensor's reach (co-op rank 3, 逃さない: further).</summary>
         public static float Range(IAbilityUnit u) => Blindside.Combat.CoopRules.Has(u, "GHOST", Blindside.Combat.CoopRules.Unique3) ? HeartbeatRangeCoop : HeartbeatRange;
@@ -23,7 +27,7 @@ namespace Blindside.Abilities
         public string Key => "heartbeat";
 
         public AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => new AbilitySpec(AbilityTargetKind.Instant,
-            hint: "心拍センサー", sub: "視界内 " + Range(u).ToString("0") + "m 以内の敵の心拍を壁越しに感知する");
+            hint: "心拍センサー", sub: "1ターンの間、視界の方向 " + Range(u).ToString("0") + "m までの敵の位置を壁越しに感知する");
 
         /// <summary>The enemies `u` would sense now (alive, in its view cone within HeartbeatRange or in the near circle; walls don't matter).</summary>
         public static void Sense(IAbilityUnit u, AbilityContext ctx, List<IAbilityUnit> into)

@@ -58,19 +58,19 @@ namespace Blindside.Rendering
         void Burst()
         {
             burstAt = clock;
-            nextBurst = clock + .12f + (float)rng.NextDouble() * .75f;
-            sparks.Emit(4 + rng.Next(10));
+            nextBurst = clock + .1f + (float)rng.NextDouble() * .55f;
+            sparks.Emit(10 + rng.Next(14));
             pop.Emit(1);
-            // the arc: a jagged line between two points on the casing
-            float a = (float)rng.NextDouble() * Mathf.PI * 2f, s = .16f * size;
-            var from = new Vector3(Mathf.Cos(a) * s, ((float)rng.NextDouble() - .5f) * s, Mathf.Sin(a) * s);
-            var to = -from + new Vector3(0f, ((float)rng.NextDouble() - .5f) * s, 0f);
+            // the arc: a jagged bolt jumping off the casing and out past it (seen from the battle camera's height)
+            float a = (float)rng.NextDouble() * Mathf.PI * 2f, s = .28f * size;
+            var from = new Vector3(Mathf.Cos(a) * s, ((float)rng.NextDouble() - .3f) * s, Mathf.Sin(a) * s);
+            var to = -from * 1.6f + new Vector3(0f, ((float)rng.NextDouble() - .2f) * s, 0f);
             for (int i = 0; i < pts.Length; i++)
             {
                 float k = i / (pts.Length - 1f);
                 var p = Vector3.Lerp(from, to, k);
                 if (i > 0 && i < pts.Length - 1)
-                    p += new Vector3((float)rng.NextDouble() - .5f, (float)rng.NextDouble() - .5f, (float)rng.NextDouble() - .5f) * (.12f * size);
+                    p += new Vector3((float)rng.NextDouble() - .5f, (float)rng.NextDouble() - .5f, (float)rng.NextDouble() - .5f) * (.22f * size);
                 pts[i] = p;
             }
             arc.SetPositions(pts);
@@ -84,21 +84,21 @@ namespace Blindside.Rendering
             arc.enabled = live;
             blink.enabled = live;
             if (!live) return;
-            arc.widthMultiplier = .022f * size * (.4f + .6f * k);
-            blink.intensity = 2.6f * k;
+            arc.widthMultiplier = .055f * size * (.4f + .6f * k);
+            blink.intensity = 7f * k;
         }
 
         void Build()
         {
             var glowMat = FxKit.Glow;
             sparks = FxBlast.Make(gameObject, "Sparks", glowMat, ParticleSystemRenderMode.Stretch,
-                life: new Vector2(.2f, .55f), size: new Vector2(.015f, .03f), speed: new Vector2(1.2f, 3.2f),
+                life: new Vector2(.25f, .6f), size: new Vector2(.035f, .07f), speed: new Vector2(1.6f, 4.2f),
                 from: new Color(1f, .95f, .75f, 1f), to: new Color(1f, .55f, .2f, 0f), grow: .5f,
                 shape: ParticleSystemShapeType.Sphere, radius: .05f * size, gravity: 1.6f);
             pop = FxBlast.Make(gameObject, "Pop", glowMat, ParticleSystemRenderMode.Billboard,
-                life: new Vector2(.06f, .1f), size: new Vector2(.35f, .55f), speed: Vector2.zero,
+                life: new Vector2(.08f, .14f), size: new Vector2(.8f, 1.2f), speed: Vector2.zero,
                 from: new Color(.85f, .95f, 1f, 1f), to: new Color(ArcCol.r, ArcCol.g, ArcCol.b, 0f), grow: 1.4f);
-            var pm = pop.main; pm.startSize = new ParticleSystem.MinMaxCurve(.35f * size, .55f * size);
+            var pm = pop.main; pm.startSize = new ParticleSystem.MinMaxCurve(.8f * size, 1.2f * size);
             wisp = FxBlast.Make(gameObject, "Wisp", FxKit.Smoke, ParticleSystemRenderMode.Billboard,
                 life: new Vector2(1.6f, 2.6f), size: new Vector2(.12f, .2f), speed: new Vector2(.15f, .35f),
                 from: new Color(.25f, .25f, .26f, .4f), to: new Color(.5f, .5f, .52f, 0f), grow: 4f,
@@ -119,7 +119,7 @@ namespace Blindside.Rendering
             arc.enabled = false;
 
             blink = FxKit.PointLight(transform, new Color(.6f, .82f, 1f));
-            blink.range = 2.2f * size;
+            blink.range = 3.2f * size;
         }
     }
 }

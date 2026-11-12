@@ -114,7 +114,7 @@ namespace Blindside.Rendering
                 var sol = fx.bubble.sizeOverLifetime;
                 sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, .05f, 0f, 4f), new Keyframe(.6f, 1f, 0f, 0f), new Keyframe(1f, 1.05f)));
                 fx.arcs = FxBlast.Make(go, "Arcs", glowMat, ParticleSystemRenderMode.Stretch,
-                    life: new Vector2(.14f, .32f), size: new Vector2(.05f, .1f), speed: new Vector2(10f, 16f),
+                    life: new Vector2(.16f, .36f), size: new Vector2(.09f, .16f), speed: new Vector2(10f, 16f),
                     from: White, to: new Color(Blue.r, Blue.g, Blue.b, 0f), grow: .5f,
                     shape: ParticleSystemShapeType.Circle, radius: .25f);
                 fx.arcs.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);   // (the circle lies flat: arcs run out along the floor)
@@ -125,7 +125,7 @@ namespace Blindside.Rendering
                     from: new Color(.95f, .98f, 1f, 1f), to: new Color(Blue.r, Blue.g, Blue.b, 0f), grow: .6f,
                     shape: ParticleSystemShapeType.Sphere, radius: .2f, gravity: 1.2f);
                 fx.glints = FxBlast.Make(go, "Glints", glowMat, ParticleSystemRenderMode.Billboard,
-                    life: new Vector2(.5f, 1.1f), size: new Vector2(.08f, .2f), speed: new Vector2(.1f, .5f),
+                    life: new Vector2(.5f, 1.1f), size: new Vector2(.12f, .28f), speed: new Vector2(.1f, .5f),
                     from: new Color(.7f, .9f, 1f, 1f), to: new Color(Blue.r, Blue.g, Blue.b, 0f), grow: .3f,
                     shape: ParticleSystemShapeType.Circle, radius: 6f, gravity: -.05f);
                 fx.glints.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);

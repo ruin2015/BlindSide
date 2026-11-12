@@ -252,6 +252,7 @@ namespace Blindside.Integration
         readonly List<HostageAnimator> hostageFigures = new List<HostageAnimator>();
         MapGadgetRuntime mapGadgets;
         IncendiaryFire incendiary;   // IGNIS's co-op rank 8 (焼夷爆薬)
+        GhostSense ghostSense;       // GHOST's 心拍センサー while it is on
         /// <summary>The running match's editor-placed mines and sensors (dev tools / tests).</summary>
         public MapGadgetRuntime ActiveMapGadgets => mapGadgets;
         BreachAbilityPresenter breachPresenter;
@@ -756,6 +757,10 @@ namespace Blindside.Integration
             if (selection.Movement != null) selection.Movement.OnStep += mapGadgets.Step;
             reconPresenter?.Unbind();
             reconPresenter = new ReconAbilityPresenter(abilities, abilityCtx, turns, marks, playerTeam);
+            // GHOST's sensor, on for a turn once switched on: the enemies in his cone sensed again and again through walls
+            if (ghostSense == null) ghostSense = GetComponent<GhostSense>();
+            if (ghostSense == null) ghostSense = gameObject.AddComponent<GhostSense>();
+            ghostSense.Bind(abilities, abilityCtx, turns, marks, playerTeam);
             if (gadgetViews == null) gadgetViews = GetComponent<GadgetViews>();
             if (gadgetViews == null) gadgetViews = gameObject.AddComponent<GadgetViews>();
             gadgetViews.Bind(abilityCtx, units);
