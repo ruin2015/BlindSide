@@ -118,6 +118,8 @@ namespace Blindside.Map
         public string operationCode, operationNameJa, briefWeather, briefLocation, briefClock;
         /// <summary>The operation's weather (MissionAtmosphere): night, rain.</summary>
         public bool night, rain;
+        /// <summary>The operation at sunset (MissionAtmosphere: a low orange sun, a dusk sky). Not in the map's own data.</summary>
+        public bool dusk;
         /// <summary>Who the player fields on this operation (empty: the whole squad), and whether the operators' abilities are off. Not in the map's own data.</summary>
         public string[] squadKeys;
         public bool noAbilities;

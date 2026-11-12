@@ -61,6 +61,8 @@ namespace Blindside.Flow
             public string briefWeather, briefLocation, briefClock;
             [Tooltip("Night (moonlight, dark sky, the helicopter's searchlight) and rain (falling rain, wet surfaces) — MissionAtmosphere.")]
             public bool night, rain;
+            [Tooltip("Sunset (a low orange sun, a dusk sky) — MissionAtmosphere. Night wins over it.")]
+            public bool dusk;
             [Tooltip("The operation's challenges: all cleared S, one missed A, two B, more C. Empty: no losses / 10 rounds / every enemy down.")]
             public MapChallenge[] challenges;
             [Tooltip("Who the player fields here, by operator key (empty: the whole squad).")]
@@ -82,7 +84,7 @@ namespace Blindside.Flow
             if (e.rescue) { d.rescueIntro = true; d.rescueHostages = e.rescueHostages; }
             d.operationCode = e.operationCode; d.operationNameJa = e.operationNameJa;
             d.briefWeather = e.briefWeather; d.briefLocation = e.briefLocation; d.briefClock = e.briefClock;
-            d.night = e.night; d.rain = e.rain;
+            d.night = e.night; d.rain = e.rain; d.dusk = e.dusk;
             d.squadKeys = e.squadSize > 0 ? SquadPick.KeysFor(e) : e.squad; d.noAbilities = e.noAbilities;
             d.briefOpening = e.briefOpening; d.hostageStandoff = e.hostageStandoff;
             return d;

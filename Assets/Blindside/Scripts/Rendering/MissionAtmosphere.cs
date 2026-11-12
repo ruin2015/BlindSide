@@ -7,7 +7,10 @@
 //          intro everywhere (IntroCameraRig.IntroWorldShown); drops on the camera's lens (LensRain, needs the camera's opaque texture);
 //          and a wet look: the map's and the intro town's lit materials darker and glossier (a wet copy of each material, made once,
 //          swapped in on a slow scan so pieces built later are caught too).
-// Apply(MapData) sets it (and puts everything back for a map without either). Per frame: positions and the particle filter over
+//   dusk   a sunset: the sun low in the west behind the intro's wide shot, orange, long shadows; a warm violet ambient and an orange
+//          haze; the sky dome on its dusk copy (a deep violet zenith over an orange horizon, warm clouds) — the match itself a little
+//          brighter and the sun a little higher, so the map reads.
+// Apply(MapData) sets it (and puts everything back for a map without any). Per frame: positions and the particle filter over
 // preallocated buffers — no allocations.
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,10 +40,11 @@ namespace Blindside.Rendering
         const float BattleMoonIntensity = 1.6f, BattleFogDensity = .0015f;
         static readonly string[] WetRoots = { "Blindside_MapRoot", "IntroHouse" };
 
-        bool night, rain;
-        // what night replaced, to put back
+        bool night, rain, dusk;
+        // what night / dusk replaced, to put back
         bool saved;
-        Light sun; Color sunColor; float sunIntensity;
+        Light sun; Color sunColor; float sunIntensity; Quaternion sunRotation;
+        Material skyMaterial;
         Color ambientLight; UnityEngine.Rendering.AmbientMode ambientMode;
         bool fog; Color fogColor; FogMode fogMode; float fogDensity;
         Renderer skyDome;
@@ -65,20 +69,20 @@ namespace Blindside.Rendering
         public static void Apply(MapData d)
         {
             if (!Application.isPlaying || quitting) return;
-            bool n = d != null && d.night, r = d != null && d.rain;
+            bool n = d != null && d.night, r = d != null && d.rain, k = d != null && d.dusk && !n;
             if (instance == null)
             {
-                if (!n && !r) return;
+                if (!n && !r && !k) return;
                 instance = new GameObject("MissionAtmosphere").AddComponent<MissionAtmosphere>();
             }
-            instance.Set(n, r);
+            instance.Set(n, r, k);
         }
 
-        void Set(bool n, bool r)
+        void Set(bool n, bool r, bool k)
         {
-            if (n && !saved) Save();
-            night = n; rain = r;
-            if (n) Night(); else Restore();
+            if ((n || k) && !saved) Save();
+            night = n; rain = r; dusk = k;
+            if (n) Night(); else if (k) Dusk(); else Restore();
             if (r) EnsureRain();
             else
             {
@@ -94,11 +98,64 @@ namespace Blindside.Rendering
             saved = true;
             sun = RenderSettings.sun;
             if (sun == null) foreach (var l in FindObjectsByType<Light>(FindObjectsInactive.Exclude)) if (l.type == LightType.Directional) { sun = l; break; }
-            if (sun != null) { sunColor = sun.color; sunIntensity = sun.intensity; }
+            if (sun != null) { sunColor = sun.color; sunIntensity = sun.intensity; sunRotation = sun.transform.rotation; }
             ambientMode = RenderSettings.ambientMode; ambientLight = RenderSettings.ambientLight;
             fog = RenderSettings.fog; fogColor = RenderSettings.fogColor; fogMode = RenderSettings.fogMode; fogDensity = RenderSettings.fogDensity;
             var sd = GameObject.Find("SkyDome");
             skyDome = sd != null ? sd.GetComponent<Renderer>() : null;
+            skyMaterial = skyDome != null ? skyDome.sharedMaterial : null;
+        }
+
+        // ---- dusk ------------------------------------------------------------------------------------------------------------------
+        // (the shade a cool violet against the warm sun: without it everything goes one red-brown)
+        static readonly Color DuskSun = new Color(1f, .62f, .36f), DuskAmbient = new Color(.34f, .33f, .46f), DuskFog = new Color(.74f, .58f, .6f);
+        static readonly Color BattleDuskSun = new Color(1f, .74f, .52f), BattleDuskAmbient = new Color(.66f, .56f, .58f);
+        const float DuskSunIntensity = 2.6f, BattleDuskSunIntensity = 2.4f, DuskFogDensity = .0008f, BattleDuskFogDensity = .0008f;
+        // low in the west: the intro's wide shot looks into it (behind the house); the match's higher (short enough shadows to read the map)
+        static readonly Quaternion DuskSunTurn = Quaternion.Euler(9f, 147f, 0f), BattleDuskSunTurn = Quaternion.Euler(38f, 147f, 0f);
+        Material duskSky;
+
+        void Dusk()
+        {
+            battleLit = !IntroCameraRig.IntroWorldShown;
+            DuskLevel(battleLit);
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Exponential;
+            RenderSettings.fogColor = DuskFog;
+            if (skyDome != null)
+            {
+                skyDome.enabled = true;
+                if (duskSky == null && skyMaterial != null) duskSky = DuskSky(skyMaterial);
+                if (duskSky != null) skyDome.sharedMaterial = duskSky;
+            }
+        }
+
+        void DuskLevel(bool battle)
+        {
+            if (sun != null)
+            {
+                sun.color = battle ? BattleDuskSun : DuskSun;
+                sun.intensity = battle ? BattleDuskSunIntensity : DuskSunIntensity;
+                sun.transform.rotation = battle ? BattleDuskSunTurn : DuskSunTurn;
+            }
+            RenderSettings.ambientLight = battle ? BattleDuskAmbient : DuskAmbient;
+            RenderSettings.fogDensity = battle ? BattleDuskFogDensity : DuskFogDensity;
+        }
+
+        /// <summary>The sky dome's material for a sunset (a copy: the scene's own is left as it is).</summary>
+        static Material DuskSky(Material day)
+        {
+            var m = new Material(day) { name = day.name + " (dusk)" };
+            void C(string p, Color c) { if (m.HasProperty(p)) m.SetColor(p, c); }
+            void F(string p, float v) { if (m.HasProperty(p)) m.SetFloat(p, v); }
+            C("_ZenithColor", new Color(.16f, .13f, .33f));
+            C("_HorizonColor", new Color(1f, .52f, .27f));
+            C("_GroundColor", new Color(.22f, .15f, .13f));
+            C("_SunColor", new Color(1f, .62f, .3f));
+            C("_CloudColor", new Color(1f, .58f, .46f));
+            F("_SunSize", .006f);
+            F("_CloudCover", .5f);
+            return m;
         }
 
         void Night()
@@ -163,10 +220,10 @@ namespace Blindside.Rendering
         void Restore()
         {
             if (!saved) return;
-            if (sun != null) { sun.color = sunColor; sun.intensity = sunIntensity; }
+            if (sun != null) { sun.color = sunColor; sun.intensity = sunIntensity; sun.transform.rotation = sunRotation; }
             RenderSettings.ambientMode = ambientMode; RenderSettings.ambientLight = ambientLight;
             RenderSettings.fog = fog; RenderSettings.fogColor = fogColor; RenderSettings.fogMode = fogMode; RenderSettings.fogDensity = fogDensity;
-            if (skyDome != null) skyDome.enabled = true;
+            if (skyDome != null) { skyDome.enabled = true; if (skyMaterial != null) skyDome.sharedMaterial = skyMaterial; }
             UndressCamera();
             foreach (var l in heliLights) if (l != null) Destroy(l);
             heliLights.Clear();
@@ -346,6 +403,11 @@ namespace Blindside.Rendering
                 if (battle != battleLit) { battleLit = battle; NightLevel(battle); }
                 if (battle && Time.unscaledTime >= nextUnitScan) { nextUnitScan = Time.unscaledTime + 1f; LightUnits(); }
             }
+            else if (dusk)
+            {
+                bool battle = !IntroCameraRig.IntroWorldShown;
+                if (battle != battleLit) { battleLit = battle; DuskLevel(battle); }
+            }
             if (!rain || rainPs == null) return;
             var cam = Camera.main;
             if (cam == null) return;
@@ -456,6 +518,7 @@ namespace Blindside.Rendering
             if (lens != null) Destroy(lens.gameObject);
             foreach (var w in wetOf.Values) if (w != null) Destroy(w);
             foreach (var w in glossOf.Values) if (w != null) Destroy(w);
+            if (duskSky != null) Destroy(duskSky);
             wetOf.Clear(); glossOf.Clear();
             if (instance == this) instance = null;
         }

@@ -32,6 +32,7 @@ MonoBehaviour:
     briefClock: 
     night: 0
     rain: 0
+    dusk: 0
     challenges:
     - kind: 0
       value: 0
@@ -66,6 +67,7 @@ MonoBehaviour:
     briefClock: 02:40
     night: 1
     rain: 1
+    dusk: 0
     challenges: []
     squad: []
     noAbilities: 0
@@ -86,11 +88,12 @@ MonoBehaviour:
     daysAfterPrevious: 15
     operationCode: VENDETA
     operationNameJa: "\u30F4\u30A7\u30F3\u30C7\u30C3\u30BF"
-    briefWeather: "\u5915\u523B \xB7 \u66C7\u308A \xB7 \u8996\u754C\u666E\u901A"
+    briefWeather: "\u5915\u523B \xB7 \u5915\u713C\u3051 \xB7 \u8996\u754C\u826F\u597D"
     briefLocation: "\u5E02\u8857\u5730 \xB7 \u76EE\u6A19: \u4EBA\u8CEA\u3092\u53D6\u3063\u305F\u6B66\u88C5\u52E2\u529B\u306E\u7ACB\u3066\u3053\u3082\u308A\u5EFA\u7269"
     briefClock: 18:20
     night: 0
     rain: 0
+    dusk: 1
     challenges: []
     squad: []
     noAbilities: 0
