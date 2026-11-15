@@ -120,6 +120,10 @@ namespace Blindside.Rendering
             enabled = !on;
         }
 
+        /// <summary>The clips' time held where it is (the armoury's gadget turn: the body turns, the weights blend, but no idle
+        /// breathing plays while the camera moves). Actions (fire, hit, …) keep their own speed.</summary>
+        public bool HoldClips;
+
         // ================================================================
         //  Actions
         // ================================================================
@@ -289,9 +293,13 @@ namespace Blindside.Rendering
             if (body != null) body.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
 
             // leg playback speed follows the real speed (no foot sliding)
-            float rate = Mathf.Clamp(speed / Profile.walkClipSpeed, .5f, 2.5f);
+            float rate = Mathf.Clamp(speed / Profile.walkClipSpeed, .5f, 2.5f), loop = HoldClips ? 0f : 1f;
+            rate *= loop;
             for (int i = 1; i < baseClips.Length; i++) if (baseClips[i].IsValid()) baseClips[i].SetSpeed(rate);
             if (moveUpperClip.IsValid()) moveUpperClip.SetSpeed(rate);
+            if (baseClips[0].IsValid()) baseClips[0].SetSpeed(loop);
+            if (aimClip.IsValid()) aimClip.SetSpeed(loop);
+            if (aimBase.IsValid()) aimBase.SetSpeed(loop);
 
             WeighBase(Mathf.DeltaAngle(bodyYaw, moveYaw));
             ApplyWeights();

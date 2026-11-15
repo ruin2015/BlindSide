@@ -219,6 +219,7 @@ namespace Blindside.Hub
         /// <summary>Lets the figure move for `seconds` (a change of pose), then holds it still.</summary>
         void Settle(float seconds)
         {
+            HoldClips(false);
             Freeze(false);
             freezeAt = Time.unscaledTime + seconds;
         }
@@ -226,6 +227,12 @@ namespace Blindside.Hub
         void Freeze(bool on)
         {
             if (figure != null && figure.UnitAnimator != null) figure.UnitAnimator.SetFrozen(on);
+        }
+
+        /// <summary>The idle's time held (the gadget turn): the body still turns, but nothing breathes while the camera moves.</summary>
+        void HoldClips(bool on)
+        {
+            if (figure != null && figure.UnitAnimator != null) figure.UnitAnimator.HoldClips = on;
         }
 
         // ---- the gun (stage 2): the figure aims to the right (+X), the camera at its right side; a slot's shot frames its point -------
@@ -322,7 +329,9 @@ namespace Blindside.Hub
             var fwd = Quaternion.Euler(0f, GadgetTurn, 0f) * toCam.normalized;   // facing away, the camera off its left shoulder
             if (figure != null)
             {
-                // turning: free to move (the look-back holds it still once turned; back to the idle: still again after the turn)
+                // turning: the body turns but the idle's time is held (no breathing while the camera moves); the look-back holds it
+                // still once turned; back to the idle: still again after the turn
+                HoldClips(true);
                 Freeze(false);
                 freezeAt = on ? -1f : Time.unscaledTime + TurnSettleTime;
                 figure.SetCombatReady(false);
