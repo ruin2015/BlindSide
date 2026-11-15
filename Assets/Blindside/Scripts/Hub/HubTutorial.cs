@@ -1,7 +1,7 @@
 // CRUSHER shows the player round the HQ, the first time the squad comes home from an operation (a conversation scene, KitDialogue): the
 // greeting with a choice; then the overview — the camera straight up through the roof (the ceilings taken off for the tour), the whole
 // HQ from above with a card over every facility (HubTourLabels) and a line on what each one is for — then the camera flown to each
-// facility in turn for the details, a last question — 「もう一度」 goes round
+// facility in turn for the details (「長押しでスキップ」 top right skips to the end at any time), a last question — 「もう一度」 goes round
 // again, 「ありません」 marks it done and takes the player to the wall training the alarm interrupted (TutorialDirector.Segment = Walls).
 // The player and the HQ's own camera and labels wait meanwhile.
 using System.Collections;
@@ -99,6 +99,16 @@ namespace Blindside.Hub
             Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
             talk = KitDialogue.Build(transform);
             Hud(false);   // (the topbar, the minimap and the hints wait: the tour's cards and lines have the screen)
+            // SKIP (held down, as the battle tutorial's): top right, clear of the conversation box
+            var talkCanvas = talk.GetComponentInParent<Canvas>();
+            if (talkCanvas != null)
+            {
+                skip = Blindside.Tutorial.TutorialSkipButton.Build(talkCanvas.transform);
+                var rt = (RectTransform)skip.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 1f);
+                rt.anchoredPosition = new Vector2(-Blindside.Tutorial.TutorialSkipButton.Right, -SkipTop);
+                skip.OnSkip = Skip;
+            }
             Playing = true;
             StartCoroutine(Run());
         }
@@ -126,13 +136,38 @@ namespace Blindside.Hub
             }
             Roof(true);
             Hud(true);
+            if (skip != null) skip.gameObject.SetActive(false);
             yield return talk.Run(Speaker, "よし。では、この前できなかった\n訓練の続きをやる。ついて来い。");
+            Finish();
+        }
 
+        // ---- the end (the last line said, or SKIP held): the tour marked seen, on to the wall training the alarm interrupted ----
+        Blindside.Tutorial.TutorialSkipButton skip;
+        const float SkipTop = 20f;
+        bool finished;
+
+        void Finish()
+        {
+            if (finished) return;
+            finished = true;
+            Roof(true);
+            Hud(true);
+            if (labels != null) { Destroy(labels.transform.parent.gameObject); labels = null; }
+            if (skip != null) skip.gameObject.SetActive(false);
             var d = SaveSystem.Current;
             if (d != null) { d.hubTutorialDone = true; SaveSystem.Write(true); }
             Force = false;
             TutorialDirector.Segment = TutorialSegment.Walls;
             SceneFade.Out(SceneFade.DefaultOut, SceneFlow.GoTutorial);
+        }
+
+        /// <summary>SKIP held: the tour stops where it is and goes straight to its end.</summary>
+        void Skip()
+        {
+            if (finished) return;
+            StopAllCoroutines();
+            if (talk != null) talk.Close();
+            Finish();
         }
 
         // ---- the overview ----------------------------------------------------------------------------------------------------------
