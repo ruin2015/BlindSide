@@ -1139,7 +1139,7 @@ namespace Blindside.Cinematic
             fadeImage = Img(fadeRt, new Color(0f, 0f, 0f, 0f));
             fadeImage.raycastTarget = false;
             fadeImage.enabled = false;
-            // the cut into / out of the fight is a tactical shutter now (and the first strike's CHANCE! / WARNING!) — BattleCallout
+            // the first strike's CHANCE! / WARNING! — BattleCallout
             callout = BattleCallout.Build(go.transform);
 
             // K.I.A —a foe-red plate with the ink underline, same visual language as the headshot badge.
@@ -1198,10 +1198,8 @@ namespace Blindside.Cinematic
 
         void SetFade(float a)
         {
-            a = Mathf.Clamp01(a);
-            // the shutter's panels close in from both sides (ENGAGE on the seam) and open again
-            if (callout != null) { callout.Cover(a); if (fadeImage != null) fadeImage.enabled = false; return; }
             if (fadeImage == null) return;
+            a = Mathf.Clamp01(a);
             fadeImage.color = new Color(0f, 0f, 0f, a);
             fadeImage.enabled = a > .001f;
         }

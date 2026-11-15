@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-15 14:34
+Screen 1440x810 · 0 issues · generated 2026-11-15 15:08
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -105,7 +105,6 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | contact_alert | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | battle_chance | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | battle_warning | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| battle_engage | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | headshot_badge | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | headshot_lock | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | kit_shapes | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -158,7 +157,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 
 ## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 81종)
 
-- BattleCallout ×3
+- BattleCallout ×2
 - Brighten ×6
 - Chip ×575
 - ClickRelay ×5
@@ -207,14 +206,14 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitTextButton ×65
 - KitTint ×325
 - KitTitleLeft ×6
-- LintIgnoreClip ×903
+- LintIgnoreClip ×899
 - LintIgnoreOverlap ×333
 - MainMenuScreen ×6
 - OperationResultScreen ×5
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×317
-- SlantedGraphic ×3263
+- SlantedGraphic ×3261
 - SlantedMask ×311
 - StageClick ×2
 - TacticalPanel ×1231
@@ -334,7 +333,6 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | contact_alert | 1440x810 | 遭遇警告 CONTACT (t=0.4s) |
 | battle_chance | 1440x810 | 戦闘 — 先制攻撃 CHANCE! (t=0.5s) |
 | battle_warning | 1440x810 | 戦闘 — 敵の先制攻撃 WARNING! (t=0.5s) |
-| battle_engage | 1440x810 | 戦闘 — 交戦開始 (シャッター) |
 | headshot_badge | 1440x810 | ヘッドショット バッジ (味方, t=0.5s) |
 | headshot_lock | 1440x810 | ヘッドショット ロックオン (t=0.24s) |
 | kit_shapes | 1440x810 | KitShapes — 斜め図形 · 分節バー |

@@ -4,7 +4,7 @@
     "total": 0,
     "groupCount": 0,
     "unmatched": [
-        "BattleCallout ×3",
+        "BattleCallout ×2",
         "Brighten ×6",
         "Chip ×575",
         "ClickRelay ×5",
@@ -53,14 +53,14 @@
         "KitTextButton ×65",
         "KitTint ×325",
         "KitTitleLeft ×6",
-        "LintIgnoreClip ×903",
+        "LintIgnoreClip ×899",
         "LintIgnoreOverlap ×333",
         "MainMenuScreen ×6",
         "OperationResultScreen ×5",
         "PauseMenu ×6",
         "ResultScreen ×3",
         "SegmentedBar ×317",
-        "SlantedGraphic ×3263",
+        "SlantedGraphic ×3261",
         "SlantedMask ×311",
         "StageClick ×2",
         "TacticalPanel ×1231",
@@ -624,12 +624,6 @@
         {
             "state": "battle_warning",
             "label": "戦闘 — 敵の先制攻撃 WARNING! (t=0.5s)",
-            "count": 0,
-            "issues": []
-        },
-        {
-            "state": "battle_engage",
-            "label": "戦闘 — 交戦開始 (シャッター)",
             "count": 0,
             "issues": []
         },
