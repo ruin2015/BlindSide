@@ -143,6 +143,41 @@ namespace Blindside.UI.EditorTools
         public static void BuildArmoryGadgetHeld(UIPreview.Stage s) => HeldScreen(s).Armory.PoseGadget(3, 0);
         public static void BuildArmorySwap(UIPreview.Stage s) { var a = HeldScreen(s).Armory; a.PoseGadget(3, 0); a.PoseTake("frag"); }
 
+        /// <summary>hub_tour_overview: the HQ tour's overview — a card over each facility (laid out as the top-down view puts them),
+        /// 医務室 the one spoken about, CRUSHER's line under it.</summary>
+        public const string TourOverview = "hub_tour_overview";
+        public static void BuildTourOverview(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("Tour_Canvas", UITheme.CanvasKind.Menu, 70);
+            var bg = HudKit.NewRect("DecoBackdrop", canvas.transform);
+            HudKit.Stretch(bg);
+            HudKit.AddImage(bg, new Color32(0x3a, 0x3f, 0x46, 0xff));
+            var l = HubTourLabels.Build(canvas.transform, canvas);
+            // (the tags where the near-vertical overview puts the rooms: between CRUSHER's art and the card)
+            (string n, string en, string host, string hl, Vector2 p, Color32 c)[] rooms =
+            {
+                ("作戦室", "OPERATIONS", "CRUSHER", "CRUSHER (隊長)", new Vector2(770f, 600f), new Color32(0xea, 0xaf, 0x20, 0xff)),
+                ("医務室", "MEDICAL", "SERUM", "SERUM (衛生兵)", new Vector2(600f, 400f), new Color32(0x55, 0xca, 0x8a, 0xff)),
+                ("装備購入", "SUPPLY", null, "補給係", new Vector2(600f, 500f), new Color32(0xff, 0xc8, 0x1e, 0xff)),
+                ("隊員・装備管理", "LOADOUT", "IGNIS", "IGNIS (装備担当)", new Vector2(600f, 610f), new Color32(0x00, 0xce, 0xf9, 0xff)),
+                ("訓練所", "TRAINING", "BASTION", "BASTION (教官)", new Vector2(950f, 500f), new Color32(0x9e, 0x6a, 0xbf, 0xff)),
+                ("炊事場", "KITCHEN", null, "炊事係", new Vector2(770f, 330f), new Color32(0xef, 0x82, 0x02, 0xff)),
+                ("電子戦室", "E-WAR", null, "不在", new Vector2(900f, 330f), new Color32(0xb0, 0x5c, 0xff, 0xff)),
+            };
+            for (int i = 0; i < rooms.Length; i++)
+            {
+                l.Add(new HubTourLabels.Room
+                {
+                    name = rooms[i].n, en = rooms[i].en, host = rooms[i].host, hostLabel = rooms[i].hl, accent = rooms[i].c,
+                    actions = i == 1 ? new[] { "医療キットを買う", "アドロピン注射器・覚醒薬を買う", "作戦中の回復手段を整える" } : new[] { "—" },
+                });
+                l.PoseFlat(i, rooms[i].p);
+            }
+            l.Pose(1);
+            var talkCanvas = s.NewCanvas("Talk_Canvas", UITheme.CanvasKind.Menu, 80);
+            KitDialogue.Build(talkCanvas.transform, talkCanvas).PoseAt("CRUSHER", "医務室。\n作戦で使う医療品が手に入る。");
+        }
+
         /// <summary>hub_sortie_squad5: 出撃メンバー編成 for the third main quest (5 to go: the wedge, slot 2 chosen, the roster open);
         /// hub_sortie_squad3: the second (3 to go, its captives left out).</summary>
         public const string SortieSquad5 = "hub_sortie_squad5", SortieSquad3 = "hub_sortie_squad3";
