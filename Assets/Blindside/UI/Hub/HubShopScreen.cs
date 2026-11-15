@@ -1,4 +1,5 @@
-// The HQ's goods screen (装備購入 and 医務室's 医薬品 / ガジェット): a full screen in the station screens' style —
+// The HQ's goods screen (装備購入: the supply clerk's parts and gadgets · 武器調達: SILENCE's guns, once she has joined · 医務室's
+// 医薬品): a full screen in the station screens' style —
 //   DecoBackdrop   paper; DecoBlockA / DecoBlockB ink blocks off the top-left corner; the back bar top left (HubTiles.Back)
 //   Card           left (69, 76, 554 × 600): ink2, cut corners, DecoShadow, a blue band on top and short hazard stripes
 //     Window       the selected product's picture (501 × 335, light grey with a faint grid and blue corner ticks): UIGlitchImage — the part's illustration, the gun's own
@@ -321,11 +322,16 @@ namespace Blindside.UI
         }
 
         // ---- open / close ------------------------------------------------------------------------------------------------------
-        static readonly Cat[] ShopCats = { Cat.Weapon, Cat.Attachment, Cat.Gadget };
+        // the supply clerk sells parts and gadgets; the guns are SILENCE's (武器調達, once she has joined the squad: OpenWeapons)
+        static readonly Cat[] ShopCats = { Cat.Attachment, Cat.Gadget };
+        static readonly Cat[] WeaponCats = { Cat.Weapon };
         static readonly Cat[] MedicalCats = { Cat.Medical };
 
-        /// <summary>The shop (武器 / アタッチメント / ガジェット) on tab `tab`.</summary>
-        public void OpenShop(int tab) => Open(ShopCats, tab);
+        /// <summary>The supply shop on tab `tab` — given as before (0 武器 · 1 アタッチメント · 2 ガジェット); the guns aren't here any
+        /// more, so 0 opens on the parts.</summary>
+        public void OpenShop(int tab) => Open(ShopCats, Mathf.Max(0, tab - 1));
+        /// <summary>SILENCE's 武器調達: the guns.</summary>
+        public void OpenWeapons() => Open(WeaponCats, 0);
         /// <summary>The 医務室's medicines.</summary>
         public void OpenMedical() => Open(MedicalCats, 0);
 

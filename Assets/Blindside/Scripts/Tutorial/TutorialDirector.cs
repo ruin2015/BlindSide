@@ -40,7 +40,7 @@ namespace Blindside.Tutorial
         public const string LCam = "練習として、\nそこにある監視カメラを破壊してみろ。";
         public const string LCamFail = "止まっているもの一つ当てられないで、\nどうやって動く敵を撃つつもりだ？";
         public const string LCamDone = "そうだ。監視カメラは敵に情報を渡す。\n破壊しておくに越したことはない。";
-        public const string LForecast = "敵に狙いを合わせると、\n攻撃予測の画面が出る。\nまずは見方を教えてやる。";
+        public const string LForecast = "そこで止まれ。敵に狙いを合わせると、\n攻撃予測の画面が出る。\n撃つ前に、見方を教えてやる。";
         public const string LForecastDone = "敵を狙うたびにこの画面が出る。\nよく見てから撃て。";
         public const string LDuel = "次は対人戦だ。\n練習として、俺を撃ってみろ。";
         public const string LDuelFail = "迷っているのか？ そんな気持ちで、\nどうやって戦場に立つつもりだ？";
@@ -1163,33 +1163,40 @@ namespace Blindside.Tutorial
             crusher.Facing = Mathf.Atan2(flare.Y - crusher.Y, flare.X - crusher.X);
             crusher.Placed = true;
             flare.Facing = Mathf.Atan2(crusher.Y - flare.Y, crusher.X - flare.X);
-            yield return ForecastLesson();
-            yield return FireLesson(TutorialMap.DuelSpot, Vector3.zero, GCrusher, LDuel, LDuelFail, (target, gadget) => target == crusher, crusher, ODuel);
+            // (the attack forecast is explained the first time the aim on CRUSHER brings it up: ExplainAimForecast)
+            yield return FireLesson(TutorialMap.DuelSpot, Vector3.zero, GCrusher, LDuel, LDuelFail, (target, gadget) => target == crusher, crusher, ODuel,
+                                    explainForecast: true);
             crusher.HP = crusher.MaxHP; flare.HP = flare.MaxHP;
             yield return Say(LDuelDone);
         }
 
-        // ---- the attack forecast: put up and gone through part by part before the first duel ----
+        // ---- the attack forecast: explained when it first comes up of itself — the player's aim on CRUSHER in the duel. The aim is
+        // held where it is (input held: the forecast stays up beside it), the forecast gone through part by part, then the shot is theirs ----
         TutorialForecastTour forecastTour;
 
-        IEnumerator ForecastLesson()
+        IEnumerator ExplainAimForecast(EngagePreview preview)
         {
+            TutorialGate.BlockInput = true;
+            guide.HideFrame();
             yield return Say(LForecast);
             radio.Close();
-            guide.HideFrame(); guide.HideTarget();
-            var preview = sel.TutorialOpenForecast(flare, crusher);
-            yield return Wait(EngagePreview.XTo + .1f);
+            yield return Wait(.1f);
             forecastTour = TutorialForecastTour.Build(transform);
             yield return forecastTour.Run(preview);
-            EndForecastLesson();
+            EndForecastTour();
             yield return Wait(.2f);
             yield return Say(LForecastDone);
         }
 
-        void EndForecastLesson()
+        void EndForecastTour()
         {
             if (forecastTour != null) Destroy(forecastTour.CanvasObject);
             forecastTour = null;
+        }
+
+        void EndForecastLesson()
+        {
+            EndForecastTour();
             if (sel != null) sel.TutorialCloseForecast();
         }
 
@@ -1267,8 +1274,9 @@ namespace Blindside.Tutorial
         /// answered with `failLine` and FLARE gets its action back.
         /// </summary>
         IEnumerator FireLesson(Vector2 at, Vector3 chipWorld, string chip, string instruction, string failLine,
-                               System.Func<Blindside.Combat.ICombatUnit, bool, bool> ok, SimUnit follow, string goal)
+                               System.Func<Blindside.Combat.ICombatUnit, bool, bool> ok, SimUnit follow, string goal, bool explainForecast = false)
         {
+            bool explained = !explainForecast;
             var marker = TutorialMarker.Create(at, transform, UIPalette.Foe);
             flare.Facing = Mathf.Atan2(at.y - flare.Y, at.x - flare.X);
             yield return Say(instruction);
@@ -1282,6 +1290,15 @@ namespace Blindside.Tutorial
                 TutorialGate.BlockInput = false;
                 while (!shotDone)
                 {
+                    // the first time the aim on the target brings the attack forecast up: held there and explained, then on with the shot
+                    if (!explained && sel.AimForecastLive != null)
+                    {
+                        explained = true;
+                        yield return ExplainAimForecast(sel.AimForecastLive);
+                        if (shotDone) break;
+                        radio.Say(instruction, false);
+                        TutorialGate.BlockInput = false;
+                    }
                     guide.TargetLabel(follow != null && follow.View != null ? follow.View.LabelPoint + Vector3.up * .5f : chipWorld, chip);
                     PointGuide("fire", GFire);
                     yield return null;

@@ -51,6 +51,13 @@ namespace Blindside.Cinematic
             shot = s; camActor = on; shotT0 = Time.unscaledTime;
         }
 
+        // across the face's line, toward the street's near side (−z: where the other cuts' cameras stand)
+        static Vector3 NearSide(Vector3 faceDir)
+        {
+            var side = Vector3.Cross(Vector3.up, faceDir);
+            return side.z > 0f ? -side : side;
+        }
+
         public CamPose CameraPose()
         {
             var a = camActor ?? leftActor;
@@ -71,18 +78,21 @@ namespace Blindside.Cinematic
                 }
                 case Shot.Face:
                 {
-                    // the critical round: tight on the shooter's face, pushing in while it lines up the shot
+                    // the critical round: tight on the shooter's face — in front of where the face really looks (FaceDir), a little
+                    // to the street's near side — pushing in while it lines up the shot
                     float push = UIEase.Tactical(Mathf.Clamp01(t / CritLead)) * .25f;
+                    var fd = a.FaceDir;
                     look = a.Head + new Vector3(0f, -.02f * s, 0f);
-                    c = a.Head + new Vector3(a.Dir * (1.05f - push) * s, .04f * s, (-.42f + push * .12f) * s);
+                    c = a.Head + fd * ((1.05f - push) * s) + NearSide(fd) * ((.42f - push * .12f) * s) + Vector3.up * (.04f * s);
                     f = fov - 10f;
                     break;
                 }
                 case Shot.Head:
                 {
                     float push = UIEase.Tactical(Mathf.Clamp01(t / .5f)) * .3f;
+                    var fd = a.FaceDir;
                     look = a.Head;
-                    c = a.Head + new Vector3(a.Dir * (1.75f - push) * s, .06f * s, (-.6f + push * .15f) * s);
+                    c = a.Head + fd * ((1.75f - push) * s) + NearSide(fd) * ((.6f - push * .15f) * s) + Vector3.up * (.06f * s);
                     f = fov - 4f;
                     break;
                 }
@@ -153,7 +163,7 @@ namespace Blindside.Cinematic
         const float AimBeat = .26f, FewInterval = .17f, BurstInterval = .075f, AfterBurst = .22f;
         const float ImpactSeconds = .42f, BurstImpactSeconds = .14f, HeadshotSeconds = .8f, DeathSeconds = 1.25f;
 
-        float ImpactTime(ShotEvent e) => e.Headshot ? (CritCut(e) ? CritLead : 0f) + HeadshotSeconds : e.Shots >= 4 ? BurstImpactSeconds : ImpactSeconds;
+        float ImpactTime(ShotEvent e) => e.Headshot ? (Cine(e) ? CritLead + HeadshotSeconds : ImpactSeconds) : e.Shots >= 4 ? BurstImpactSeconds : ImpactSeconds;
 
         // ---- a critical round (either side's): the shooter's face in close-up first, then the round, then the head ----
         /// <summary>Whether a unit is the player's (set by the director; kept for presentation choices).</summary>
@@ -162,10 +172,16 @@ namespace Blindside.Cinematic
 
         static bool CritCut(ShotEvent e) => e.Headshot && e.Hit && !e.ShieldBlocked;
 
-        /// <summary>Where a round lands: a critical one goes through the shooter's face close-up first.</summary>
+        // the close-ups (the face, the head, the badge) play once a volley: on its first critical round; a later one in the same burst
+        // lands as a plain hit with its クリティカル number
+        int volleyCritIndex = -1;
+        void Claim(ShotEvent e) { if (volleyCritIndex < 0 && CritCut(e)) volleyCritIndex = e.Index; }
+        bool Cine(ShotEvent e) => CritCut(e) && e.Index == volleyCritIndex;
+
+        /// <summary>Where a round lands: the volley's first critical one goes through the shooter's face close-up first.</summary>
         void Land(ShotEvent e)
         {
-            if (!CritCut(e)) { Impact(e); return; }
+            if (!Cine(e)) { Impact(e); return; }
             var s = ActorOf(e.Attacker); var t = ActorOf(e.Target);
             if (s == null || t == null || s.Dead) { Impact(e); return; }
             Cut(Shot.Face, s);
@@ -201,6 +217,8 @@ namespace Blindside.Cinematic
                 if (volleyShooter != null && volleyShooter != s) volleyShooter.Advance(false);
                 volleyShooter = s; volleyTarget = t; targetUp = false;
                 pendingImpacts.Clear();
+                volleyCritIndex = -1;
+                Claim(e);
                 s.Advance(true);
                 Cut(Shot.Shooter, s);
                 int n = Mathf.Max(1, e.Shots);
@@ -212,6 +230,7 @@ namespace Blindside.Cinematic
                 busyUntil = now + burst + ImpactTime(e);
                 return burst + ImpactTime(e);
             }
+            Claim(e);
             if (!targetUp)
             {
                 pendingImpacts.Add(e);
@@ -246,6 +265,7 @@ namespace Blindside.Cinematic
         float PlaySupport(ShotEvent e, BattleActor t)
         {
             float now = Time.unscaledTime, wait = Mathf.Max(0f, busyUntil - now);
+            volleyCritIndex = -1; Claim(e);   // (a 支援射撃 round is a volley of its own)
             float lead = SupportFace + SupportAim + SupportFly;
             float total = wait + lead + (CritCut(e) ? HeadshotSeconds : ImpactSeconds);
             busyUntil = now + total;
@@ -338,6 +358,17 @@ namespace Blindside.Cinematic
                 Dust(at, 3, .35f);
                 Chips(at, 5);
                 Popup(t, "ミス", new Color32(0xb8, 0xc0, 0xca, 0xff), 2.2f);
+            }
+            else if (e.Headshot && !Cine(e))
+            {
+                // a critical round after the volley's first: no close-ups again — the hit and its クリティカル number
+                var at = t.Head;
+                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .035f, .08f);
+                Blob(at, Color.white, .28f, .08f);
+                Sparks(at, new Color32(0xff, 0xd2, 0x7a, 0xff), 10, 3f);
+                t.Flinch(.16f, true);
+                Kick?.Invoke(.07f);
+                Popup(t, $"<size=60%>クリティカル</size>\n{e.Damage}", new Color32(0xff, 0xc8, 0x1e, 0xff), 2.6f);
             }
             else if (e.Headshot)
             {
@@ -711,6 +742,15 @@ namespace Blindside.Cinematic
         // ================================================================
         //  Actor: a script-less copy of a unit's figure, posed on the stage
         // ================================================================
+        /// <summary>The front of a body from its shoulders (left → right across, up): flat on the ground, not normalised.</summary>
+        public static Vector3 FaceForward(Vector3 leftShoulder, Vector3 rightShoulder)
+        {
+            var across = rightShoulder - leftShoulder; across.y = 0f;
+            var f = Vector3.Cross(across, Vector3.up);
+            f.y = 0f;
+            return f;
+        }
+
         sealed class BattleActor
         {
             public ICombatUnit Unit { get; private set; }
@@ -725,7 +765,24 @@ namespace Blindside.Cinematic
             float step, stepTarget, recoil, knock, flashT = -1f, flashCrit, deathT0 = -1f, bobPhase;
 
             public Vector3 Torso => root.TransformPoint(torsoL);
-            public Vector3 Head => root.TransformPoint(headL);
+            // the head: the copy's own head bone as it is posed (the spot captured from the field figure when there is none)
+            public Vector3 Head => headBone != null ? headBone.position + Vector3.up * (.03f * Scale) : root.TransformPoint(headL);
+            /// <summary>Where the face looks, flat: between the chest's front (from the shoulders) and the aim down the street — the
+            /// aim pose stands bladed, so the street's ±x alone can put a close-up behind the head.</summary>
+            public Vector3 FaceDir
+            {
+                get
+                {
+                    var aim = new Vector3(Dir, 0f, 0f);
+                    if (lUpper == null || rUpper == null) return aim;
+                    var chest = FaceForward(lUpper.position, rUpper.position);
+                    if (chest.sqrMagnitude < 1e-4f) return aim;
+                    if (Vector3.Dot(chest, aim) < 0f) chest = -chest;   // (a rig whose left / right are swapped)
+                    var f = (chest + aim * 1.4f); f.y = 0f;
+                    return f.sqrMagnitude > 1e-4f ? f.normalized : aim;
+                }
+            }
+            Transform headBone, lUpper, rUpper;
             public Vector3 Label => root.TransformPoint(labelL);
             // the copied gun's own muzzle (it moves with the hands); a figure without a gun: the spot captured at the copy
             Transform muzzleT;
@@ -797,6 +854,12 @@ namespace Blindside.Cinematic
                         a.anim.CopyFootAxes(sv.UnitAnimator);
                         a.anim.ForceAim = true;
                         a.anim.AimYaw = dir > 0 ? 90f : 270f;
+                        if (anim.isHuman)
+                        {
+                            a.headBone = anim.GetBoneTransform(HumanBodyBones.Head);
+                            a.lUpper = anim.GetBoneTransform(HumanBodyBones.LeftUpperArm);
+                            a.rUpper = anim.GetBoneTransform(HumanBodyBones.RightUpperArm);
+                        }
                         // the copied gun: hands on it, raised to the eye like the field figure's
                         if (sv.GunObjectName != null)
                         {

@@ -99,7 +99,8 @@ namespace Blindside.UI.EditorTools
             hs.BuildMinimap(walls, npcs, areas, player);
         }
 
-        public static void BuildShop(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 0);
+        /// <summary>hub_shop: SILENCE's 武器調達 — the guns (the supply clerk sells parts and gadgets only).</summary>
+        public static void BuildShop(UIPreview.Stage s) => Screen(s).Shop.OpenWeapons();
         public static void BuildShopAttach(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 1);
         public static void BuildShopGadget(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Shop, 2);
         /// <summary>hub_shop_buy: アタッチメント, the 4x scope picked, 「何個購入しますか？」 at 3.</summary>

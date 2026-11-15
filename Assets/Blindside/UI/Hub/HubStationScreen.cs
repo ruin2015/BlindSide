@@ -212,7 +212,7 @@ namespace Blindside.UI
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
             onBack = null;
-            if (talk || (op != null && key != "SERUM" && key != "IGNIS" && key != "BASTION" && key != "CRUSHER"))
+            if (talk || (op != null && key != "SERUM" && key != "IGNIS" && key != "BASTION" && key != "CRUSHER" && key != "SILENCE"))
             {
                 Tag("会話", "TALK");
                 TalkOptions(key);
@@ -225,6 +225,7 @@ namespace Blindside.UI
                 case "BASTION": Tag("訓練所", "TRAINING"); BastionStats(); break;
                 case "CRUSHER": Tag("作戦室", "OPERATIONS"); CampaignOps(); break;
                 case KitchenKey: Tag("炊事場", "KITCHEN"); KitchenOptions(); break;
+                case "SILENCE": Tag("武器調達", "ARMS"); SilenceOptions(); break;
                 default: Tag("装備購入", "SUPPLY"); ClerkOptions(); break;
             }
             RefreshMoney();
@@ -283,13 +284,21 @@ namespace Blindside.UI
         void IgnisOptions()
         {
             SetOptions(null, new Option { title = "ロードアウト", sub = "銃とガジェットを装備する", icon = "⌖", click = () => screen.OpenLoadout() },
-                             new Option { title = "装備", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 0) });
+                             new Option { title = "パーツ", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 1) });
+        }
+
+        // SILENCE (after the rescue): the guns — the squad's arms dealer — and her talk
+        void SilenceOptions()
+        {
+            SetOptions(null, new Option { title = "武器", sub = "を買う", icon = "⌖", click = () => screen.Shop.OpenWeapons(),
+                                          hoverLine = "いい銃は、いい情報と同じ。手に入れるには少しコストがかかるの。" },
+                             new Option { title = "会話", sub = "SILENCEと話す", icon = "◎", click = () => { TalkOptions("SILENCE"); onBack = SilenceOptions; } });
+            onBack = null;
         }
 
         void ClerkOptions()
         {
-            SetOptions(null, new Option { title = "武器", sub = "を買う", icon = "⌖", click = () => screen.OpenStation(HubStation.Shop, 0) },
-                             new Option { title = "アタッチメント", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 1) },
+            SetOptions(null, new Option { title = "アタッチメント", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 1) },
                              new Option { title = "ガジェット", sub = "を買う", icon = "✹", click = () => screen.OpenStation(HubStation.Shop, 2) },
                              new Option { title = "贈り物", sub = "を仲間に贈る", icon = "✚", click = GiftTargets });
             onBack = null;

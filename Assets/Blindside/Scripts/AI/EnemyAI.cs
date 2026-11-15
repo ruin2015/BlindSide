@@ -212,6 +212,7 @@ namespace Blindside.Turns
             bool enemySeesBack = vision.Sees((IVisionAgent)t, (IVisionAgent)u);
             OnEncounter?.Invoke(u, t, enemySeesBack);
             // Both volleys are one engagement for CombatSystem.Director (camera staging only).
+            combat.NextPreempt = !enemySeesBack;   // (staging hint only: the 先制攻撃's WARNING!)
             yield return combat.Engagement(u, t, FireAtBody(u, t, !enemySeesBack));
         }
 

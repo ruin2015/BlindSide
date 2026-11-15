@@ -206,6 +206,10 @@ namespace Blindside.Cinematic
             // the combat system's hint for this engagement (read once)
             bool mutual = combat != null && combat.NextMutual;
             if (combat != null) combat.NextMutual = false;
+            bool preempt = combat != null && combat.NextPreempt;
+            if (combat != null) combat.NextPreempt = false;
+            // a first strike (not a mutual encounter): its opening hit gets 「CHANCE!」 (ours) / 「WARNING!」 (theirs)
+            calloutPending = preempt && !mutual ? (IsPlayer(first) ? 1 : IsPlayer(second) ? 2 : 0) : 0;
             // an encounter's first strike (a sure hit) is staged like any other, a killing one too (the stage replays it, then the fall)
             noStage = false;
             if (combat != null) combat.ExchangeSureHit = false;
@@ -225,6 +229,26 @@ namespace Blindside.Cinematic
         // A mutual encounter: no opening shot on the map — the camera closes in on the player's unit and the whole
         // fight plays on the battle stage.
         bool mutualOpen;
+
+        // ---- a first strike's opening hit: 「CHANCE!」 / 「WARNING!」 over the screen while the camera is on the unit hit, the zoom held
+        // that much longer before the cut into the fight (BattleCallout) ----
+        int calloutPending;            // 0 none · 1 CHANCE! (the player struck first) · 2 WARNING! (the enemy did)
+        ICombatUnit openingShooter;
+        float zoomExtra;
+        BattleCallout callout;
+
+        void TryCallout(ShotEvent e)
+        {
+            if (calloutPending == 0 || skipping || e.Attacker != openingShooter || !e.Hit) return;
+            bool enemy = calloutPending == 2;
+            calloutPending = 0;
+            EnsureUi();
+            if (callout == null) return;
+            callout.Play(enemy);
+            float now = Time.unscaledTime;
+            zoomExtra = BattleCallout.Seconds * .85f;
+            holdUntil = Mathf.Max(holdUntil, now + BattleCallout.Seconds);
+        }
         // the opening first strike is going to kill: no battle stage for this engagement
         bool noStage;
 
@@ -322,6 +346,8 @@ namespace Blindside.Cinematic
             savedTimeScale = Time.timeScale; frozen = false;
             slowHsUntil = slowKillUntil = holdUntil = 0f;
             shooter = first; target = second;
+            openingShooter = first; zoomExtra = 0f;
+            if (k != Kind.Full) calloutPending = 0;
             hitCutDone = false; closeupActive = false; basePose = null;
             focus = baseFocus = null;
             if (k == Kind.Instant) return;
@@ -629,6 +655,8 @@ namespace Blindside.Cinematic
             Safe(() => { basePose = TwoShot(a, t); focus = baseFocus = null; bcam.SetOverride(basePose, P.counterSeconds); });
         }
 
+        bool volleyCloseupDone;
+
         void HandleShot(ShotEvent e)
         {
             if (kind != Kind.Full || degraded || skipping || bcam == null) return;
@@ -638,8 +666,11 @@ namespace Blindside.Cinematic
                 bcam.Kick(e.Headshot ? P.headshotShake : P.shotShake);
                 bool fewShots = e.Shots < P.manyShotThreshold;
                 var hitUnit = e.Target;
-                if (e.Headshot)
+                TryCallout(e);   // (no stage: the first strike's words over the map)
+                if (e.Index == 0) volleyCloseupDone = false;   // (a new volley: its first headshot gets the close-up)
+                if (e.Headshot && !volleyCloseupDone)
                 {
+                    volleyCloseupDone = true;
                     if (fewShots && !hitCutDone) { hitCutDone = true; basePose = HitCut(hitUnit); baseFocus = () => Torso(hitUnit); }
                     focus = () => Head(hitUnit);
                     float now = Time.unscaledTime;
@@ -699,6 +730,7 @@ namespace Blindside.Cinematic
                 // The opening shot stays on the map; then zoom on the unit it was aimed at.
                 stagePhase = StagePhase.Zoom; stagePhaseT0 = now;
                 stageReplay.Add(e);
+                TryCallout(e);
                 bcam.Kick(e.Headshot ? P.headshotShake : P.shotShake);
                 var unit = e.Target;
                 basePose = ZoomOn(unit);
@@ -712,6 +744,7 @@ namespace Blindside.Cinematic
             {
                 // Still zooming/fading (a burst's later shots): played back once the stage is up.
                 stageReplay.Add(e);
+                if (stagePhase == StagePhase.Zoom) TryCallout(e);   // (the opening volley's first round may have missed)
                 holdUntil = Mathf.Max(holdUntil, now + ShotHold(e));
                 return;
             }
@@ -736,7 +769,8 @@ namespace Blindside.Cinematic
             switch (stagePhase)
             {
                 case StagePhase.Zoom:
-                    if (t >= P.stageZoomHold) { stagePhase = StagePhase.FadeOut; stagePhaseT0 = now; }
+                    if (t >= P.stageZoomHold + zoomExtra && (callout == null || !callout.Playing || t >= P.stageZoomHold + BattleCallout.Seconds))
+                    { stagePhase = StagePhase.FadeOut; stagePhaseT0 = now; }
                     break;
                 case StagePhase.FadeOut:
                     SetFade(t / Mathf.Max(.01f, P.stageFadeOutSeconds));
@@ -917,9 +951,10 @@ namespace Blindside.Cinematic
             var aim = head + Vector3.up * .15f;
             Vector2 H = GridOf(head);
             CamPose best = default; float bestScore = float.MaxValue;
+            float face = FaceAngle(t);
             foreach (float offDeg in new[] { 0f, 30f, -30f, 60f, -60f })
             {
-                float a = t.Facing + offDeg * Mathf.Deg2Rad;
+                float a = face + offDeg * Mathf.Deg2Rad;
                 Vector2 c2 = H + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * P.headshotDistance;
                 var c = GridSpace.GridToWorld(c2.x, c2.y, head.y + .08f);
                 float score = SightScore(c, new[] { head }) + Mathf.Abs(offDeg) / 180f;
@@ -927,6 +962,33 @@ namespace Blindside.Cinematic
             }
             var chosen = best;
             return () => chosen;
+        }
+
+        /// <summary>Where `t`'s figure really faces (grid radians): its shoulders' front as posed — the aim stands bladed and the body
+        /// lags the facing while it turns — else its facing.</summary>
+        static float FaceAngle(ICombatUnit t)
+        {
+            if (t.View is UnitView uv && uv != null && uv.ModelRoot != null)
+            {
+                var anim = uv.ModelRoot.GetComponentInChildren<Animator>();
+                if (anim != null && anim.isHuman)
+                {
+                    var l = anim.GetBoneTransform(HumanBodyBones.LeftUpperArm);
+                    var r = anim.GetBoneTransform(HumanBodyBones.RightUpperArm);
+                    if (l != null && r != null)
+                    {
+                        var f = BattleStage.FaceForward(l.position, r.position);
+                        if (f.sqrMagnitude > 1e-4f)
+                        {
+                            var logical = GridSpace.FacingToWorldDirection(t.Facing);
+                            if (Vector3.Dot(f, logical) < -.2f) f = -f;   // (a rig whose left / right are swapped)
+                            var g = f.normalized + logical * .8f;           // (between the chest and the aim: the head turns toward the aim)
+                            return Mathf.Atan2(-g.z, g.x);
+                        }
+                    }
+                }
+            }
+            return t.Facing;
         }
 
         /// <summary>Death: orbit `deathOrbitDegrees` around the body (ease-out), keeping the framing of `start`.</summary>
@@ -1077,6 +1139,8 @@ namespace Blindside.Cinematic
             fadeImage = Img(fadeRt, new Color(0f, 0f, 0f, 0f));
             fadeImage.raycastTarget = false;
             fadeImage.enabled = false;
+            // the cut into / out of the fight is a tactical shutter now (and the first strike's CHANCE! / WARNING!) — BattleCallout
+            callout = BattleCallout.Build(go.transform);
 
             // K.I.A —a foe-red plate with the ink underline, same visual language as the headshot badge.
             kiaRoot = Rect("KIA", go.transform, Vector2.zero, Vector2.zero, new Vector2(.5f, 0f), Vector2.zero, new Vector2(190, 52));
@@ -1134,8 +1198,10 @@ namespace Blindside.Cinematic
 
         void SetFade(float a)
         {
-            if (fadeImage == null) return;
             a = Mathf.Clamp01(a);
+            // the shutter's panels close in from both sides (ENGAGE on the seam) and open again
+            if (callout != null) { callout.Cover(a); if (fadeImage != null) fadeImage.enabled = false; return; }
+            if (fadeImage == null) return;
             fadeImage.color = new Color(0f, 0f, 0f, a);
             fadeImage.enabled = a > .001f;
         }

@@ -10,11 +10,13 @@ using TMPro;
 namespace Blindside.UI
 {
     // ------------------------------------------------------------------
-    //  Headshot: lock-on reticle on the head + tactical badge + a short white screen tick
+    //  Headshot: lock-on reticle on the head + the badge (no plate: the crosshair icon and 「HEADSHOT!」, large) + a short white tick
     // ------------------------------------------------------------------
-    //  0.00–0.22  the four corner brackets close in on the head (rotating 45° → 0), the badge slides in from the left
-    //  0.22–0.40  lock: brackets blink white twice (steps), the crosshair arms draw out, the underline sweeps
-    //  0.20–0.45  the detail line types in
+    //  0.00–0.22  the four corner brackets close in on the head (rotating 45° → 0)
+    //  0.00–0.20  the icon spins in (180° → 0) from 1.8× and snaps, its ticks closing from wide
+    //  0.06–0.24  the words slam in: stretched 1.6× wide and squeezed down to size, a glitch burst; a jolt (steps) as they land
+    //  0.16–0.34  a bright scan line crosses the words left → right
+    //  0.22–0.40  lock: brackets blink white twice (steps), the crosshair arms draw out
     //  …–1.15     hold; the reticle fades out by 1.0
     //  1.15–1.50  the badge slides right and fades
     // Late in LateUpdate: it re-projects its world points after the camera (BattlefieldCamera runs at -100)
@@ -28,7 +30,9 @@ namespace Blindside.UI
         /// <summary>Phase 4-4 kit skin: the diagonal hazard-stripe line along the badge's bottom (Deco) and the title's glitch burst.</summary>
         public HazardStripe hazard;
         public UIGlitchText glitch;
-        public TMP_Text title, detail;         // "HEADSHOT!", "ヘッドショット · クリティカル ×2 · -40"
+        public TMP_Text title, detail;         // "HEADSHOT!", (detail: none now — kept for older builds)
+        public TMP_Text titleShadow;           // the dark drop under the words
+        public Graphic[] iconGraphics;         // the crosshair icon's pieces (tinted)
         public CanvasGroup group;
         public RawImage flash;                 // full-screen white tick (no texture)
         public Canvas canvas;
@@ -67,8 +71,10 @@ namespace Blindside.UI
             Color c = enemyScored ? UIPalette.Foe : UIPalette.Accent;
             tint = c;
             if (hazard != null) { hazard.stripeColor = c; hazard.SetVerticesDirty(); }
-            iconBg.color = c; textUnderline.color = c; title.color = enemyScored ? UIPalette.Hex("#FF8A98") : UIPalette.Accent;
-            detail.text = $"ヘッドショット · クリティカル ×2 · -{damage}";
+            if (iconBg != null) iconBg.color = c;
+            if (iconGraphics != null) foreach (var g in iconGraphics) if (g) g.color = c;
+            title.color = enemyScored ? UIPalette.Hex("#FF8A98") : UIPalette.Accent;
+            if (detail != null) detail.text = $"ヘッドショット · クリティカル ×2 · -{damage}";
             if (reticleGraphics != null) foreach (var g in reticleGraphics) if (g) g.color = c;
         }
 
@@ -151,15 +157,42 @@ namespace Blindside.UI
             badge.localRotation = Quaternion.identity;
             group.alpha = t < .18f ? UIEase.Tactical(t / .18f) : t > 1.15f ? Mathf.Clamp01(1f - (t - 1.15f) / .35f) : 1f;
 
-            float sp = UIEase.Tactical(Mathf.Clamp01(t / .3f));
-            icon.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(90f, 0f, sp));
-            icon.localScale = Vector3.one * Mathf.Lerp(1.4f, 1f, sp);
+            // the icon: spun in from 1.8×, snapping to size (a little overshoot)
+            float sp = UIEase.Tactical(Mathf.Clamp01(t / .2f));
+            icon.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(180f, 0f, sp));
+            float snap = t < .2f ? Mathf.Lerp(1.8f, .92f, sp) : t < .26f ? Mathf.Lerp(.92f, 1f, (t - .2f) / .06f) : 1f;
+            icon.localScale = new Vector3(snap, snap, 1f);
 
-            float u = UIEase.Tactical(Mathf.Clamp01((t - .1f) / .3f));
-            textUnderline.rectTransform.localScale = new Vector3(u, 1f, 1f);
+            // the words: slammed in stretched wide and squeezed to size, a jolt as they land
+            float w = UIEase.Tactical(Mathf.Clamp01((t - .06f) / .18f));
+            float sx = t < .06f ? 0f : Mathf.Lerp(1.6f, 1f, w), sy = t < .06f ? 0f : Mathf.Lerp(.55f, 1f, w);
+            var ws = new Vector3(sx, sy, 1f);
+            float jolt = t >= .24f && t < .30f ? ((int)((t - .24f) / .02f) % 2 == 0 ? 5f : -4f) : 0f;   // (steps, no easing)
+            var wp = new Vector2(jolt, 0f);
+            // (the words sit in their own rects — Title / DecoTitleShadow — so only the jolt moves them)
+            title.rectTransform.localScale = ws;
+            title.rectTransform.anchoredPosition = wp;
+            if (titleShadow != null)
+            {
+                titleShadow.rectTransform.localScale = ws;
+                titleShadow.rectTransform.anchoredPosition = wp;
+            }
 
-            int len = detail.text != null ? detail.text.Length : 0;
-            detail.maxVisibleCharacters = t >= .45f ? 99999 : Mathf.FloorToInt(len * Mathf.Clamp01((t - .2f) / .25f));
+            // the scan line crossing the words
+            if (textUnderline != null)
+            {
+                float s = Mathf.Clamp01((t - .16f) / .18f);
+                var rt = textUnderline.rectTransform;
+                rt.anchoredPosition = new Vector2(Mathf.Lerp(76f, badge.sizeDelta.x - 10f, UIEase.Tactical(s)), 0f);
+                var c = textUnderline.color; c.a = t < .16f || s >= 1f ? 0f : .85f * (1f - s * .6f);
+                textUnderline.color = c;
+            }
+
+            if (detail != null)
+            {
+                int len = detail.text != null ? detail.text.Length : 0;
+                detail.maxVisibleCharacters = t >= .45f ? 99999 : Mathf.FloorToInt(len * Mathf.Clamp01((t - .2f) / .25f));
+            }
         }
 
         void PoseReticle(float t)

@@ -98,12 +98,12 @@ namespace Blindside.Hub.EditorTools
             hp.view = camGo.transform;
 
             // stations
-            // the supply clerk keeps the shop (equipment); the operators run the rest (F: the station, G: talk)
+            // the supply clerk keeps the shop (parts, gadgets, gifts); the operators run the rest (F: the station, G: talk)
             Staff(HubStation.Shop, "補給係", "装備購入 · 贈り物", new Vector3(-14.2f, 0f, 1f), 90f, new Color(1f, .78f, .12f));
             Staff(HubStation.Kitchen, "炊事係", "炊事場 · 炊事支援", new Vector3(0f, 0f, -18.3f), 0f, new Color(.95f, .55f, .25f));
-            // 電子戦室: GHOST and SILENCE (talk: G / F) — HubDirector hides them until they have joined the squad
+            // 電子戦室: GHOST (talk) and SILENCE — the guns are hers (F: 武器調達, G: talk); HubDirector hides them until they have joined
             Operator("GHOST", HubStation.Talk, "電子戦室", new Vector3(EwX0 + 2f, 0f, -16.8f), 0f, 2.4f);
-            Operator("SILENCE", HubStation.Talk, "電子戦室", new Vector3(EwX1 - 2f, 0f, -16.8f), 0f, 2.4f);
+            Operator("SILENCE", HubStation.Shop, "武器調達", new Vector3(EwX1 - 2f, 0f, -16.8f), 0f, 2.4f);
             Operator("CRUSHER", HubStation.Operations, "作戦室 · 出撃", new Vector3(0f, 0f, 8.6f), 180f, 3.4f);   // behind the table
             foreach (var r in Rooms)
                 if (!string.IsNullOrEmpty(r.key)) Operator(r.key, r.station, r.caption, r.spot, r.yaw, 2.6f);
@@ -196,7 +196,7 @@ namespace Blindside.Hub.EditorTools
             // 訓練所. Each faces its door.
             new Room { key = "SERUM",   name = "医務室",         caption = "医務室 · 回復薬", station = HubStation.Medical,    area = XZ(-16f, -9f, -11f, -3f),
                        door = new Vector3(-8.7f, 3.1f, -7f),  spot = new Vector3(-13.4f, 0f, -7f),  yaw = 90f },
-            new Room { key = "IGNIS",   name = "隊員・装備管理", caption = "ロードアウト · 装備購入", station = HubStation.Management, area = XZ(-16f, -9f, 5f, 11f),
+            new Room { key = "IGNIS",   name = "隊員・装備管理", caption = "ロードアウト · パーツ購入", station = HubStation.Management, area = XZ(-16f, -9f, 5f, 11f),
                        door = new Vector3(-8.7f, 3.1f, 8f),   spot = new Vector3(-13f, 0f, 8.4f),   yaw = 100f },
             new Room { key = "BASTION", name = "訓練所",         caption = "訓練所",          station = HubStation.Training,   area = XZ(9f, 16f, -11f, 11f),
                        door = new Vector3(8.7f, 3.1f, 0f),    spot = new Vector3(12.4f, 0f, -1.2f), yaw = -90f },

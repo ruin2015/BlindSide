@@ -234,7 +234,7 @@ namespace Blindside.Hub
                 case ClerkKey: return new[] { "いらっしゃい。今日は何にする？", "仲間への贈り物なら、いいのが揃ってるよ。" };
                 case "KITCHEN": return new[] { "腹が減っては戦はできぬ、ってね。誰と作る？", "今日の献立は任せるよ。" };
                 case "GHOST": return new[] { "……何か用か。", "ここは静かでいい。" };
-                case "SILENCE": return new[] { "電波は今日も静か。……話でもする？", "ここなら誰にも盗聴されないわ。" };
+                case "SILENCE": return new[] { "武器が要るなら、私に言って。ルートはいくつか持ってるの。", "いい銃が入ったわ。……見ていく？" };
             }
             return new[] { "……" };
         }

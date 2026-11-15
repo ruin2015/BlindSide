@@ -46,6 +46,9 @@ namespace Blindside.Integration
 
         public void TutorialCloseForecast() { if (engagePreview != null) engagePreview.Close(); }
 
+        /// <summary>FIRE's aim is on an enemy and its attack forecast is up beside it (null otherwise) — the tutorial explains it then.</summary>
+        public EngagePreview AimForecastLive => aimForecastTarget != null && engagePreview != null && engagePreview.IsLive ? engagePreview : null;
+
         /// <summary>An item is being aimed (the throw's arc follows the mouse).</summary>
         public bool InThrowMode => mode == Mode.Throw;
 

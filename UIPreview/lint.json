@@ -4,6 +4,7 @@
     "total": 0,
     "groupCount": 0,
     "unmatched": [
+        "BattleCallout ×3",
         "Brighten ×6",
         "Chip ×575",
         "ClickRelay ×5",
@@ -11,7 +12,7 @@
         "CutCornerGraphic ×256",
         "EngagePreview ×5",
         "ExpGainPopup ×2",
-        "HazardStripe ×203",
+        "HazardStripe ×169",
         "HubArmoryScreen ×7",
         "HubHover ×75",
         "HubListPanel ×5",
@@ -52,14 +53,14 @@
         "KitTextButton ×65",
         "KitTint ×325",
         "KitTitleLeft ×6",
-        "LintIgnoreClip ×905",
+        "LintIgnoreClip ×903",
         "LintIgnoreOverlap ×333",
         "MainMenuScreen ×6",
         "OperationResultScreen ×5",
         "PauseMenu ×6",
         "ResultScreen ×3",
         "SegmentedBar ×317",
-        "SlantedGraphic ×3335",
+        "SlantedGraphic ×3263",
         "SlantedMask ×311",
         "StageClick ×2",
         "TacticalPanel ×1231",
@@ -611,6 +612,24 @@
         {
             "state": "contact_alert",
             "label": "遭遇警告 CONTACT (t=0.4s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "battle_chance",
+            "label": "戦闘 — 先制攻撃 CHANCE! (t=0.5s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "battle_warning",
+            "label": "戦闘 — 敵の先制攻撃 WARNING! (t=0.5s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "battle_engage",
+            "label": "戦闘 — 交戦開始 (シャッター)",
             "count": 0,
             "issues": []
         },

@@ -470,6 +470,7 @@ namespace Blindside.Combat
             bool sure = NextSureHit;
             NextSureHit = false;
             ExchangeSureHit = sure;
+            NextPreempt = preempt;
             return Engagement(first, second, ExchangeBody(first, second, preempt, sure));
         }
 
@@ -484,6 +485,10 @@ namespace Blindside.Combat
         /// encounter (both saw each other) — the director goes in on the player's unit instead of showing the opening
         /// shot on the map.</summary>
         public bool NextMutual { get; set; }
+
+        /// <summary>Staging hint for the director's next engagement (presentation only, read once by it): the first to fire strikes
+        /// first (先制攻撃) — its opening hit gets 「CHANCE!」 (the player's) / 「WARNING!」 (the enemy's).</summary>
+        public bool NextPreempt { get; set; }
 
         // ================================================================
         //  The engagement forecast: the coming exchange rolled ahead on a copy of the game's random stream

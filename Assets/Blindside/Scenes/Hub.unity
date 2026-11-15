@@ -7968,9 +7968,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 517dce6cade97064e8d8e9977d071230, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Hub.HubNpc
-  station: 2
+  station: 1
   displayName: SILENCE
-  caption: "\u96FB\u5B50\u6226\u5BA4"
+  caption: "\u6B66\u5668\u8ABF\u9054"
   operatorKey: SILENCE
   radius: 2.4
   labelHeight: 2.15

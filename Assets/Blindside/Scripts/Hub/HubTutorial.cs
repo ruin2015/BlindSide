@@ -48,8 +48,8 @@ namespace Blindside.Hub
                        actions = new[] { "医療キットを買う", "アドロピン注射器・覚醒薬を買う", "作戦中の回復手段を整える" },
                        line = "医務室。\n作戦で使う医療品が手に入る。" },
             new Area { room = "装備購入", en = "SUPPLY", hostLabel = "補給係", accent = new Color32(0xff, 0xc8, 0x1e, 0xff),
-                       actions = new[] { "武器を買う", "アタッチメントを買う", "ガジェットを買う", "隊員に贈り物をする" },
-                       line = "装備購入。\n武器やパーツ、ガジェットを買える。" },
+                       actions = new[] { "アタッチメントを買う", "ガジェットを買う", "隊員に贈り物をする" },
+                       line = "装備購入。\nパーツやガジェットを買える。" },
             new Area { room = "隊員・装備管理", en = "LOADOUT", host = "IGNIS", hostLabel = "IGNIS (装備担当)", accent = new Color32(0x00, 0xce, 0xf9, 0xff),
                        actions = new[] { "銃にパーツを取り付ける", "ガジェットを持たせる", "仲間のロードアウトを変える" },
                        line = "隊員・装備管理室。\n銃のカスタムや、仲間のロードアウトを整える。" },
@@ -62,8 +62,8 @@ namespace Blindside.Hub
             new Area { room = "電子戦室", en = "E-WAR", hostLabel = "不在", accent = new Color32(0xb0, 0x5c, 0xff, 0xff),
                        actions = new[] { "現在は使われていない" },
                        line = "電子戦室。……今は空き部屋だが、\nいずれ使う奴らが来る。",
-                       joinedActions = new[] { "GHOST・SILENCEと話す", "交流・褒賞休暇" },
-                       joinedLine = "電子戦室。\nGHOSTとSILENCEの部屋だ。" },
+                       joinedActions = new[] { "SILENCEから武器を買う", "GHOST・SILENCEと話す", "交流・褒賞休暇" },
+                       joinedLine = "電子戦室。\nGHOSTとSILENCEの部屋だ。\n銃が要るならSILENCEに頼め。" },
         };
         // up through the roof, then settled straight over the whole HQ (OverviewPitch: almost vertical — the 8.5 m walls hide no room;
         // OverviewMargin m round the facilities' middles reaches their outer walls)

@@ -207,38 +207,50 @@ namespace Blindside.UI
             foreach (var g in reticleGraphics) g.raycastTarget = false;
             reticleGroup.alpha = 0f;
 
-            var badge = MakeRect("Badge", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(260, 90));
+            // the badge: no plate — the crosshair icon and 「HEADSHOT!」 alone, large (a dark drop under the words keeps them readable
+            // on any picture), a scan line sweeping through the words as they land
+            var badge = MakeRect("Badge", root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(380, 84));
             var group = badge.gameObject.AddComponent<CanvasGroup>();
-            // Phase 4-4 kit skin: ink parallelogram (slant 12) behind everything, a hazard-stripe line along its bottom edge
-            var bgRt = MakeRect("DecoBg", badge, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-            AddImg(bgRt, UITheme.Current.ink).raycastTarget = false;
-            bgRt.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 12f);
-            var hazardBar = MakeRect("DecoHazardBar", badge, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(0, 5));
-            hazardBar.offsetMax = new Vector2(-12f, hazardBar.offsetMax.y);
-            var hazard = HazardStripe.Create(hazardBar, "DecoHazard", UIPalette.Accent, UITheme.Current.ink, 5f, 10f);
-            hazard.scroll = false;
-            var iconBg = MakeRect("IconBg", badge, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(28, 0), new Vector2(48, 48));
-            var iconBgImg = AddImg(iconBg, UIPalette.Accent);
-            iconBg.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 8f);
-            var icon = MakeRect("Icon", badge, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(28, 0), new Vector2(32, 32));
-            AddText(icon, "+", 20, UIPalette.Ink, true);
-            // pivot on the left so the sweep grows left → right; x 30 with that pivot is the same 30..260 line as before
-            var underline = MakeRect("TextUnderline", badge, Vector2.zero, new Vector2(1, 0), new Vector2(0f, 0f), new Vector2(30, 26), new Vector2(-30, 3));
-            var underlineImg = AddImg(underline, UIPalette.Accent);
-            var title = MakeRect("Title", badge, new Vector2(0, 0.5f), Vector2.one, new Vector2(0.5f, 1f), new Vector2(15, 0), new Vector2(-30, 36));
-            var titleTmp = AddText(title, "HEADSHOT!", 24, UIPalette.Accent, true);
+            // the crosshair icon (64): four arms round a gap, four corner ticks, a centre dot — all in the tint
+            var icon = MakeRect("Icon", badge, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(34, 0), new Vector2(64, 64));
+            var iconGraphics = new System.Collections.Generic.List<Graphic>();
+            const float iArm = 20f, iGap = 7f, iW = 4f, iTick = 12f, iEdge = 30f;
+            iconGraphics.Add(AddImg(MakeRect("Arm_L", icon, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(1f, .5f), new Vector2(-iGap, 0), new Vector2(iArm, iW)), UIPalette.Accent));
+            iconGraphics.Add(AddImg(MakeRect("Arm_R", icon, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, .5f), new Vector2(iGap, 0), new Vector2(iArm, iW)), UIPalette.Accent));
+            iconGraphics.Add(AddImg(MakeRect("Arm_U", icon, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, 0f), new Vector2(0, iGap), new Vector2(iW, iArm)), UIPalette.Accent));
+            iconGraphics.Add(AddImg(MakeRect("Arm_D", icon, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, 1f), new Vector2(0, -iGap), new Vector2(iW, iArm)), UIPalette.Accent));
+            for (int i = 0; i < 4; i++)
+            {
+                bool right = i % 2 == 1, top = i < 2;
+                var c = MakeRect("Tick" + i, icon, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(right ? 1f : 0f, top ? 1f : 0f),
+                                 new Vector2(right ? iEdge : -iEdge, top ? iEdge : -iEdge), new Vector2(iTick, iTick));
+                iconGraphics.Add(AddImg(MakeRect("H", c, new Vector2(0, top ? 1 : 0), new Vector2(1, top ? 1 : 0), new Vector2(.5f, top ? 1 : 0), Vector2.zero, new Vector2(0, 3)), UIPalette.Accent));
+                iconGraphics.Add(AddImg(MakeRect("V", c, new Vector2(right ? 1 : 0, 0), new Vector2(right ? 1 : 0, 1), new Vector2(right ? 1 : 0, .5f), Vector2.zero, new Vector2(3, 0)), UIPalette.Accent));
+            }
+            var iconDot = AddImg(MakeRect("Dot", icon, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(6, 6)), UIPalette.Accent);
+            iconGraphics.Add(iconDot);
+            foreach (var g in iconGraphics) g.raycastTarget = false;
+            // the words: a dark drop under them, then the title itself
+            var shadow = MakeRect("DecoTitleShadow", badge, new Vector2(0, 0), Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(42 + 3, -3), new Vector2(-84, 0));
+            var shadowTmp = AddText(shadow, "HEADSHOT!", 46, new Color(0f, 0f, 0f, .65f), true);
+            var title = MakeRect("Title", badge, new Vector2(0, 0), Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(42, 0), new Vector2(-84, 0));
+            var titleTmp = AddText(title, "HEADSHOT!", 46, UIPalette.Accent, true);
+            titleTmp.characterSpacing = 4f;
+            shadowTmp.characterSpacing = 4f;
             var hsGlitch = titleTmp.gameObject.AddComponent<UIGlitchText>();
             hsGlitch.source = titleTmp; hsGlitch.loop = false;
-            var detail = MakeRect("Detail", badge, Vector2.zero, new Vector2(1, 0.5f), new Vector2(0.5f, 1f), new Vector2(15, 0), new Vector2(-30, 24));
-            var detailTmp = AddText(detail, "ヘッドショット · クリティカル x2 · -40", 12, Color.white, false);
+            // the scan line through the words (a thin bright bar crossing left → right as they land)
+            var underline = MakeRect("ScanLine", badge, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(76, 0), new Vector2(6, 70));
+            var underlineImg = AddImg(underline, Color.white);
+            underlineImg.raycastTarget = false;
 
             var flash = MakeRect("Flash", root, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             var flashRaw = flash.gameObject.AddComponent<RawImage>();
             flashRaw.raycastTarget = false; flashRaw.color = new Color(1, 1, 1, 0);
 
-            hs.badge = badge; hs.icon = icon; hs.iconBg = iconBgImg; hs.textUnderline = underlineImg;
-            hs.title = titleTmp; hs.detail = detailTmp; hs.group = group; hs.flash = flashRaw;
-            hs.canvas = canvasComp; hs.hazard = hazard; hs.glitch = hsGlitch;
+            hs.badge = badge; hs.icon = icon; hs.iconBg = iconDot; hs.textUnderline = underlineImg;
+            hs.title = titleTmp; hs.titleShadow = shadowTmp; hs.detail = null; hs.group = group; hs.flash = flashRaw;
+            hs.canvas = canvasComp; hs.hazard = null; hs.glitch = hsGlitch; hs.iconGraphics = iconGraphics.ToArray();
             hs.reticle = reticle; hs.reticleGroup = reticleGroup; hs.brackets = brackets; hs.arms = arms; hs.reticleGraphics = reticleGraphics.ToArray();
             root.gameObject.SetActive(true);
             return hs;
