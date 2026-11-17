@@ -113,7 +113,11 @@ namespace Blindside.UI.EditorTools
         public static void BuildLoadout(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Loadout, 1);
         public static void BuildSquad(UIPreview.Stage s) { var hs = Screen(s); hs.Menu.Open(); hs.OpenStation(HubStation.Growth, 0); }
         public static void BuildMenu(UIPreview.Stage s) => Screen(s).Menu.Open();
-        public const string Coop = "hub_coop", CoopDetail = "hub_coop_detail";
+        public const string Coop = "hub_coop", CoopDetail = "hub_coop_detail", Status = "hub_status", StatusGive = "hub_status_give";
+        /// <summary>hub_status: CRUSHER's status (Lv 3, 4 points to give); hub_status_give: 2 of them pending on 攻撃力.</summary>
+        public static void BuildStatus(UIPreview.Stage s) => Screen(s).Status.Pose(CrusherIndex());
+        public static void BuildStatusGive(UIPreview.Stage s) => Screen(s).Status.Pose(CrusherIndex(), 2);
+        static int CrusherIndex() => Mathf.Max(0, HubCatalog.Squad.FindIndex(o => o != null && o.key == "CRUSHER"));
         /// <summary>hub_coop: the members' list; hub_coop_detail: CRUSHER's page at rank 2 (the bonus, the real name, the story).</summary>
         public static void BuildCoop(UIPreview.Stage s) => CoopScreen(s).Pose(0, false);
         public static void BuildCoopDetail(UIPreview.Stage s) => CoopScreen(s).Pose(0, true);

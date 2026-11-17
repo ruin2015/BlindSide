@@ -27,13 +27,13 @@ namespace Blindside.UI
         public const float DimTime = .2f, PopTime = .32f;
         static readonly Color DimColor = new Color32(3, 5, 8, 128);
         static readonly Color Gold = UIPalette.Hex("#FFC81E");
-        public static readonly string[] StatNames = { "体力", "防御力", "攻撃力", "機動力", "精密力" };
+        public static string[] StatNames => ProgressBonus.StatNames;
         static readonly string[] StatNotes =
         {
             "1ポイントごとに最大HP +4",
             "1ポイントで被ダメージ −1.5% (最大30%)",
             "1ポイントごとに与えるダメージ +2%",
-            "1ポイントごとに移動力 +0.2m",
+            "1ポイントごとに敵の命中率 −1% (最大20%)",
             "1ポイントごとにクリティカル率 +0.5%",
         };
 
@@ -310,7 +310,7 @@ namespace Blindside.UI
                     case 0: effects[i].SetText("+{0} HP", (float)(v * ProgressBonus.HpPerPoint)); break;
                     case 1: effects[i].SetText("-{0:1}%", Mathf.Min(ProgressBonus.DefMax, v * ProgressBonus.DefPerPoint) * 100f); break;
                     case 2: effects[i].SetText("+{0:0}%", v * ProgressBonus.AtkPerPoint * 100f); break;
-                    case 3: effects[i].SetText("+{0:1}m", v * ProgressBonus.MovePerPoint); break;
+                    case 3: effects[i].SetText("-{0:0}%", Mathf.Min(ProgressBonus.EvaMax, v * ProgressBonus.EvaPerPoint)); break;
                     default: effects[i].SetText("+{0:1}%", v * ProgressBonus.CritPerPoint); break;
                 }
                 bool canPlus = editable && left > 0, canMinus = editable && add[i] > 0;

@@ -25,7 +25,7 @@ namespace Blindside.Save
         public string key = "";
         public int level = 1, exp;
         public int points;                       // unspent
-        public int hp, def, atk, mob, prec;      // 体力 / 防御力 / 攻撃力 / 機動力 / 精密力
+        public int hp, def, atk, mob, prec;      // (体力: none now) / 防御力 / 攻撃力 / 回避力 (was 機動力) / ヘッドショット率 (was 精密力)
         /// <summary>Of the stats above, how many came from the HQ's training ground (bought with money; Hub.HubCatalog.TrainCost) —
         /// counted per stat in the same order, so the price rises with each session.</summary>
         public int[] trained = new int[5];
@@ -299,6 +299,7 @@ namespace Blindside.Save
             foreach (var o in operators)
             {
                 if (o.key == null) o.key = ""; if (o.level < 1) o.level = 1; if (o.exp < 0) o.exp = 0; if (o.points < 0) o.points = 0;
+                if (o.hp > 0) { o.points += o.hp; o.hp = 0; }   // (体力 is no stat any more: its points come back to be given again)
                 if (o.trained == null || o.trained.Length != 5) { var t = new int[5]; if (o.trained != null) for (int i = 0; i < 5 && i < o.trained.Length; i++) t[i] = o.trained[i]; o.trained = t; }
                 for (int i = 0; i < 5; i++) if (o.trained[i] < 0) o.trained[i] = 0;
                 if (o.gadget == null) o.gadget = "";

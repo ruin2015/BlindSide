@@ -326,16 +326,17 @@ namespace Blindside.UI
             SetOptions("作戦を選んで出撃", list);
         }
 
-        static readonly string[] Drills = { "持久走", "防御訓練", "射撃訓練", "機動訓練", "精密射撃訓練" };
+        static readonly string[] Drills = { "持久走", "防御訓練", "射撃訓練", "回避訓練", "精密射撃訓練" };
         static readonly string[] StatIcons = { "✚", "▣", "✹", "➜", "◎" };
 
         void BastionStats()
         {
-            var list = new Option[5];
-            for (int i = 0; i < 5; i++)
+            var shown = Progress.ProgressBonus.Shown;
+            var list = new Option[shown.Length];
+            for (int i = 0; i < shown.Length; i++)
             {
-                int stat = i;
-                list[i] = new Option { title = KitGrowthPanel.StatNames[i], sub = "を鍛える  ·  " + Drills[i], icon = StatIcons[i], click = () => BastionPartner(stat) };
+                int stat = shown[i];
+                list[i] = new Option { title = KitGrowthPanel.StatNames[stat], sub = "を鍛える  ·  " + Drills[stat], icon = StatIcons[stat], click = () => BastionPartner(stat) };
             }
             // (訓練プログラム — the old training room's lessons — is out of the game's flow: the first operation teaches as it is played.
             // BastionPrograms stays for bringing it back.)

@@ -70,6 +70,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.Manage, label = "本部 — IGNIS (ロードアウト / 装備購入)", build = UIPreviewHub.BuildManage },
             new State { name = UIPreviewHub.LoadoutState, label = "本部 — ロードアウト", build = UIPreviewHub.BuildLoadout },
             new State { name = UIPreviewHub.Menu, label = "本部 — メニュー (ESC)", build = UIPreviewHub.BuildMenu },
+            new State { name = UIPreviewHub.Status, label = "本部 — 隊員情報 (ステータス)", build = UIPreviewHub.BuildStatus },
+            new State { name = UIPreviewHub.StatusGive, label = "本部 — 隊員情報 ポイント分配中", build = UIPreviewHub.BuildStatusGive },
             new State { name = UIPreviewHub.Coop, label = "本部 — コープ 一覧", build = UIPreviewHub.BuildCoop },
             new State { name = UIPreviewHub.CoopDetail, label = "本部 — コープ 詳細 (CRUSHER)", build = UIPreviewHub.BuildCoopDetail },
             new State { name = UIPreviewHub.StationSerum, label = "本部 — 医務室 (SERUM)", build = UIPreviewHub.BuildStationSerum },

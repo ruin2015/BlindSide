@@ -199,14 +199,14 @@ namespace Blindside.Hub
         public override int TabCount => Squad.Count;
         public override string Tab(int i) => SquadTab(i);
 
-        static readonly string[] Drills = { "持久走", "防御訓練", "射撃訓練", "機動訓練", "精密射撃訓練" };
+        static readonly string[] Drills = { "持久走", "防御訓練", "射撃訓練", "回避訓練", "精密射撃訓練" };
 
         public override void Fill(int tab, List<HubRow> into)
         {
             into.Clear();
             if (tab >= Squad.Count) return;
             var p = D.OperatorOf(Squad[tab].key);
-            for (int i = 0; i < 5; i++)
+            foreach (int i in Progress.ProgressBonus.Shown)
             {
                 int done = p.trained[i];
                 bool max = done >= HubCatalog.MaxTrain;
@@ -223,7 +223,8 @@ namespace Blindside.Hub
 
         public override string Act(int tab, int row)
         {
-            if (!Editable || tab >= Squad.Count || row >= 5) return null;
+            if (!Editable || tab >= Squad.Count || row >= Progress.ProgressBonus.Shown.Length) return null;
+            row = Progress.ProgressBonus.Shown[row];
             var op = Squad[tab];
             var p = D.OperatorOf(op.key);
             if (p.trained[row] >= HubCatalog.MaxTrain) return null;
@@ -489,7 +490,7 @@ namespace Blindside.Hub
         public override int TabCount => Squad.Count;
         public override string Tab(int i) => SquadTab(i);
 
-        static readonly string[] StatShort = { "体力", "防御力", "攻撃力", "機動力", "精密力" };
+        static string[] StatShort => Progress.ProgressBonus.StatNames;
 
         public override void Fill(int tab, List<HubRow> into)
         {
@@ -505,18 +506,10 @@ namespace Blindside.Hub
                 value = "Lv " + p.level + "   残り " + p.points + " pt", current = p.points > 0,
                 button = "能力分配", enabled = true,
             });
-            for (int i = 0; i < 5; i++)
+            foreach (int i in Progress.ProgressBonus.Shown)
             {
                 int v = p.StatPoints(i);
-                string eff;
-                switch (i)
-                {
-                    case 0: eff = "最大HP +" + (v * Progress.ProgressBonus.HpPerPoint); break;
-                    case 1: eff = "被ダメージ −" + (Mathf.Min(Progress.ProgressBonus.DefMax, v * Progress.ProgressBonus.DefPerPoint) * 100f).ToString("0.#") + "%"; break;
-                    case 2: eff = "与ダメージ +" + (v * Progress.ProgressBonus.AtkPerPoint * 100f).ToString("0") + "%"; break;
-                    case 3: eff = "移動力 +" + (v * Progress.ProgressBonus.MovePerPoint).ToString("0.#") + "m"; break;
-                    default: eff = "クリティカル率 +" + (v * Progress.ProgressBonus.CritPerPoint).ToString("0.#") + "%"; break;
-                }
+                string eff = Progress.ProgressBonus.Effect(i, v);
                 into.Add(new HubRow { name = "ステータス  " + StatShort[i], note = eff + " (訓練 " + p.trained[i] + " 回)", value = v + " pt", band = op.color });
             }
             into.Add(new HubRow

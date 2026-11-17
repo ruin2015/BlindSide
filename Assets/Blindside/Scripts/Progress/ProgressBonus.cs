@@ -1,9 +1,9 @@
 // What growth gives an operator in a match (the player's side, a real match, a save session — MatchBootstrap applies it at setup):
-//   体力 (hp)     +4 max HP per point
-//   防御力 (def)   −1.5% damage taken per point, at most −30%
-//   攻撃力 (atk)   +2% damage per point
-//   機動力 (mob)   +0.2 m move range per point
-//   精密力 (prec)  +0.5 critical (headshot) chance (percentage points) per point
+//   攻撃力 (atk)          +2% damage per point
+//   ヘッドショット率 (prec) +0.5 critical (headshot) chance (percentage points) per point
+//   防御力 (def)          −1.5% damage taken per point, at most −30%
+//   回避力 (mob)          −1 enemy hit chance (percentage points) per point, at most −20 (the old 機動力's field)
+//   (体力 is no stat any more: its points were given back — SaveData.Normalize)
 //   weapon mastery  per level above 1: +3% damage and +0.3 critical chance (only scopes raise the hit chance)
 //   attachments     the parts fitted at the HQ, summed (Data.Attachments: hit / headshot by range band, rounds, damage, falloff, SPD,
 //                   mobility, no 銃声 mark) — SimUnit.Gear
@@ -17,14 +17,32 @@ namespace Blindside.Progress
     public static class ProgressBonus
     {
         public const int HpPerPoint = 4;
-        public const float DefPerPoint = .015f, DefMax = .30f, AtkPerPoint = .02f, MovePerPoint = .2f, CritPerPoint = .5f;
+        public const float DefPerPoint = .015f, DefMax = .30f, AtkPerPoint = .02f, CritPerPoint = .5f, EvaPerPoint = 1f, EvaMax = 20f;
+        /// <summary>The stats shown and trained, in order (OperatorProgress.StatPoints indices): 攻撃力, ヘッドショット率, 防御力, 回避力.</summary>
+        public static readonly int[] Shown = { 2, 4, 1, 3 };
+        /// <summary>The stats' names by OperatorProgress.StatPoints index (0 体力 is no longer shown).</summary>
+        public static readonly string[] StatNames = { "体力", "防御力", "攻撃力", "回避力", "ヘッドショット率" };
+        public static readonly string[] StatEn = { "VIT", "DEF", "ATK", "EVA", "CRIT" };
+
+        /// <summary>What `v` points of stat `i` (StatPoints index) give, in words.</summary>
+        public static string Effect(int i, int v)
+        {
+            switch (i)
+            {
+                case 1: return "被ダメージ −" + (Mathf.Min(DefMax, v * DefPerPoint) * 100f).ToString("0.#") + "%";
+                case 2: return "与ダメージ +" + (v * AtkPerPoint * 100f).ToString("0") + "%";
+                case 3: return "敵の命中率 −" + Mathf.Min(EvaMax, v * EvaPerPoint).ToString("0.#") + "%";
+                case 4: return "ヘッドショット率 +" + (v * CritPerPoint).ToString("0.#") + "%";
+            }
+            return "";
+        }
         public const float MasteryDamage = .03f, MasteryCrit = .3f;
 
         public static int Hp(OperatorProgress p) => p.hp * HpPerPoint;
         public static float TakenScale(OperatorProgress p) => 1f - Mathf.Min(DefMax, p.def * DefPerPoint);
         public static float DamageScale(OperatorProgress p, WeaponProgress w) => (1f + p.atk * AtkPerPoint) * (1f + (Mathf.Max(1, w.level) - 1) * MasteryDamage);
         public static float Crit(OperatorProgress p, WeaponProgress w) => p.prec * CritPerPoint + (Mathf.Max(1, w.level) - 1) * MasteryCrit;
-        public static float Move(OperatorProgress p) => p.mob * MovePerPoint;
+        public static float Evasion(OperatorProgress p) => Mathf.Min(EvaMax, p.mob * EvaPerPoint);
 
         /// <summary>Gives `u` its operator's growth from the session's save (nothing without a session).</summary>
         public static void Apply(SimUnit u)
@@ -37,7 +55,7 @@ namespace Blindside.Progress
             if (d.mealBuff) hp += Campaign.MealHp;   // 炊事支援: a good meal before the sortie
             if (hp != 0) { u.MaxHP += hp; u.HP = u.MaxHP; }
             u.DamageTakenScale = TakenScale(p);
-            u.MoveBonus = Move(p);
+            u.Evasion = Evasion(p);
             ApplyWeapon(u);
             // the items it carries out of the HQ (only those the squad still holds): the first ready, the rest after it is spent; the
             // slots past the first need co-op rank 4 / 7 (CoopPerks.GadgetSlots); frag grenades first (the ones used in the field)

@@ -172,6 +172,7 @@ namespace Blindside.Combat
                 var g = m.Gear;
                 if (g != null) c += g.AccuracyAt(d);               // scopes (flat + the range band's), item effects
             }
+            if (target is ICombatModifiers tm && tm.Evasion != 0f) c -= tm.Evasion;   // the target's 回避力
             return JsRound(c, 5, 100);
         }
 

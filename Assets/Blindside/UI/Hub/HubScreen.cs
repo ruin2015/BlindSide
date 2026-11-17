@@ -55,6 +55,9 @@ namespace Blindside.Hub
         HubCoopScreen coop;
         /// <summary>The menu's コープ screen.</summary>
         public HubCoopScreen Coop => coop;
+        HubStatusScreen status;
+        /// <summary>The menu's 隊員情報: the status screen (the stat points are given there).</summary>
+        public HubStatusScreen Status => status;
 
         /// <summary>Previews: a sample save shown instead of the session's.</summary>
         public SaveData previewData;
@@ -64,7 +67,7 @@ namespace Blindside.Hub
 
         public bool AnyOpen => (list != null && list.IsOpen) || (talk != null && talk.IsOpen) || (growth != null && growth.IsOpen)
                                || (menu != null && menu.IsOpen) || (loadout != null && loadout.IsOpen) || (armory != null && armory.IsOpen)
-                               || (squadPick != null && squadPick.IsOpen) || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || (coop != null && coop.IsOpen) || leaving;
+                               || (squadPick != null && squadPick.IsOpen) || (station != null && station.IsOpen) || (shop != null && shop.IsOpen) || (coop != null && coop.IsOpen) || (status != null && status.IsOpen) || leaving;
         public HubListPanel List => list;
         public HubTalkPanel Talk => talk;
         public KitGrowthPanel Growth => growth;
@@ -97,8 +100,9 @@ namespace Blindside.Hub
             s.squadPick = HubSquadScreen.Build(s.root, s);
             s.squadC = new SquadInfoContent(s);
             s.coop = HubCoopScreen.Build(s.root, s);
-            s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle, () => s.coop.Open());
-            s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.coop.IsOpen;
+            s.status = HubStatusScreen.Build(s.root, s);
+            s.menu = HubMenu.Build(s.root, () => s.status.Open(0), s.SaveNow, s.ToTitle, () => s.coop.Open());
+            s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.coop.IsOpen || s.status.IsOpen;
             s.menu.Data = () => s.Data;
             s.menu.Live = () => !(SaveSystem.Current == null && Application.isPlaying);
             s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.armory.IsOpen || s.shop.IsOpen || s.squadPick.IsOpen;
@@ -399,7 +403,7 @@ namespace Blindside.Hub
         public void OpenGrowth(OperatorData op)
         {
             if (op == null) return;
-            growth.Open(op, SaveSystem.Current ?? (Application.isPlaying ? null : previewData));
+            status.Open(op);   // (the status screen gives the points now; the old growth panel stays built, unused)
         }
         bool growthWasOpen;
 

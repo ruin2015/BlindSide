@@ -14,6 +14,8 @@ namespace Blindside.Combat
         float AccuracyBonus { get; }
         /// <summary>+ percentage points of critical (headshot) chance (精密力, weapon mastery). 0 = none.</summary>
         float HeadshotBonus { get; }
+        /// <summary>− percentage points of the hit chance of shots at this unit (回避力). 0 = none.</summary>
+        float Evasion { get; }
         /// <summary>× the damage this unit takes (防御力). 1 = none.</summary>
         float DamageTakenScale { get; }
         /// <summary>+ metres of move range (機動力). 0 = none.</summary>
