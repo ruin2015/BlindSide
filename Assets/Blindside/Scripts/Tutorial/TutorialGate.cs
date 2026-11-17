@@ -36,7 +36,7 @@ namespace Blindside.Integration
 
         /// <summary>The player's drone finished a flight (the unit's turn is then spent).</summary>
         public static event System.Action<SimUnit> DroneFinished;
-        public static void RaiseDroneFinished(SimUnit u) { if (Active) DroneFinished?.Invoke(u); }
+        public static void RaiseDroneFinished(SimUnit u) { if (Active || Guided) DroneFinished?.Invoke(u); }
 
         /// <summary>The player's unit finished a throw (it has landed and gone off): where it landed.</summary>
         public static event System.Action<SimUnit, UnityEngine.Vector2> ThrowFinished;
@@ -44,6 +44,15 @@ namespace Blindside.Integration
 
         /// <summary>Which wall panels a panel ability may target (null: every valid one) — the lesson's one wall.</summary>
         public static System.Func<int, bool> PanelFilter;
+
+        /// <summary>Which of the player's units can be selected (null: any) — the scripted operation's one unit at a time.</summary>
+        public static System.Func<SimUnit, bool> Selectable;
+        /// <summary>Where [作戦開始] drops a unit (null, or a null answer: the map's default points) — the scripted fixed deployment.</summary>
+        public static System.Func<SimUnit, UnityEngine.Vector2?> FixedDrop;
+        /// <summary>END TURN (and the automatic turn end when everyone has acted) is held during a guided match until this is set.</summary>
+        public static bool EndTurnOk = true;
+        /// <summary>The squad's radio calls (an enemy sighted, an engagement, a kill) stay off — the scripted operation's radio talks instead.</summary>
+        public static bool NoCallouts;
 
         public static bool Allows(string commandId) => (!Active && !Guided) || Allowed.Contains(commandId);
 
@@ -65,7 +74,13 @@ namespace Blindside.Integration
             DroneFinished = null;
             ThrowFinished = null;
             PanelFilter = null;
+            Selectable = null; FixedDrop = null; EndTurnOk = true; NoCallouts = false;
+            Blindside.Turns.EnemyAI.HoldTeam = null;
             Blindside.Combat.CombatSystem.FloorHP = 0;
+            Blindside.Combat.CombatSystem.FloorTeam = null;
+            Blindside.Combat.CombatSystem.SureKillTeam = null;
+            Blindside.Movement.MovementSystem.QuietMoves = false;
+            Blindside.Movement.MovementSystem.EncounterHook = null;
         }
     }
 }

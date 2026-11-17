@@ -349,7 +349,7 @@ namespace Blindside.Integration
         {
             if (!PlayerCanAct()) return;
             var my = new List<SimUnit>();
-            foreach (var u in units) if (u.Alive && u.Team == side && !u.Ended && !u.Captive) my.Add(u);
+            foreach (var u in units) if (u.Alive && u.Team == side && !u.Ended && !u.Captive && !u.Reserve) my.Add(u);
             if (my.Count == 0) return;
             int i = my.IndexOf(uiUnit);
             SelectUnit(my[(i + 1) % my.Count]);
@@ -468,6 +468,7 @@ namespace Blindside.Integration
         public void SelectUnit(SimUnit u)
         {
             if (u == null || !u.Alive) return;
+            if (TutorialGate.Selectable != null && u.Team == side && !TutorialGate.Selectable(u)) return;   // (the scripted operation: one unit at a time)
             if (healShot && mode != Mode.Busy) EndHealAim(true);   // (another unit / back to the menu while aiming the heal shot)
             if (turns != null && turns.Phase == MatchPhase.Deploy) { EnterDeploy(u); return; }   // selectUnit → enterDeploy
             bool changed = uiUnit != u;

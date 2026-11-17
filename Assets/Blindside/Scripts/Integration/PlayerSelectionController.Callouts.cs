@@ -63,7 +63,7 @@ namespace Blindside.Integration
         float callUntil = -1f, nextSight;
         bool cinematicOn;
 
-        bool CalloutsOn => hasSide && !TutorialGate.Active && turns != null && !turns.Over;
+        bool CalloutsOn => hasSide && !TutorialGate.Active && !TutorialGate.NoCallouts && turns != null && !turns.Over;
 
         /// <summary>`who` (one of the player's operators) says `line`. `urgent`: shown now, whatever is queued.</summary>
         void Callout(SimUnit who, string line, bool urgent = false)

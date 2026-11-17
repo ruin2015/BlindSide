@@ -210,7 +210,7 @@ namespace Blindside.Integration
             u.Ended = true; u.MoveLeft = 0;
             Deselect();
             UnitsChanged?.Invoke();   // updateHUD()
-            if (AllEnded() && !TutorialGate.Active) { Log("全隊員が行動を終えました。ターンを終了します。", "w"); StartCoroutine(AutoEndTurn()); }
+            if (AllEnded() && !TutorialGate.Active && (!TutorialGate.Guided || TutorialGate.EndTurnOk)) { Log("全隊員が行動を終えました。ターンを終了します。", "w"); StartCoroutine(AutoEndTurn()); }
         }
 
         bool AllEnded()
@@ -263,7 +263,7 @@ namespace Blindside.Integration
         IEnumerator FireRoutine(SimUnit u, float ang)
         {
             bool acted = u.Acted;
-            var aimed = TutorialGate.Active ? FireCast(u, ang) : default;   // what the shot went at (the tutorial judges it)
+            var aimed = TutorialGate.Active || TutorialGate.Guided ? FireCast(u, ang) : default;   // what the shot went at (the tutorial judges it)
             if (TutorialGate.Active) { TutorialGate.LastShotAngle = ang; TutorialGate.LastShotWalls = aimed.walls; }
             yield return FireDirection(u, ang);
             busy = false;
@@ -284,6 +284,7 @@ namespace Blindside.Integration
         void PointerMoveAim(Vector2 pos)
         {
             if (pos == lastAimMouse) return;
+            if (aimHeld) return;   // (the tutorial explaining the forecast: the aim stays on the target)
             lastAimMouse = pos;
             UpdateAim(pos);
         }

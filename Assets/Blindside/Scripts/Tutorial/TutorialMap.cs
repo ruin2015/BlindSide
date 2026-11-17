@@ -59,6 +59,46 @@ namespace Blindside.Tutorial
         public static readonly Vector2Int CrusherHome = new Vector2Int(22, 13);
         public static readonly Vector2Int HostagePocket = new Vector2Int(1, 1);
 
+        // ================================================================
+        //  The opening's training hall: its own map (MapCatalog entry TrainingMapId — Assets/Blindside/Maps/map_tutorial.json, not listed
+        //  on the title nor as a quest; edited in the map editor as 「訓練場」, saving it updates the entry), dressed in the hall's white
+        //  panels (TutorialStage). It began as a copy of BLINDSIDE and no longer follows it. FLARE and CRUSHER on the same side, the map's
+        //  terrorists across. CRUSHER takes out DemoFoe from DemoStand; FLARE goes to GuidedSpot for GuidedFoe (it watches the south door);
+        //  FreeFoe is hers alone. (The spots below are this layout's: moving the walls or the terrorists means checking them again.)
+        // ================================================================
+        public const string TrainingMapId = "map_tutorial";
+        public const string TrainingName = "訓練場";
+        public static readonly Vector2Int TrainingStart = new Vector2Int(2, 14), TrainingCrusher = new Vector2Int(4, 14);
+        /// <summary>Indices into the map's terrorists: CRUSHER's demonstration, the player's marked one, the last one.</summary>
+        public const int DemoFoe = 2, GuidedFoe = 0, FreeFoe = 1;
+        /// <summary>In front of the south door: the demonstration's target is in sight, its back turned.</summary>
+        public static readonly Vector2 DemoStand = new Vector2(6f, 13f);
+        /// <summary>Just inside the west door: out of GuidedFoe's cone, it in sight from behind; the pillars hide FreeFoe.</summary>
+        public static readonly Vector2 GuidedSpot = new Vector2(3f, 8f);
+        /// <summary>Where CRUSHER steps back to after his demonstration (beside FLARE, out of every enemy's sight).</summary>
+        public static readonly Vector2 CrusherBack = new Vector2(3f, 14f);
+
+        /// <summary>The training hall's map (falls back to the old yard when its map is missing or has too few terrorists).</summary>
+        public static MapData BuildTraining()
+        {
+            var d = Blindside.Flow.MapCatalog.DataOf(Blindside.Flow.MapCatalog.Find(TrainingMapId));
+            if (d == null || d.terrorists == null || d.terrorists.Length <= Mathf.Max(DemoFoe, Mathf.Max(GuidedFoe, FreeFoe))) return Build();
+            d.name = TrainingName;
+            d.useHouseIntro = false; d.rescueIntro = false;
+            d.operationCode = null;   // (not the operation itself: no briefing, no opening talk)
+            d.noHostage = true;
+            d.cameras = new Vector2Int[0];
+            d.gadgets = new MapGadget[0];
+            d.exfils = new MapExfil[0];
+            d.squadKeys = null;
+            d.anchors = new MapAnchors
+            {
+                attackerDrops = new[] { TrainingStart, TrainingCrusher, new Vector2Int(3, 15), new Vector2Int(4, 15), new Vector2Int(5, 15) },
+                facingTarget = new Vector2(7.5f, 7.5f),
+            };
+            return d;
+        }
+
         public static MapData Build()
         {
             var t = new MapTerrain[W * H];

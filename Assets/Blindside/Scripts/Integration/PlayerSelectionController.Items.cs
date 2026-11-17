@@ -198,7 +198,7 @@ namespace Blindside.Integration
             hoverPanel = -1;
             validPanels.Clear();
             foreach (var p in map.Panels)
-                if (abilitySpec.ValidPanel(p) && (!TutorialGate.Active || TutorialGate.PanelFilter == null || TutorialGate.PanelFilter(p.id))) validPanels.Add(p.id);
+                if (abilitySpec.ValidPanel(p) && (!(TutorialGate.Active || TutorialGate.Guided) || TutorialGate.PanelFilter == null || TutorialGate.PanelFilter(p.id))) validPanels.Add(p.id);
             NotifySelection();
             if (validPanels.Count == 0)
             {

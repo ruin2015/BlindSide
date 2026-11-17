@@ -60,7 +60,7 @@ namespace Blindside.Integration
             validPanels.Clear();
             if (sp.Kind != AbilityTargetKind.Panel) return StartSupportAbility(u, sp);   // stim / shield / shock (.SupportAbility.cs)
             foreach (var p in map.Panels)
-                if (sp.ValidPanel(p) && (!TutorialGate.Active || TutorialGate.PanelFilter == null || TutorialGate.PanelFilter(p.id))) validPanels.Add(p.id);
+                if (sp.ValidPanel(p) && (!(TutorialGate.Active || TutorialGate.Guided) || TutorialGate.PanelFilter == null || TutorialGate.PanelFilter(p.id))) validPanels.Add(p.id);
             NotifySelection();
             if (validPanels.Count == 0)
             {

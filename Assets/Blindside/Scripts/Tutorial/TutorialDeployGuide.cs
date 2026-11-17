@@ -33,7 +33,7 @@ namespace Blindside.Tutorial
         };
 
         // ---- the first operation teaches as it goes (the new game starts here: there is no training first) ----
-        public const string LOp1 = "任務だ、新入り。\n今回は実戦の中で、\nやり方を教えてやる。";
+        public const string LOp1 = "いよいよ実戦だ、新入り。\n訓練どおりにやればいい。";
         public const string LFixed = "今回の配置は俺が決めておいた。\nまずは実戦の流れを覚えろ。";
         public const string LTab = "突入する前に、敵の位置を確かめておけ。\nTabを長押ししてみろ。";
         public const string LTabDone = "赤い反応が敵だ。正確な位置ではないが、\n作戦を立てる手がかりになる。";
@@ -67,6 +67,8 @@ namespace Blindside.Tutorial
         static void OnMatchReady(MatchBootstrap mb)
         {
             if (mb.tutorialMode || mb.playerTeam != OperatorTeam.Attack) return;
+            // the story's first operation, until it is cleared: the scripted lesson (TutorialOperation) runs the whole match
+            if (TutorialOperation.Due()) { Pending = false; TutorialOperation.Begin(mb); return; }
             // the first operation always opens with the briefing, however it was reached (the tutorial skipped, from the HQ) — once a session, not on every retry
             bool talk = OpeningDue(), brief = Pending || (talk && !briefedFirstOperation);
             if (!brief && !talk) return;
@@ -209,7 +211,7 @@ namespace Blindside.Tutorial
             // the fixed deployment: [作戦開始] drops every squad member on the map's points (the squad's opening talk follows, before round 1)
             var bridge = mb.uiBridge;
             if (bridge != null && bridge.endTurnButton != null) bridge.endTurnButton.onClick.Invoke();
-            yield return Lessons();
+            // (moving, shooting and sight are taught in the training hall now: Lessons is kept but no longer played here)
         }
 
         IEnumerator Lessons()

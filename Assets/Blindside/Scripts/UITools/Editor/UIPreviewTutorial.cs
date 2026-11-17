@@ -214,6 +214,22 @@ namespace Blindside.UITools.EditorTools
             c.Evaluate(c.Duration + .1f);
         }
 
+        public const string WallPopup = "tutorial_wall_popup";
+
+        /// <summary>The first operation's wall popup (the soft wall, page 1 of 3), settled, with CRUSHER's line.</summary>
+        public static void BuildWallPopup(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("WallPopup_Stage", UITheme.CanvasKind.Hud, 0);
+            var r = TutorialRadio.Build(canvas.transform, canvas);
+            r.enabled = false;
+            r.Say(TutorialOperation.LSoft, true);
+            r.Evaluate(6f);
+            var c = TutorialWallPopup.Build(canvas.transform);
+            c.enabled = false;
+            c.Show(TutorialWallPopup.Kind.Soft, 0, 3);
+            c.Evaluate(c.Duration + .1f);
+        }
+
         public const string GadgetCard = "tutorial_gadget_card";
 
         /// <summary>FLARE's launcher card, settled (glow mid-pulse), with CRUSHER's line about her ability.</summary>

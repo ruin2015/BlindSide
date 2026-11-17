@@ -61,7 +61,7 @@ namespace Blindside.Abilities
             return new AbilitySpec(
                 AbilityTargetKind.Panel,
                 hint: "破壊する壁を選択してください",
-                sub: strong ? "隣接する壁 · 強化壁は能力2回分 (通電中は不可)" : "隣接する通常の壁のみ可能",
+                sub: strong ? "隣接する壁 · 強化壁は能力2回分 (通電中は不可)" : "隣接するソフト壁のみ可能",
                 // a mirror on a plain (unreinforced) wall breaks too
                 validPanel: p => ctx.Map.TileAt(p.cells[0].x, p.cells[0].y) == TileType.Wall
                     && (!p.reinforced || (strong && !p.electrified)) && AbilitySystem.PanelNear(p, u));

@@ -115,7 +115,7 @@ namespace Blindside.Integration
         void SyncRosterSize()
         {
             int n = 0;
-            foreach (var u in units) if (u.Team == side && !u.Captive) n++;
+            foreach (var u in units) if (u.Team == side && !u.Captive && !u.Reserve) n++;
             if (n != rosterBuilt) BuildRoster();
         }
 
@@ -125,7 +125,7 @@ namespace Blindside.Integration
             kitUnits.Clear();
             if ((roster == null && kitRoster == null) || units == null) return;
             var mine = new List<SimUnit>();
-            foreach (var u in units) if (u.Team == side && !u.Captive) mine.Add(u);   // G.units.filter(u=>u.team===G.side); a captive joins the list once freed
+            foreach (var u in units) if (u.Team == side && !u.Captive && !u.Reserve) mine.Add(u);   // G.units.filter(u=>u.team===G.side); a captive joins the list once freed
             rosterBuilt = mine.Count;
             if (kitRoster != null) { BuildKitRoster(mine); return; }
             var cards = roster.Build(mine.Count);

@@ -224,7 +224,7 @@ namespace Blindside.UI
             var kb = Keyboard.current;
             if (kb != null)
             {
-                if (kb.tabKey.wasPressedThisFrame && !Blindside.Rendering.BattlefieldCamera.InputLocked) Toggle();
+                if (kb.tabKey.wasPressedThisFrame && !Blindside.Rendering.BattlefieldCamera.InputLocked && !Blindside.Integration.DeployHologram.TabTaken) Toggle();   // (during the deployment Tab is the hologram)
                 else if (open && kb.escapeKey.wasPressedThisFrame && !EscapeGate.Consumed) { EscapeGate.Consume(); Close(); }
             }
             if (!open) return;

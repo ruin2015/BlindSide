@@ -42,6 +42,24 @@ namespace Blindside.Integration
         sealed class Contact { public Transform ring, diamond; public LineRenderer ringLr, beamLr; public Vector3 pos; public float phase; }
         readonly List<Contact> contacts = new List<Contact>(12);
         readonly List<Contact> hostMarks = new List<Contact>(4);
+        // the walls by kind, over the plan (WallKinds order): each its own tinted copy of the plan's material
+        readonly Material[] kindMats = new Material[3];
+        static readonly int FillId = Shader.PropertyToID("_Fill"), EdgeColorId = Shader.PropertyToID("_EdgeColor");
+
+        // ---- the walls by kind (the hologram's legend, the first operation's lesson) ----
+        /// <summary>The kinds shown, in legend order: ソフト壁 (breakable: shots go through), 強化壁 (reinforced), 通常壁 (solid).</summary>
+        public static readonly Blindside.Map.MapTerrain[] WallKinds = { Blindside.Map.MapTerrain.Breakable, Blindside.Map.MapTerrain.Reinforced, Blindside.Map.MapTerrain.Solid };
+        public static readonly string[] WallKindNames = { "ソフト壁", "強化壁", "通常壁" };
+        public static readonly Color[] WallKindColors = { new Color(.36f, 1f, .64f, 1f), new Color(1f, .72f, .18f, 1f), new Color(.86f, .9f, .96f, 1f) };
+        public const float KindFill = .55f, KindFillDim = .06f, KindFillFocus = .95f;
+        /// <summary>Shown as if Tab were held (the first operation's lesson keeps it up while CRUSHER talks).</summary>
+        public static bool Pinned;
+        /// <summary>The deployment's hologram owns Tab right now (the log history leaves it alone).</summary>
+        public static bool TabTaken { get; private set; }
+        /// <summary>The contacts stand exactly where the enemy is (the first operation's lesson: the spots its first turn marks and shoots at).</summary>
+        public static bool ExactContacts;
+        /// <summary>The kind of wall singled out (an index into WallKinds; -1: none) — the others dim.</summary>
+        public static int FocusKind = -1;
 
         // ---- the screen ----
         Canvas canvas;
@@ -67,10 +85,11 @@ namespace Blindside.Integration
         void LateUpdate()
         {
             bool on = active != null && active();
+            TabTaken = on;
             if (!on) { if (canvas != null || root != null) Teardown(); return; }
             EnsureScreen();
             var kb = Keyboard.current;
-            bool hold = (kb != null && kb.tabKey.isPressed) || DebugHold;
+            bool hold = (kb != null && kb.tabKey.isPressed) || DebugHold || Pinned;
             if (hold && root == null) Build();
             if (hold && !holding) buildClock = 0f;
             holding = hold;
@@ -105,6 +124,15 @@ namespace Blindside.Integration
             float now = Time.unscaledTime;
             for (int i = 0; i < contacts.Count; i++) Pulse(contacts[i], now, k);
             for (int i = 0; i < hostMarks.Count; i++) Pulse(hostMarks[i], now, k);
+            for (int i = 0; i < kindMats.Length; i++)
+            {
+                var m = kindMats[i];
+                if (m == null) continue;
+                Reveal(m, k >= 1f ? 1000f : k * WallTop);
+                float fill = FocusKind < 0 ? KindFill : FocusKind == i ? KindFillFocus + .15f * Mathf.Sin(now * 5f) : KindFillDim;
+                m.SetFloat(FillId, fill);
+                m.SetFloat(AlphaId, FocusKind < 0 || FocusKind == i ? 1f : .35f);
+            }
         }
 
         static void Pulse(Contact c, float now, float k)
@@ -161,15 +189,17 @@ namespace Blindside.Integration
                 gridMat.SetVector(CenterId, new Vector4(bounds.center.x, bounds.center.z, 0f, 0f));
             }
 
+            BuildWallKinds();
+
             // the enemy: one contact per fighter, a cell or so off where it stands (its own fixed offset: the estimate holds still)
             contacts.Clear();
             if (units != null)
                 foreach (var u in units)
                 {
-                    if (u == null || !u.Alive || u.Team == side || u.Captive) continue;
+                    if (u == null || !u.Alive || u.Team == side || u.Captive || u.Reserve) continue;
                     var rng = new System.Random(StableHash(u.Id));
                     float ang = (float)rng.NextDouble() * Mathf.PI * 2f;
-                    float off = Mathf.Lerp(ContactOffsetMin, ContactOffsetMax, (float)rng.NextDouble());
+                    float off = ExactContacts ? 0f : Mathf.Lerp(ContactOffsetMin, ContactOffsetMax, (float)rng.NextDouble());
                     var p = GridSpace.GridToWorld(u.X + Mathf.Cos(ang) * off, u.Y + Mathf.Sin(ang) * off, 0f);
                     contacts.Add(Marker(p, foeMat, (float)rng.NextDouble()));
                 }
@@ -190,6 +220,63 @@ namespace Blindside.Integration
             cam.enabled = false;
             main.cullingMask &= ~(1 << layer);
             KeepTextureSized();
+        }
+
+        /// <summary>One mesh per kind of wall: a box a little larger than each of its cells (every face UV'd 0..1, so the hologram shader
+        /// draws it as a wireframe), in its own tinted copy of the plan's material.</summary>
+        void BuildWallKinds()
+        {
+            var data = Blindside.Map.MapLibrary.Current;
+            if (data == null || data.terrain == null) return;
+            for (int k = 0; k < WallKinds.Length; k++)
+            {
+                var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var normals = new List<Vector3>(); var tris = new List<int>();
+                for (int y = 0; y < data.height; y++)
+                    for (int x = 0; x < data.width; x++)
+                    {
+                        int i = y * data.width + x;
+                        if (i >= data.terrain.Length || data.terrain[i] != WallKinds[k]) continue;
+                        AddBox(GridSpace.GridToWorld(x, y, 0f), .54f, WallTop + .06f, verts, uvs, normals, tris);
+                    }
+                if (verts.Count == 0) continue;
+                var mesh = new Mesh { name = "HoloWalls_" + WallKinds[k] };
+                if (verts.Count > 65000) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+                mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetNormals(normals); mesh.SetTriangles(tris, 0);
+                var mat = new Material(mapMat);
+                var c = WallKindColors[k];
+                mat.SetColor(ColorId, c);
+                mat.SetColor(EdgeColorId, Color.Lerp(c, Color.white, .35f));
+                mat.SetFloat(FillId, KindFill);
+                kindMats[k] = mat;
+                var go = new GameObject("HoloWalls_" + WallKinds[k], typeof(MeshFilter), typeof(MeshRenderer));
+                go.layer = layer;
+                go.transform.SetParent(root.transform, false);
+                go.GetComponent<MeshFilter>().sharedMesh = mesh;
+                var mr = go.GetComponent<MeshRenderer>();
+                mr.sharedMaterial = mat;
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                mr.receiveShadows = false;
+            }
+        }
+
+        static void AddBox(Vector3 c, float half, float h, List<Vector3> v, List<Vector2> uv, List<Vector3> n, List<int> t)
+        {
+            var p = new Vector3[8];
+            for (int i = 0; i < 8; i++) p[i] = c + new Vector3((i & 1) == 0 ? -half : half, (i & 2) == 0 ? 0f : h, (i & 4) == 0 ? -half : half);
+            Face(p[2], p[3], p[7], p[6], Vector3.up, v, uv, n, t);         // top
+            Face(p[0], p[1], p[3], p[2], Vector3.back, v, uv, n, t);       // -z
+            Face(p[5], p[4], p[6], p[7], Vector3.forward, v, uv, n, t);    // +z
+            Face(p[4], p[0], p[2], p[6], Vector3.left, v, uv, n, t);       // -x
+            Face(p[1], p[5], p[7], p[3], Vector3.right, v, uv, n, t);      // +x
+        }
+
+        static void Face(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 nrm, List<Vector3> v, List<Vector2> uv, List<Vector3> n, List<int> t)
+        {
+            int i = v.Count;
+            v.Add(a); v.Add(b); v.Add(c); v.Add(d);
+            uv.Add(new Vector2(0f, 0f)); uv.Add(new Vector2(1f, 0f)); uv.Add(new Vector2(1f, 1f)); uv.Add(new Vector2(0f, 1f));
+            n.Add(nrm); n.Add(nrm); n.Add(nrm); n.Add(nrm);
+            t.Add(i); t.Add(i + 1); t.Add(i + 2); t.Add(i); t.Add(i + 2); t.Add(i + 3);
         }
 
         const string IntroHologramLayer = Blindside.Cinematic.IntroHologram.LayerName;
@@ -302,7 +389,7 @@ namespace Blindside.Integration
             // the header, top centre under the top bar: TACTICAL HOLOGRAM + what it shows
             header = HudKit.NewRect("HoloHeader", parent);
             header.anchorMin = header.anchorMax = new Vector2(.5f, 1f); header.pivot = new Vector2(.5f, 1f);
-            header.sizeDelta = new Vector2(420f, 58f); header.anchoredPosition = new Vector2(0f, -HeaderY);
+            header.sizeDelta = new Vector2(420f, 86f); header.anchoredPosition = new Vector2(0f, -HeaderY);
             HudKit.AddImage(header, new Color(.02f, .08f, .16f, .78f));
             var line = HudKit.NewRect("DecoHeaderLine", header);
             line.anchorMin = new Vector2(0f, 0f); line.anchorMax = new Vector2(1f, 0f); line.pivot = new Vector2(.5f, 0f);
@@ -312,6 +399,16 @@ namespace Blindside.Integration
             Place(title.rectTransform, 0f, 6f, 420f, 22f);
             count = HudKit.AddText(header, "敵の推定位置", 15f, Color.white, false, TextAlignmentOptions.Top, "Count", UITheme.TextRole.Body);
             Place(count.rectTransform, 0f, 30f, 420f, 22f);
+            // the legend: the walls by kind, each in its colour
+            for (int i = 0; i < WallKindNames.Length; i++)
+            {
+                float x = 38f + i * 124f;
+                var sw = HudKit.NewRect("Swatch" + i, header);
+                Place(sw, x, 60f, 14f, 14f);
+                HudKit.AddImage(sw, WallKindColors[i]);
+                var nm = HudKit.AddText(header, WallKindNames[i], 15f, WallKindColors[i], false, TextAlignmentOptions.MidlineLeft, "Kind" + i, UITheme.TextRole.Body);
+                Place(nm.rectTransform, x + 20f, 56f, 100f, 22f);
+            }
 
             // the hint chip: TAB (a key cap) and what it does
             chip = HudKit.NewRect("HoloHint", parent);
@@ -345,10 +442,11 @@ namespace Blindside.Integration
             root = null;
             foreach (var m in new[] { mapMat, floorMat, gridMat, lineMat, foeMat, hostMat }) if (m != null) Destroy(m);
             mapMat = floorMat = gridMat = lineMat = foeMat = hostMat = null;
+            for (int i = 0; i < kindMats.Length; i++) { if (kindMats[i] != null) Destroy(kindMats[i]); kindMats[i] = null; }
             contacts.Clear(); hostMarks.Clear();
             if (canvas != null) Destroy(canvas.gameObject);
             canvas = null; view = null; viewGroup = null; header = chip = null; headerCount = null;
-            shown = 0f; holding = false; Showing = false;
+            shown = 0f; holding = false; Showing = false; TabTaken = false;
         }
 
         void OnDestroy() => Teardown();

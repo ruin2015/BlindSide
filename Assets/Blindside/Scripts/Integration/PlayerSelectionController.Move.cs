@@ -377,7 +377,7 @@ namespace Blindside.Integration
         // ================================================================
         void EndTurnClicked()
         {
-            if (!PlayerCanAct() || TutorialGate.Active || TutorialGate.HoldInput) return;   // the tutorial never hands the turn over (nor starts the op mid-briefing)
+            if (!PlayerCanAct() || TutorialGate.Active || TutorialGate.HoldInput || (TutorialGate.Guided && !TutorialGate.EndTurnOk && turns.Phase != MatchPhase.Deploy)) return;   // the tutorial never hands the turn over (nor starts the op mid-briefing)
             if (turns.Phase == MatchPhase.Deploy) { StartOperation(); return; }   // [作戦開始] (.Deploy.cs)
             foreach (var u in units) if (u.Alive && u.Team == side) u.Ended = true;
             UnitsChanged?.Invoke();

@@ -709,8 +709,12 @@ namespace Blindside.Turns
         /// `.sort((a,b)=>b.b-a.b)` on `bestTarget(u)?1:0`), each takes its full turn, then `ended=true`.
         /// Checks CheckWin after every unit's turn, same as kill()'s trailing checkWin() call.
         /// </summary>
+        /// <summary>A side whose phases pass with nobody acting (the first operation's script holds the enemy still).</summary>
+        public static OperatorTeam? HoldTeam;
+
         public IEnumerator RunTeamPhase(TurnManager tm, OperatorTeam team)
         {
+            if (HoldTeam == team) { yield return new WaitForSeconds(1.2f); yield break; }
             // aiPhase: await aiShootGadgets(team); if(G.over) return; if(team==='atk') await aiDrone();
             if (team == OperatorTeam.Defense) defPhase++;
             if (ShootGadgets != null) yield return ShootGadgets(team);

@@ -6,6 +6,9 @@
 // The tutorial comes in parts (TutorialSegment): the first one (moving, shooting, sight) is cut short by the emergency call just as CRUSHER
 // starts on walls and leads into the first operation; the walls follow after the HQ's tour (HubTutorial); every part, and one lesson per
 // gadget, can be played again from the training room, and those end back at the HQ.
+// The opening (a new game) plays in the training hall built on the first operation's building (TutorialMap.BuildTraining): CRUSHER
+// shows moving and shooting on one of its three enemies, explains sight, then FLARE takes one at a marked spot and the last one on
+// her own; as CRUSHER starts on walls the alarm cuts in and the operation (BLINDSIDE) begins.
 // Lines are CRUSHER's (Japanese, ko_ja_dictionary / glossary_ja terms).
 using System.Collections;
 using System.Collections.Generic;
@@ -196,6 +199,11 @@ namespace Blindside.Tutorial
             }
             if (stage != null) { stage.Revert(); stage = null; }
             CombatSystem.FloorHP = 0;
+            CombatSystem.FloorTeam = null;
+            CombatSystem.SureKillTeam = null;
+            Blindside.Movement.MovementSystem.QuietMoves = false;
+            Blindside.Movement.MovementSystem.EncounterHook = null;
+            foes.Clear(); foeMarkers.Clear(); showFoes = false;
             radio = null; guide = null; objective = null;
             foreach (var m in GetComponentsInChildren<TutorialMarker>()) Destroy(m.gameObject);
         }
@@ -205,13 +213,18 @@ namespace Blindside.Tutorial
         Canvas guideCanvas;
         /// <summary>The unit panel's height with its face poking up (190 + 30) and a gap.</summary>
         public const float RadioLiftOverPanel = 236f;
+        /// <summary>Past the attack forecast's panel (its left edge, its width and a gap), less the radio's own left edge.</summary>
+        public const float RadioShiftPastForecast = EngagePreview.PanelX + EngagePreview.W + 24f - TutorialRadio.BoxX;
 
         // the radio and the guide step aside while a battle cinematic is on screen (it hides the HUD the same way)
         void LateUpdate()
         {
+            if (showFoes) SyncFoes();
             if (radio == null || mb == null) return;
             bool show = !entranceOn && (mb.battleDirector == null || !mb.battleDirector.Directing);
             radio.Lift = sel != null && sel.UnitPanelUp ? RadioLiftOverPanel : 0f;   // (bottom left, over the unit panel while it's up)
+            // the attack forecast covers the left of the screen: the radio steps out to its right while it is up
+            radio.Shift = sel != null && sel.AimForecastLive != null ? RadioShiftPastForecast : 0f;
             if (radio.canvas.enabled != show) radio.canvas.enabled = show;
             if (guideCanvas == null && guide != null) guideCanvas = guide.GetComponentInParent<Canvas>();
             if (guideCanvas != null && guideCanvas.enabled != show) guideCanvas.enabled = show;
@@ -232,11 +245,23 @@ namespace Blindside.Tutorial
         IEnumerator Run()
         {
             sel = mb.selection;
+            flare = crusher = null;
+            foes.Clear();
             foreach (var u in mb.ActiveUnits)
             {
-                if (u.Team == Blindside.Data.OperatorTeam.Attack) flare = u;
-                else crusher = u;
+                string key = u.Op != null ? u.Op.key : "";
+                if (key == "FLARE") flare = u;
+                else if (key == "CRUSHER") crusher = u;
+                else if (u.Team != Blindside.Data.OperatorTeam.Attack) foes.Add(u);
             }
+            if (foes.Count > 0) ShowCones(null);   // the training hall: no cone on the floor until CRUSHER explains sight
+            // (the old yard: FLARE alone on the attack side, CRUSHER across)
+            if (flare == null || crusher == null)
+                foreach (var u in mb.ActiveUnits)
+                {
+                    if (u.Team == Blindside.Data.OperatorTeam.Attack) { if (flare == null) flare = u; }
+                    else if (crusher == null) crusher = u;
+                }
             if (radio == null)
             {
                 radio = TutorialRadio.Build(transform);
@@ -280,6 +305,15 @@ namespace Blindside.Tutorial
             }
 
             CombatSystem.FloorHP = 1;   // nobody falls in practice
+            if (foes.Count > 0)
+            {
+                // the training hall: the squad never falls, the targets do
+                CombatSystem.FloorTeam = Blindside.Data.OperatorTeam.Attack;
+                CombatSystem.SureKillTeam = Blindside.Data.OperatorTeam.Attack;   // (and every shot of the squad's hits and takes its target down)
+                yield return Training();
+                yield return Emergency();
+                yield break;
+            }
             if (StartStage <= 1) yield return Stage1();
             else
             {
@@ -937,6 +971,311 @@ namespace Blindside.Tutorial
             mb.TutorialToMainOperation(true);   // (disarms this tutorial: this coroutine ends here; the deployment opens with the briefing)
         }
 
+        // ================= the opening in the training hall (the first operation's building: TutorialMap.BuildTraining) =================
+        // CRUSHER shows how (draws a path to the south door, takes out the target whose back is turned), sight is explained with every
+        // cone on the floor, then FLARE: to the marked spot and the marked target, then the last one on her own. The enemies are marked
+        // (a red ring, the figure shown) the whole time; the squad can't fall (CombatSystem.FloorTeam), the enemies can.
+        public const string LHall = "ここは訓練場だ。\n次の作戦の建物を再現してある。";
+        public const string LHallFoes = "中には敵役が三人いる。\n赤い印が敵の位置だ。";
+        public const string LShowHow = "まずは俺が手本を見せる。\nよく見ておけ。";
+        public const string LDemoMove = "移動は、隊員を選んで「移動」を押し、\nマウスでなぞって経路を描く。";
+        public const string LDemoSpot = "見えるか？ あの敵は\nこちらに背を向けている。";
+        public const string LDemoFire = "攻撃は「攻撃」を押し、\nマウスで狙いを定めて左クリックだ。";
+        public const string LDemoDone = "こうして、敵に気づかれる前に仕留める。";
+        public const string LSight1 = "次は視界だ。建物内で戦う俺たちにとって、\n視界は命に直結する。";
+        public const string LSight2 = "青い範囲が俺の視界、\n赤い範囲があの敵の視界だ。";
+        public const string LSight3 = "先に相手を見つけた方が先制攻撃できる。\n敵の視界に入らないよう、\n背後や横から近づけ。";
+        public const string LSighted = "見えたな。気づかれる前に、\nそこから「攻撃」で撃て。";
+        public const string LSpotted ="見つかったぞ。\n敵の視界に入らないよう、\n最初からやり直せ。";
+        public const string LYourTurn = "次はお前の番だ、新入り。\nやってみろ。";
+        public const string LGuided = "印の地点まで移動して、\n目標の敵を倒せ。\n赤い範囲に入れば見つかるぞ。";
+        public const string LKillFail = "仕留め損ねたか。\nもう一度だ。";
+        public const string LGuidedDone = "いいだろう。";
+        public const string LFreeFoe = "最後の一人だ。今度は自分で考えて動き、\n倒してみろ。";
+        public const string LFreeDone = "上出来だ。伊達にうちの部隊に\n来たわけじゃないな。";
+        public const string GFoe = "目標";
+        public const string OGuided = "印の地点まで移動し、\n目標の敵を倒そう";
+        public const string OFreeFoe = "最後の敵を倒そう";
+        static readonly (string, string)[] CKill =
+            { ("左クリック", "フレアを選択"), ("「移動」", "経路を描いて移動"), ("「攻撃」", "狙いを定めて射撃"), ("ESC", "キャンセル") };
+        /// <summary>FLARE's move for one try at a target (m).</summary>
+        public const float TrainingMoveBudget = 14f;
+
+        readonly List<SimUnit> foes = new List<SimUnit>();
+        readonly List<(SimUnit u, TutorialMarker m)> foeMarkers = new List<(SimUnit, TutorialMarker)>();
+        bool showFoes;
+        /// <summary>The attack forecast has been gone through (once in the whole training).</summary>
+        bool forecastExplained;
+
+        IEnumerator Training()
+        {
+            forecastExplained = false;
+            SimUnit demoFoe = TutorialMap.DemoFoe < foes.Count ? foes[TutorialMap.DemoFoe] : null;
+            SimUnit guidedFoe = TutorialMap.GuidedFoe < foes.Count ? foes[TutorialMap.GuidedFoe] : null;
+            SimUnit freeFoe = TutorialMap.FreeFoe < foes.Count ? foes[TutorialMap.FreeFoe] : null;
+            crusher.Placed = true;
+            crusher.Ended = true;   // (the lessons are FLARE's: the instructor only moves in his demonstration)
+            yield return Say(LWelcome);
+            yield return Say(LUnit);
+
+            // the hall: the building, the enemies marked (they stay marked the whole time)
+            ShowFoes(true);
+            var cam = BattlefieldCamera.Instance;
+            BattlefieldCamera.InputLocked = true;
+            if (cam != null) cam.PanTo(7.5f, 7.5f, 700f);
+            yield return Say(LHall);
+            yield return Say(LHallFoes);
+            if (cam != null) cam.PanTo(flare.X + 2f, flare.Y - 2f, 600f);
+            BattlefieldCamera.InputLocked = false;
+            yield return Say(LShowHow);
+
+            if (demoFoe != null && demoFoe.Alive) yield return CrusherDemo(demoFoe);
+            yield return SightTalk(guidedFoe);
+
+            if (guidedFoe != null && guidedFoe.Alive)
+            {
+                yield return Say(LYourTurn);
+                // its cone stays drawn (the way in from the south is watched); FLARE's own beside it, nobody else's
+                ShowCones(u => u == guidedFoe, u => u != guidedFoe && u != flare);
+                yield return KillLesson(guidedFoe, TutorialMap.GuidedSpot, LGuided, OGuided, true);
+                yield return Say(LGuidedDone);
+            }
+            ShowCones(u => false, u => u == crusher);   // (from here the usual ones, the instructor's aside)
+            if (freeFoe != null && freeFoe.Alive) yield return KillLesson(freeFoe, null, LFreeFoe, OFreeFoe, false);
+            yield return Say(LFreeDone);
+        }
+
+        /// <summary>The cones on the floor: `show` null — none at all; otherwise the usual ones plus every unit `show` says, less every
+        /// unit `hide` says.</summary>
+        void ShowCones(System.Func<SimUnit, bool> show, System.Func<SimUnit, bool> hide = null)
+        {
+            var vp = mb.visionPolys;
+            if (vp == null) return;
+            vp.ForceHide = show == null ? (System.Func<SimUnit, bool>)(u => true) : hide;
+            vp.ForceShow = show;
+            vp.Refresh();
+        }
+
+        /// <summary>CRUSHER's demonstration: the hand picks him, presses 移動 and draws the path to the south door (he walks it: nobody is
+        /// met on the way), then 攻撃 — the aim sweeps onto the target and the burst takes it down (a sure kill: it is the example).</summary>
+        IEnumerator CrusherDemo(SimUnit foe)
+        {
+            var cam = BattlefieldCamera.Instance;
+            crusher.Ended = false; crusher.Acted = false; crusher.MoveLeft = 20f;
+            yield return Say(LDemoMove);
+            radio.Close();
+            if (cam != null) cam.PanTo(crusher.X + 1f, crusher.Y - 1f, 450f);
+            yield return Wait(.5f);
+            Blindside.Movement.MovementSystem.QuietMoves = true;
+            TutorialGate.Allow("move");
+            var path = sel.TutorialPlanPath(crusher, TutorialMap.DemoStand, 20f);
+            if (path == null) path = new List<Vector2> { new Vector2(crusher.X, crusher.Y), TutorialMap.DemoStand };
+            yield return DemoSelect(crusher);
+            var follow = StartCoroutine(FollowDemoCursor());
+            yield return sel.TutorialDemoMove(crusher, path, 1.6f, () => DemoPress("move", GMove));
+            StopCoroutine(follow);
+            guide.HideCursor();
+            TutorialGate.Allow();
+            Blindside.Movement.MovementSystem.QuietMoves = false;
+            yield return Wait(.3f);
+
+            // the target, its back to him
+            if (cam != null) cam.PanTo((crusher.X + foe.X) * .5f, (crusher.Y + foe.Y) * .5f, 500f);
+            yield return Wait(.5f);
+            guide.TargetLabel(FoeChip(foe), GFoe);
+            yield return Say(LDemoSpot);
+            yield return Say(LDemoFire);
+            radio.Close();
+            guide.HideTarget();
+
+            float accWas = crusher.AccuracyBonus;
+            crusher.AccuracyBonus += 200f;
+            foe.HP = 1;
+            for (int tries = 0; tries < 3 && foe.Alive; tries++)
+            {
+                crusher.Acted = false; crusher.Ended = false;
+                float to = Mathf.Atan2(foe.Y - crusher.Y, foe.X - crusher.X);
+                TutorialGate.Allow("fire");
+                yield return DemoSelect(crusher);
+                follow = StartCoroutine(FollowDemoCursor());
+                yield return sel.TutorialDemoFire(crusher, to - .7f, to, 1.6f, true, () => DemoPress("fire", GFire), () => guide.Click());
+                StopCoroutine(follow);
+                guide.HideCursor();
+                TutorialGate.Allow();
+                while (Directing()) yield return null;
+            }
+            crusher.AccuracyBonus = accWas;
+            crusher.HP = crusher.MaxHP;
+            sel.Deselect();
+            yield return Wait(.4f);
+            yield return Say(LDemoDone);
+            radio.Close();
+            // back beside FLARE (out of every enemy's sight), facing along the yard
+            yield return WalkUnit(crusher, new[] { new Vector2(crusher.X, crusher.Y), TutorialMap.CrusherBack }, 2.4f);
+            crusher.Facing = 0f;
+            crusher.Acted = false; crusher.Ended = true;
+            yield return Wait(.3f);
+        }
+
+        /// <summary>Two cones on the floor while CRUSHER talks about sight: his own (blue) and `foe`'s (red) — nobody else's.</summary>
+        IEnumerator SightTalk(SimUnit foe)
+        {
+            yield return Say(LSight1);
+            ShowCones(u => u == crusher || u == foe, u => u != crusher && u != foe);   // (not even FLARE's)
+            var cam = BattlefieldCamera.Instance;
+            if (cam != null && foe != null) cam.PanTo((crusher.X + foe.X) * .5f, (crusher.Y + foe.Y) * .5f, 600f);
+            yield return Say(LSight2);
+            yield return Say(LSight3);
+            ShowCones(null);
+            if (cam != null) cam.PanTo(flare.X, flare.Y - 1f, 500f);
+        }
+
+        /// <summary>
+        /// FLARE takes `foe` down: 移動 and 攻撃 are both offered (and as often as it takes: each try gives the move and the action back);
+        /// `spot` (if any) is marked until she gets there. Done when the target is down, however (a shot, an encounter); a try that ends
+        /// with her action spent and the target standing is answered with LKillFail. The forecast is explained the first time it comes up.
+        /// </summary>
+        IEnumerator KillLesson(SimUnit foe, Vector2? spot, string line, string goal, bool stealth)
+        {
+            var spotMarker = spot.HasValue ? TutorialMarker.Create(spot.Value, transform) : null;
+            bool reached = !spot.HasValue;
+            // (stealth: every try starts over from here — FLARE where she stood, the target as it stood)
+            var flareStart = new Vector2(flare.X, flare.Y); float flareFacing = flare.Facing;
+            var foeStart = new Vector2(foe.X, foe.Y); float foeFacing = foe.Facing;
+            bool spotted = false, sighted = false, sightedSaid = false;
+            string firstLine = line;
+            // on the way, only the target is met. With `stealth` there is no encounter fight at all: the target seeing FLARE first ends
+            // the move there (found out: try again); FLARE seeing it first ends the move too, and the shot is hers to take with 攻撃
+            Blindside.Movement.MovementSystem.EncounterHook = (mover, e, kind) =>
+            {
+                if (mover != flare) return Blindside.Movement.EncounterHookResult.Normal;
+                if (e != foe) return Blindside.Movement.EncounterHookResult.Ignore;
+                if (!stealth) return Blindside.Movement.EncounterHookResult.Normal;
+                if (kind != EncounterKind.SelfOnly) { spotted = true; foe.AlertT = Time.unscaledTime; }
+                else sighted = true;
+                return Blindside.Movement.EncounterHookResult.Stop;
+            };
+            yield return Say(line);
+            radio.Close();
+            if (spot.HasValue) yield return ShowPoint(spot.Value);
+            objective.Set(goal, CKill);
+            while (foe.Alive)
+            {
+                flare.MoveLeft = TrainingMoveBudget; flare.Acted = false; flare.Ended = false;
+                flare.HP = flare.MaxHP;
+                spotted = false;
+                TutorialGate.Allow("move", "fire");
+                radio.Say(line, false);
+                TutorialGate.BlockInput = false;
+                while (foe.Alive && !spotted && !(flare.Acted && !Directing()))
+                {
+                    if (!reached && Vector2.Distance(new Vector2(flare.X, flare.Y), spot.Value) <= TutorialMap.ArriveRadius)
+                    {
+                        reached = true;
+                        if (spotMarker != null) { Destroy(spotMarker.gameObject); spotMarker = null; }
+                    }
+                    if (sighted && !sightedSaid)
+                    {
+                        // she saw it first and stopped: the shot from where she stands
+                        sightedSaid = true;
+                        TutorialGate.BlockInput = true;
+                        guide.HideFrame(); guide.HideTarget(); guide.HideMouseTip();
+                        while (Directing()) yield return null;
+                        sel.Deselect();
+                        reached = true;
+                        if (spotMarker != null) { Destroy(spotMarker.gameObject); spotMarker = null; }
+                        flare.Facing = Mathf.Atan2(foe.Y - flare.Y, foe.X - flare.X);
+                        yield return Say(LSighted);
+                        line = LSighted;
+                        radio.Say(line, false);
+                        TutorialGate.BlockInput = false;
+                        continue;
+                    }
+                    if (!forecastExplained && sel.AimForecastLive != null)
+                    {
+                        forecastExplained = true;
+                        guide.HideTarget();
+                        yield return ExplainAimForecast(sel.AimForecastLive);
+                        radio.Say(line, false);
+                        TutorialGate.BlockInput = false;
+                        continue;
+                    }
+                    if (Directing()) { guide.HideTarget(); guide.HideFrame(); guide.HideMouseTip(); }
+                    else
+                    {
+                        guide.TargetLabel(FoeChip(foe), GFoe);
+                        // the guided one points at what to click; the last one is hers alone (no click guide)
+                        bool fire = reached || flare.MoveLeft < .35f;
+                        if (stealth) PointGuide(fire ? "fire" : "move", fire ? GFire : GMove);
+                        else { guide.HideFrame(); guide.HideMouseTip(); }
+                    }
+                    yield return null;
+                }
+                TutorialGate.BlockInput = true;
+                TutorialGate.Allow();
+                guide.HideFrame(); guide.HideTarget();
+                while (Directing()) yield return null;
+                sel.Deselect();
+                yield return Wait(.4f);
+                if (!foe.Alive) break;
+                if (spotted)
+                {
+                    // found out: the camera on who saw her, then both put back
+                    var cam = BattlefieldCamera.Instance;
+                    if (cam != null) cam.PanTo((flare.X + foe.X) * .5f, (flare.Y + foe.Y) * .5f, 500f);
+                    yield return Say(LSpotted);
+                }
+                else yield return Say(LKillFail);
+                if (stealth)
+                {
+                    flare.MoveTo(flareStart.x, flareStart.y); flare.Facing = flareFacing;
+                    foe.MoveTo(foeStart.x, foeStart.y); foe.Facing = foeFacing; foe.HP = foe.MaxHP;
+                    foe.AlertT = -1e9f;
+                    if (spot.HasValue && reached) { reached = false; spotMarker = TutorialMarker.Create(spot.Value, transform); }
+                    sighted = sightedSaid = false;
+                    line = firstLine;
+                    var cam = BattlefieldCamera.Instance;
+                    if (cam != null) cam.PanTo(flare.X + 1f, flare.Y - 2f, 400f);
+                    yield return Wait(.45f);
+                }
+            }
+            Blindside.Movement.MovementSystem.EncounterHook = null;
+            if (spotMarker != null) Destroy(spotMarker.gameObject);
+            guide.HideTarget(); guide.HideFrame(); guide.HideMouseTip();
+            objective.Hide();
+            flare.HP = flare.MaxHP; flare.Acted = false; flare.Ended = false;
+        }
+
+        bool Directing() => (mb.battleDirector != null && mb.battleDirector.Directing) || (sel != null && sel.Busy);
+
+        static Vector3 FoeChip(SimUnit u) => u.View != null ? u.View.LabelPoint + Vector3.up * .5f : GridSpace.GridToWorld(u.X, u.Y, 2f);
+
+        /// <summary>The enemies marked (a red ring under each, the figure shown through the walls) — or not.</summary>
+        void ShowFoes(bool on)
+        {
+            showFoes = on;
+            foreach (var (_, m) in foeMarkers) if (m != null) Destroy(m.gameObject);
+            foeMarkers.Clear();
+            if (on) foreach (var f in foes) if (f.Alive) foeMarkers.Add((f, TutorialMarker.Create(new Vector2(f.X, f.Y), transform, UIPalette.Foe)));
+        }
+
+        void SyncFoes()
+        {
+            float now = Time.unscaledTime;
+            for (int i = foeMarkers.Count - 1; i >= 0; i--)
+            {
+                var (u, m) = foeMarkers[i];
+                if (u.Alive)
+                {
+                    if (u.RevealT < now + .5f) u.RevealT = now + .5f;
+                    if (m != null) m.MoveTo(new Vector2(u.X, u.Y));
+                    continue;
+                }
+                if (m != null) Destroy(m.gameObject);
+                foeMarkers.RemoveAt(i);
+            }
+        }
+
         // ================= stage 3: vision =================
         IEnumerator Stage3()
         {
@@ -1177,7 +1516,8 @@ namespace Blindside.Tutorial
         IEnumerator ExplainAimForecast(EngagePreview preview)
         {
             TutorialGate.BlockInput = true;
-            guide.HideFrame();
+            sel.TutorialHoldAim(true);   // (the aim stays on the target however the mouse moves: the forecast stays up)
+            guide.HideFrame(); guide.HideMouseTip();
             yield return Say(LForecast);
             radio.Close();
             yield return Wait(.1f);
@@ -1186,6 +1526,7 @@ namespace Blindside.Tutorial
             EndForecastTour();
             yield return Wait(.2f);
             yield return Say(LForecastDone);
+            sel.TutorialHoldAim(false);
         }
 
         void EndForecastTour()
@@ -1197,7 +1538,7 @@ namespace Blindside.Tutorial
         void EndForecastLesson()
         {
             EndForecastTour();
-            if (sel != null) sel.TutorialCloseForecast();
+            if (sel != null) { sel.TutorialHoldAim(false); sel.TutorialCloseForecast(); }
         }
 
         // ---- walls: one a bullet goes through, one it doesn't ----

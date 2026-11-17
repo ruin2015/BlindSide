@@ -163,12 +163,13 @@ namespace Blindside.UI
             busy = true;
             SaveSystem.NewGame();
             MapStore.SelectedStem = "";
-            // no training room first: straight into the story's first operation, which teaches as it is played (Tutorial.TutorialDeployGuide)
-            var first = Blindside.Progress.Campaign.FirstMain();
-            AutoSave.TutorialFinished(first != null ? first.stem : "");
-            Wipe(() => StartFirstOperation(first));
+            // the training hall first (moving, shooting, sight — cut short by the alarm), then the story's first operation
+            Blindside.Tutorial.TutorialDirector.Segment = Blindside.Tutorial.TutorialSegment.First;
+            if (title != null) title.LaunchTutorial();
+            else Wipe(SceneFlow.GoTutorial);
         }
 
+        /// <summary>(kept: the new game used to go straight into the first operation)</summary>
         static void StartFirstOperation(Blindside.Progress.Quest first)
         {
             Blindside.Map.MapData map = null;

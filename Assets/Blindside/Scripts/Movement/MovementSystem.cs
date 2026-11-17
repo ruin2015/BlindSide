@@ -327,13 +327,20 @@ namespace Blindside.Movement
         /// hostage within .5 of the next step stops the walk with a log line. Leftover budget under .35
         /// (or any stop) zeroes moveLeft. `onDone(stopped)` reports the source's return value.
         /// </summary>
+        /// <summary>Moves meet nobody (no encounter is checked): the training hall's demonstration walks past its targets.</summary>
+        public static bool QuietMoves;
+
+        /// <summary>The training hall's say over an encounter about to happen (mover, enemy, kind): Normal plays it, Ignore passes the
+        /// enemy by, Stop ends the move there with no fight. Null: every encounter plays.</summary>
+        public static System.Func<ITurnUnit, ITurnUnit, EncounterKind, EncounterHookResult> EncounterHook;
+
         public IEnumerator MoveAlong(ITurnUnit u, List<Vector2> pts, bool human, System.Action<bool> onDone = null)
         {
-            bool stopped = false, halt = false;
+            bool stopped = false, halt = false, hookStop = false;
             // const trigM=new Set(), trigE=new Set();
             // for(const e of enemies()){ if(sees(u,e)) trigM.add(e.id); if(sees(e,u)) trigE.add(e.id); }
             // — pairs already in sight when the walk starts never count as a new encounter.
-            bool checkEnc = Vision != null && Combat != null;
+            bool checkEnc = Vision != null && Combat != null && !QuietMoves;
             var trigM = new HashSet<ITurnUnit>();
             var trigE = new HashSet<ITurnUnit>();
             if (checkEnc)
@@ -406,11 +413,18 @@ namespace Blindside.Movement
                         if (k == null) continue;
                         // if(es&&!trigE.has(e.id)){ trigE.add(e.id); if(us) trigM.add(e.id); enc={e,kind:us?2:3}; break; }
                         // if(us&&!trigM.has(e.id)){ trigM.add(e.id); enc={e,kind:1}; break; }
+                        if (EncounterHook != null)
+                        {
+                            var hr = EncounterHook(u, e, k.Value);
+                            if (hr == EncounterHookResult.Ignore) continue;
+                            if (hr == EncounterHookResult.Stop) { hookStop = true; break; }
+                        }
                         if (k.Value == EncounterKind.SelfOnly) trigM.Add(e);
                         else { trigE.Add(e); if (us) trigM.Add(e); }
                         encE = e; encK = k.Value;
                         break;
                     }
+                    if (hookStop) { stopped = true; halt = true; break; }
                     // if(enc){ const r=await resolveEncounter(u,enc.e,enc.kind,human); if(r==='stop'){ stopped=true; break outer; } }
                     if (encE != null)
                     {
@@ -489,6 +503,8 @@ namespace Blindside.Movement
 
         static string KrOf(ITurnUnit u) => u is IOperatorNamed n && !string.IsNullOrEmpty(n.Kr) ? n.Kr : u.Id;
     }
+
+    public enum EncounterHookResult { Normal, Ignore, Stop }
 
     /// <summary>u.lockFacing (視界固定): while set, moveAlong keeps the unit's facing instead of turning it
     /// toward each step.</summary>

@@ -31,6 +31,10 @@ namespace Blindside.Tutorial
         public float Lift;
         float liftNow;
         float BoxYPos => BoxBottom + liftNow;
+        /// <summary>How far right of BoxX the box wants to sit (eased): out from under the attack forecast while that is up.</summary>
+        public float Shift;
+        float shiftNow;
+        float BoxXPos => BoxX + shiftNow;
         public static readonly Color CrusherColor = UIPalette.Hex("#EAAF20");
 
         public Canvas canvas;
@@ -128,12 +132,13 @@ namespace Blindside.Tutorial
                 closeClock += dt;
                 float k = 1f - Mathf.Clamp01(closeClock / CloseTime);
                 group.alpha = k;
-                box.anchoredPosition = new Vector2(BoxX - SlideFrom * (1f - k), BoxYPos);
+                box.anchoredPosition = new Vector2(BoxXPos - SlideFrom * (1f - k), BoxYPos);
                 if (closeClock >= CloseTime) { closeClock = -1f; gameObject.SetActive(false); }
                 return;
             }
             if (!open) return;
             liftNow = Mathf.MoveTowards(liftNow, Lift, LiftSpeed * dt);
+            shiftNow = Mathf.MoveTowards(shiftNow, Shift, LiftSpeed * 2f * dt);
             clock += dt;
             Evaluate(clock);
             if (wantsClick && !Advanced && Pressed())
@@ -159,7 +164,7 @@ namespace Blindside.Tutorial
             // open: slide + fade; the face comes in through a few flickers
             float o = opening ? UIEase.Tactical(t / OpenTime) : 1f;
             group.alpha = o;
-            box.anchoredPosition = new Vector2(BoxX - SlideFrom * (1f - o), BoxYPos);
+            box.anchoredPosition = new Vector2(BoxXPos - SlideFrom * (1f - o), BoxYPos);
             float flick = opening && t < OpenTime + .12f ? ((int)(t * 30f) % 3 == 0 ? .25f : 1f) : 1f;
             faceGroup.alpha = flick;
 

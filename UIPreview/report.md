@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-16 15:21
+Screen 1440x810 · 0 issues · generated 2026-11-17 17:04
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -147,6 +147,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | support_fire_badge | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_wall_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_wall_card_shot | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| tutorial_wall_popup | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_gadget_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | deploy_wall_intel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_hint_undrop | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -161,19 +162,19 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 82종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 83종)
 
 - BattleCallout ×2
 - Brighten ×6
 - Chip ×575
 - ClickRelay ×5
 - CornerBrackets ×30
-- CutCornerGraphic ×255
+- CutCornerGraphic ×256
 - EngagePreview ×5
 - ExpGainPopup ×2
 - HazardStripe ×169
 - HubArmoryScreen ×7
-- HubHover ×69
+- HubHover ×75
 - HubListPanel ×5
 - HubLoadoutScreen ×3
 - HubMenu ×2
@@ -191,7 +192,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
 - KitBannerStrip ×57
-- KitBrighten ×118
+- KitBrighten ×131
 - KitChoice ×5
 - KitCommandMenu ×16
 - KitCoopRankUp ×2
@@ -204,7 +205,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitPointer ×59
 - KitRoster ×38
 - KitSaveIndicator ×1
-- KitShadow ×140
+- KitShadow ×141
 - KitSlider ×6
 - KitStepper ×1
 - KitSupportBadge ×1
@@ -213,14 +214,14 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitTextButton ×65
 - KitTint ×325
 - KitTitleLeft ×6
-- LintIgnoreClip ×906
+- LintIgnoreClip ×904
 - LintIgnoreOverlap ×342
 - MainMenuScreen ×6
 - OperationResultScreen ×5
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×317
-- SlantedGraphic ×3258
+- SlantedGraphic ×3261
 - SlantedMask ×311
 - StageClick ×2
 - TacticalPanel ×1231
@@ -231,10 +232,11 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialGuide ×4
 - TutorialObjective ×2
 - TutorialOperatorCard ×1
-- TutorialRadio ×17
+- TutorialRadio ×18
 - TutorialSiren ×1
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
+- TutorialWallPopup ×1
 - UIContactAlert ×38
 - UIGlitchImage ×343
 - UIGlitchName ×60
@@ -382,6 +384,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | support_fire_badge | 1440x810 | 戦闘シーン — 支援射撃バッジ |
 | tutorial_wall_card | 1440x810 | チュートリアル 壁の種類 (三種類) |
 | tutorial_wall_card_shot | 1440x810 | チュートリアル 壁の種類 (貫通) |
+| tutorial_wall_popup | 1440x810 | 最初の作戦 壁のポップアップ |
 | tutorial_gadget_card | 1440x810 | チュートリアル フレアのガジェット |
 | deploy_wall_intel | 1440x810 | 配置 — 偵察情報 (強化壁・電気) |
 | hud_hint_undrop | 1440x810 | HUD — 案内バー 降下取り消し (ボタン2つ) |

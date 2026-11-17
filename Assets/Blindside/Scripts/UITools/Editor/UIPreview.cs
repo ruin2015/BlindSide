@@ -171,6 +171,7 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewTutorial.SupportBadge, label = "戦闘シーン — 支援射撃バッジ", build = UIPreviewTutorial.BuildSupportBadge },
             new State { name = UIPreviewTutorial.WallCard3, label = "チュートリアル 壁の種類 (三種類)", build = s => UIPreviewTutorial.BuildWallCard(s, true) },
             new State { name = UIPreviewTutorial.WallCard2, label = "チュートリアル 壁の種類 (貫通)", build = s => UIPreviewTutorial.BuildWallCard(s, false) },
+            new State { name = UIPreviewTutorial.WallPopup, label = "最初の作戦 壁のポップアップ", build = s => UIPreviewTutorial.BuildWallPopup(s) },
             new State { name = UIPreviewTutorial.GadgetCard, label = "チュートリアル フレアのガジェット", build = UIPreviewTutorial.BuildGadgetCard },
             new State { name = UIPreviewTutorial.WallIntel, label = "配置 — 偵察情報 (強化壁・電気)", build = UIPreviewTutorial.BuildWallIntel },
             new State { name = UIPreviewTutorial.HintUndrop, label = "HUD — 案内バー 降下取り消し (ボタン2つ)", build = UIPreviewTutorial.BuildHintUndrop },

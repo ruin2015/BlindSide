@@ -49,6 +49,20 @@ namespace Blindside.Integration
         /// <summary>FIRE's aim is on an enemy and its attack forecast is up beside it (null otherwise) — the tutorial explains it then.</summary>
         public EngagePreview AimForecastLive => aimForecastTarget != null && engagePreview != null && engagePreview.IsLive ? engagePreview : null;
 
+        bool aimHeld;
+        /// <summary>The tutorial holds FIRE's aim on the forecast's target (the mouse moves nothing; the forecast stays up beside it) —
+        /// or lets it follow the mouse again.</summary>
+        public void TutorialHoldAim(bool on)
+        {
+            aimHeld = on;
+            if (!on) { lastAimMouse = new Vector2(float.NaN, float.NaN); return; }
+            var u = uiUnit; var t = aimForecastTarget;
+            if (mode != Mode.Fire || u == null || t == null) return;
+            float a = Mathf.Atan2(t.Y - u.Y, t.X - u.X);
+            fireAim = a; fireCast = FireCast(u, a); hasFireCast = true; u.Facing = a;
+            aimLostAt = -1f;
+        }
+
         /// <summary>An item is being aimed (the throw's arc follows the mouse).</summary>
         public bool InThrowMode => mode == Mode.Throw;
 

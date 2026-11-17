@@ -249,6 +249,12 @@ namespace Blindside.Combat
 
         /// <summary>The lowest HP a hit can leave (0 = a hit can kill). The tutorial holds it at 1 so nobody falls in its practice duel.</summary>
         public static int FloorHP = 0;
+        /// <summary>FloorHP holds only for this side (null: everyone) — the training hall: the squad never falls, its targets do.</summary>
+        public static OperatorTeam? FloorTeam;
+        static int Floor(ICombatUnit t) => FloorTeam == null || t.Team == FloorTeam.Value ? FloorHP : 0;
+        /// <summary>The training hall: this side's shots never miss and the first round that hits takes the target down (null: off).</summary>
+        public static OperatorTeam? SureKillTeam;
+        static bool SureKill(ICombatUnit a) => SureKillTeam != null && a.Team == SureKillTeam.Value;
 
         public event System.Action<ICombatUnit, ICombatUnit> OnShotStart;             // attacker, target — the line is open (revealT)
         public event System.Action<ICombatUnit, ICombatUnit, bool, bool> OnShotFired; // attacker, target, hit, crit
@@ -269,6 +275,7 @@ namespace Blindside.Combat
         public IEnumerator Shoot(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt, bool sureHit = false)
         {
             if (!attacker.Alive || !target.Alive) yield break;
+            if (SureKill(attacker)) sureHit = true;
             // behind a raised shield (BASTION) there is no shooting — not in an encounter, not in return fire (co-op rank 8: he can)
             if (attacker.ShieldUp && !CoopRules.CanFireShielded(attacker))
             {
@@ -333,9 +340,10 @@ namespace Blindside.Combat
                         crit = Blindside.Core.GameRng.Range(0f, 100f) < hsChance;
                         int d = crit ? dmg * 2 : dmg;
                         if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
+                        if (SureKill(attacker)) d = Mathf.Max(d, target.HP);
                         dealt = d;
                         hits++; total += d;
-                        target.HP = Mathf.Max(FloorHP, target.HP - d);
+                        target.HP = Mathf.Max(Floor(target), target.HP - d);
                         if (target.HP <= 0 && target is IItemEffects rv && rv.ReviveHp > 0) rv.Revive();   // (除細動器: it never goes down)
                         if (crit) headshots++;
                         if (!down)
@@ -436,7 +444,7 @@ namespace Blindside.Combat
                 float takenScale = t is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
                 if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
                 dealt = d;
-                t.HP = Mathf.Max(FloorHP, t.HP - d);
+                t.HP = Mathf.Max(Floor(t), t.HP - d);
                 t.View?.PlayHit(crit);
                 OnDamage?.Invoke(t, d, crit);
             }
@@ -567,7 +575,7 @@ namespace Blindside.Combat
                     float takenScale = target is ICombatModifiers tm ? tm.DamageTakenScale : 1f;
                     if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
                     o.damage = d;
-                    targetHp = Mathf.Max(FloorHP, targetHp - d);
+                    targetHp = Mathf.Max(Floor(target), targetHp - d);
                 }
                 into?.Add(o);
             }
@@ -577,6 +585,7 @@ namespace Blindside.Combat
         {
             var o = new VolleyOutcome();
             if (attacker.ShieldUp && !CoopRules.CanFireShielded(attacker)) return o;
+            if (SureKill(attacker)) sureHit = true;
             WeaponData w = attacker.Weapon;
             if (w == null || path.Blocked || Distance(attacker, target) > w.range + 4f) return o;
             o.fired = true; o.preempt = preempt;
@@ -600,8 +609,9 @@ namespace Blindside.Combat
                 bool crit = (float)r.NextDouble() * 100f < o.hsChance;
                 int d = crit ? dmg * 2 : dmg;
                 if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
+                if (SureKill(attacker)) d = Mathf.Max(d, targetHp);
                 o.hits++; o.total += d; if (crit) o.crits++;
-                targetHp = Mathf.Max(FloorHP, targetHp - d);
+                targetHp = Mathf.Max(Floor(target), targetHp - d);
                 if (targetHp <= 0 && revive > 0) { targetHp = revive; revive = 0; }
             }
             if (sureHit) o.chance = 100;

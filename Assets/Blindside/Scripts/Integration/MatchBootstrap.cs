@@ -30,6 +30,9 @@ namespace Blindside.Integration
         public bool Captive { get; set; }
         /// <summary>A captive the squad's sight has found: its figure shows from then on.</summary>
         public bool CaptiveSeen { get; set; }
+        /// <summary>Waits off the map for its scene (the first operation's script: the ambush, IGNIS's arrival): not placed, no turn, not
+        /// on the squad bar, not dropped at the deployment, not on the hologram. The script clears it when the unit comes on.</summary>
+        public bool Reserve { get; set; }
         /// <summary>Carries a shop drone (HubCatalog.ReconDroneKey) out of the HQ — the player's operators in a real match only.</summary>
         public bool ShopDrone { get; set; }
         // growth (Progress.ProgressBonus: the player's operators in a real match); neutral for everyone else
@@ -479,7 +482,7 @@ namespace Blindside.Integration
             RescueMatch = rescueMatch;
             var startSave = Blindside.Save.SaveSystem.Current;
             FirstMainQuest = !tutorialMode && !PlaySession.IsTest && (startSave == null || Blindside.Progress.Campaign.MainIndex(startSave.lastMap) == 0);
-            FreeDrone = tutorialMode || PlaySession.IsTest;
+            FreeDrone = true;   // (the basic drone is every operator's again; a shop drone only makes it better)
             NoAbilities = !tutorialMode && mapData.noAbilities && playerTeam == OperatorTeam.Attack;
             var roster = rescueMatch ? mapData.RescueRoster() : new List<MapCaptive>();
             RescueKeys.Clear();
@@ -497,7 +500,18 @@ namespace Blindside.Integration
             var atkSpawn = mapData.anchors.attackerDrops;
             // (an operation that names its squad fields only those, for the player's side)
             var fielded = playerTeam == OperatorTeam.Attack && mapData.squadKeys != null && mapData.squadKeys.Length > 0 ? mapData.squadKeys : AttackerKeys;
-            if (tutorialMode)
+            // the opening's training hall (a tutorial map with terrorists: TutorialMap.BuildTraining): FLARE and CRUSHER together on the
+            // attack side, the terrorists where the map puts them
+            bool training = tutorialMode && mapData.terrorists != null && mapData.terrorists.Length > 0;
+            if (training)
+            {
+                var flare = MakeUnit("atk1", OperatorTeam.Attack, atkSpawn[0].x, atkSpawn[0].y, weaponAr);
+                flare.Op = LoadOperator("FLARE"); flare.Uid = 2;
+                var crusher = MakeUnit("atk2", OperatorTeam.Attack, atkSpawn[1].x, atkSpawn[1].y, weaponAr);
+                crusher.Op = LoadOperator("CRUSHER"); crusher.Uid = 1;
+                units.Add(flare); units.Add(crusher);
+            }
+            else if (tutorialMode)
             {
                 // the tutorial: FLARE alone, standing at the first drop point; CRUSHER (the instructor) on the other side at the first
                 // defender start, kept off the map (not placed) until a lesson puts him somewhere
@@ -535,7 +549,7 @@ namespace Blindside.Integration
                 units.Add(MakeUnit(ds.operatorKey, OperatorTeam.Defense, ds.cell.x, ds.cell.y, weaponPst, ds.facing));
             // the map's generic terrorists beyond the five (MapData.terrorists): no ability, each with its own gun
             var terroristGuns = new List<(SimUnit u, WeaponData w)>();
-            if (!tutorialMode && mapData.terrorists != null)
+            if ((!tutorialMode || training) && mapData.terrorists != null)
                 for (int i = 0; i < mapData.terrorists.Length; i++)
                 {
                     var t = mapData.terrorists[i];
@@ -558,6 +572,27 @@ namespace Blindside.Integration
                 foreach (var u in units)
                     if (u.Team == OperatorTeam.Attack && !u.Captive) { u.Op = LoadOperator(atkKeys[atkIdx++]); u.Uid = ++uid; }
                 for (int i = 0; i < captives.Count; i++) { captives[i].Op = LoadOperator(RescueKeys[i]); captives[i].Uid = ++uid; }
+            }
+            else if (training)
+            {
+                uid = 2;
+                foreach (var u in units) if (u.Team == OperatorTeam.Defense) u.Uid = ++uid;
+            }
+            // the first operation's script (Tutorial.TutorialOperation): the ambush's terrorists and IGNIS wait off the map until their scene
+            if (!tutorialMode && playerTeam == OperatorTeam.Attack && Blindside.Tutorial.TutorialOperation.Due())
+            {
+                var cells = Blindside.Tutorial.TutorialOperation.AmbushCells;
+                for (int i = 0; i < cells.Length; i++)
+                {
+                    var tu = MakeUnit(MapData.TerroristKey + "R" + (i + 1), OperatorTeam.Defense, cells[i].x, cells[i].y, weaponPst);
+                    tu.Op = LoadOperator(MapData.TerroristKey); tu.Uid = ++uid; tu.Reserve = true;
+                    units.Add(tu);
+                    terroristGuns.Add((tu, LoadWeapon("Weapon_" + MapData.TerroristWeapons[0])));
+                }
+                var ig = Blindside.Tutorial.TutorialOperation.IgnisCell;
+                var ignis = MakeUnit("atkIGNIS", OperatorTeam.Attack, ig.x, ig.y, weaponAr, Mathf.PI / 2f);
+                ignis.Op = LoadOperator("IGNIS"); ignis.Uid = ++uid; ignis.Reserve = true;
+                units.Add(ignis);
             }
             // mkUnit(team,op,...): `Object.assign({},op,{... hp:op.hp, maxHp:op.hp ...})` — hp, mv and
             // weapon all come from the operator record (MakeUnit's 100/3/AR|PST are only fallbacks
@@ -598,8 +633,9 @@ namespace Blindside.Integration
             // still aboard the helicopter: not in the scene, no sight, until it is dropped in the deploy phase.
             if (playerTeam == OperatorTeam.Attack && !tutorialMode)
                 foreach (var u in units) if (u.Team == OperatorTeam.Attack) u.Placed = false;
-            if (tutorialMode)
+            if (tutorialMode && !training)
                 foreach (var u in units) if (u.Team == OperatorTeam.Defense) u.Placed = false;
+            foreach (var u in units) if (u.Reserve) u.Placed = false;
             // startGame() (defense side): no attackers exist yet — they appear when the preparation ends ([作戦開始]).
             if (playerTeam == OperatorTeam.Defense)
                 foreach (var u in units) if (u.Team == OperatorTeam.Attack) u.Placed = false;

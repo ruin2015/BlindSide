@@ -28,7 +28,7 @@ MonoBehaviour:
     operationCode: BLINDSIDE
     operationNameJa: "\u30D6\u30E9\u30A4\u30F3\u30C9\u30B5\u30A4\u30C9"
     briefWeather: "\u65E5\u4E2D \xB7 \u6674\u308C \xB7 \u8996\u754C\u826F\u597D"
-    briefLocation: "\u90CA\u5916 \xB7 \u76EE\u6A19: \u6B66\u88C5\u52E2\u529B\u306E\u6F5C\u4F0F\u5EFA\u7269"
+    briefLocation: "\u90CA\u5916 \xB7 \u76EE\u6A19: \u4EBA\u8CEA\u306E\u6551\u51FA"
     briefClock: 
     night: 0
     rain: 0
@@ -43,8 +43,7 @@ MonoBehaviour:
     squad:
     - CRUSHER
     - FLARE
-    - SERUM
-    noAbilities: 1
+    noAbilities: 0
     squadSize: 0
     briefOpening: 
     hostageStandoff: 0
@@ -100,3 +99,29 @@ MonoBehaviour:
     squadSize: 5
     briefOpening: "\u4F5C\u6226\u540D\u3001\u30F4\u30A7\u30F3\u30C7\u30C3\u30BF\u3002\n\u30D6\u30EA\u30FC\u30D5\u30A3\u30F3\u30B0\u3092\u958B\u59CB\u3059\u308B\u3002"
     hostageStandoff: 1
+  - id: map_tutorial
+    displayName: "\u8A13\u7DF4\u5834"
+    listed: 0
+    mapJson: {fileID: 4900000, guid: ea02b8704c21e3e409486f8422a1a08f, type: 3}
+    sceneName: 
+    sourceStem: "\u8A13\u7DF4\u5834"
+    rescue: 0
+    rescueHostages: []
+    questKind: 1
+    questTime: 0
+    mainOrder: 2
+    daysAfterPrevious: 15
+    operationCode: 
+    operationNameJa: 
+    briefWeather: 
+    briefLocation: 
+    briefClock: 
+    night: 0
+    rain: 0
+    dusk: 0
+    challenges: []
+    squad: []
+    noAbilities: 0
+    squadSize: 0
+    briefOpening: 
+    hostageStandoff: 0

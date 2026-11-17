@@ -568,7 +568,10 @@ namespace Blindside.UI
             if (matchBootstrap == null) return false;
             Blindside.Tutorial.TutorialDirector.Prepare(matchBootstrap);
             launchingTutorial = true;
-            if (Launch(OperatorTeam.Attack, Blindside.Tutorial.TutorialMap.Build(), null, skipIntro: true)) return true;
+            // the opening plays in the training hall (the first operation's building); the other parts keep the old yard
+            var map = Blindside.Tutorial.TutorialDirector.Segment == Blindside.Tutorial.TutorialSegment.First
+                ? Blindside.Tutorial.TutorialMap.BuildTraining() : Blindside.Tutorial.TutorialMap.Build();
+            if (Launch(OperatorTeam.Attack, map, null, skipIntro: true)) return true;
             Blindside.Tutorial.TutorialDirector.Disarm(matchBootstrap);
             return false;
         }
