@@ -328,13 +328,14 @@ namespace Blindside.UI
 
         void BastionStats()
         {
-            var list = new Option[6];
+            var list = new Option[5];
             for (int i = 0; i < 5; i++)
             {
                 int stat = i;
                 list[i] = new Option { title = KitGrowthPanel.StatNames[i], sub = "を鍛える  ·  " + Drills[i], icon = StatIcons[i], click = () => BastionPartner(stat) };
             }
-            list[5] = new Option { title = "訓練プログラム", sub = "これまでの訓練をもう一度", icon = "⌖", click = BastionPrograms };
+            // (訓練プログラム — the old training room's lessons — is out of the game's flow: the first operation teaches as it is played.
+            // BastionPrograms stays for bringing it back.)
             SetOptions("鍛える能力を選ぶ", list);
             onBack = null;
         }

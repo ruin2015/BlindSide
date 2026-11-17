@@ -1,6 +1,7 @@
 // The campaign's side of the HQ stations (Progress.Campaign), the same screen and option tiles as the stations:
 //   作戦室 (CRUSHER, F)  メイン作戦 — the next main quest (its due day) · サブクエスト — the sub quests open at this time of day (1日)
-//   会話 (G on an operator; F on one who runs no station)  交流 (½日: co-op with FLARE) · 褒賞休暇 (the leave days earned, 1 … 3 days at
+//   会話 (G on an operator; F on one who runs no station)  交流 (½日: co-op with FLARE — or, when one is on offer, the co-op's story event:
+//                       Hub.CoopEventPlayer) · 褒賞休暇 (the leave days earned, 1 … 3 days at
 //                       once, a big co-op step) · 話す (the old talk) — CRUSHER adds サブクエスト, BASTION トレーニング
 //   炊事場 (the cook, F)  炊事支援 with an operator (½日): the next sortie's squad +HP (Campaign.MealHp) and a little co-op
 //   補給係's 贈り物     a gift to an operator (three prices, three sizes of co-op)
@@ -109,10 +110,13 @@ namespace Blindside.UI
             var op = BuildAssetRegistry.Operator(key);
             string name = op != null ? op.DisplayName : key;
             int pts = Campaign.Points(D, Campaign.Commander, key), rank = Campaign.Level(pts);
+            // the co-op's story: an event on offer opens with 交流; one still to come says how long until it does
+            int wait = Campaign.CoopEventWait(D, key);
+            string sub = wait == 0 ? "イベントあり  ·  ½日" : wait > 0 ? "する  ·  ½日  ·  次のイベントまで あと" + Mathf.CeilToInt(wait / (float)Campaign.Day) + "日" : "する  ·  ½日";
             var list = new List<Option>();
             list.Add(new Option
             {
-                title = "交流", sub = "する  ·  ½日", icon = "✚", face = OperatorArt.Face(key),
+                title = "交流", sub = sub, icon = "✚", face = OperatorArt.Face(key),
                 value = "コープ Rank " + rank, enabled = Editable, click = () => Hangout(key),
                 hoverLine = "少し時間あるか？ 付き合えよ。",
             });
@@ -131,6 +135,13 @@ namespace Blindside.UI
         void Hangout(string key)
         {
             if (!Editable) return;
+            // the co-op's story scene, when one is on offer (it takes its own half day, and only if the invitation is taken)
+            if (Campaign.CoopEventDue(D, key))
+            {
+                Close();
+                CoopEventPlayer.Play(key, taken => { screen.RefreshTopbar(); if (taken) screen.TimeSpent(); });
+                return;
+            }
             Campaign.Spend(D, Campaign.CostTalk);
             bool up = Campaign.AddCoop(D, Campaign.Commander, key, Campaign.CoopTalk);
             AfterAction(key, up, HangoutLine(key));

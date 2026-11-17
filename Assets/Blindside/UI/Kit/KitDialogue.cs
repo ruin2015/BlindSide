@@ -22,8 +22,10 @@ namespace Blindside.UI
         public const float InTime = .25f, ArtSlide = 40f, CharsPerSecond = 40f, NextBlink = .8f;
         public const int SortingOrder = 80, MaxChoices = 4;
 
+        static readonly Color NarrationColor = new Color(.78f, .8f, .83f, 1f);
+
         Canvas canvas;
-        RectTransform root, art, next;
+        RectTransform root, art, next, plate;
         CanvasGroup group;
         Image artImage;
         TMP_Text nameText, lineText;
@@ -101,9 +103,13 @@ namespace Blindside.UI
         void Fill(string key, string line, string[] options)
         {
             Advanced = false; Choice = -1;
-            var op = Blindside.Data.BuildAssetRegistry.Operator(key);
-            nameText.text = op != null ? op.kr : key;
-            var body = OperatorArt.Body(key);
+            // no speaker: narration (no name plate, no one standing, the line a little dimmer); a voice unseen (???): the plate, no art
+            bool named = !string.IsNullOrEmpty(key);
+            if (plate.gameObject.activeSelf != named) plate.gameObject.SetActive(named);
+            lineText.color = named ? Color.white : NarrationColor;
+            var op = named ? Blindside.Data.BuildAssetRegistry.Operator(key) : null;
+            nameText.text = op != null ? op.kr : key ?? "";
+            var body = named ? OperatorArt.Body(key) : null;
             artImage.sprite = body;
             artImage.enabled = body != null;
             lineText.text = line;
@@ -207,7 +213,7 @@ namespace Blindside.UI
             UILayout.Place(box, BoxX, BoxY, BoxW, BoxH);
             HudKit.AddImage(box, Color.black);
 
-            var plate = HudKit.NewRect("NamePlate", root);
+            var plate = d.plate = HudKit.NewRect("NamePlate", root);
             UILayout.Place(plate, NameX, BoxY - NameH * .5f, NameW, NameH);
             HudKit.AddImage(plate, theme.blue);
             plate.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 10f);

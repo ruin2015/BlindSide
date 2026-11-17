@@ -576,6 +576,20 @@ namespace Blindside.Integration
             // the player's operators grow (levels' stat points, weapon mastery) — a real match with a save session only
             if (playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest)
                 foreach (var u in units) if (u.Team == playerTeam.Value) Blindside.Progress.ProgressBonus.Apply(u);
+            // the map's 敵の強さ (map editor): the side the player fights — max HP and damage scaled, hit chance shifted (AI-vs-AI: untouched)
+            if (playerTeam.HasValue)
+            {
+                var es = MapEnemyStats.Of(mapData).Clamped();
+                if (!es.IsDefault)
+                    foreach (var u in units)
+                    {
+                        if (u.Team == playerTeam.Value) continue;
+                        u.MaxHP = Mathf.Max(1, Mathf.RoundToInt(u.MaxHP * es.hp / 100f));
+                        u.HP = u.MaxHP;
+                        u.DamageScale *= es.dmg / 100f;
+                        u.AccuracyBonus += es.acc;
+                    }
+            }
             // (editor debug: no save session — the co-op ranks set in Blindside > Debug > Co-op Ranks)
             if (playerTeam.HasValue && !tutorialMode && Blindside.Save.SaveSystem.Current == null)
                 foreach (var u in units) if (u.Team == playerTeam.Value) Blindside.Progress.ProgressBonus.ApplyDebugCoop(u);

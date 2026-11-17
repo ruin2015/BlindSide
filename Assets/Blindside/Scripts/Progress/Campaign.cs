@@ -198,7 +198,47 @@ namespace Blindside.Progress
             var l = LinkOf(d, a, b);
             int before = Level(l.points);
             l.points += points;
-            return (a == Commander || b == Commander) && Level(l.points) > before;
+            // a rank with a story scene written for it is reached through the scene (CoopEvents): the points stop just short of it
+            string other = a == Commander ? b : b == Commander ? a : null;
+            if (other != null && before < CoopNeed.Length && CoopEvents.Has(other, before))
+                l.points = Mathf.Min(l.points, Mathf.Max(CoopNeed[before] - 1, l.points - points));
+            return other != null && Level(l.points) > before;
+        }
+
+        // ---- co-op events (the story scenes, CoopEvents) ----------------------------------------------------------------------------
+        /// <summary>Half days between one co-op event and the next one with the same operator.</summary>
+        public const int CoopGap = 2 * Day;
+
+        /// <summary>FLARE's next scene with `key` is on offer: one is written for the rank reached, and (past the first) CoopGap has gone by
+        /// since the last one.</summary>
+        public static bool CoopEventDue(SaveData d, string key)
+        {
+            if (d == null || string.IsNullOrEmpty(key) || key == Commander) return false;
+            int rank = Rank(d, key);
+            if (!CoopEvents.Has(key, rank)) return false;
+            if (rank == 0) return true;
+            int at = LinkOf(d, Commander, key).eventAt;
+            return at <= 0 || d.halfDays - (at - 1) >= CoopGap;
+        }
+
+        /// <summary>Half days until FLARE's next scene with `key` opens: 0 when it is on offer, −1 when none is written for the rank reached.</summary>
+        public static int CoopEventWait(SaveData d, string key)
+        {
+            if (d == null || !CoopEvents.Has(key, Rank(d, key))) return -1;
+            if (CoopEventDue(d, key)) return 0;
+            int at = LinkOf(d, Commander, key).eventAt;
+            return Mathf.Max(1, CoopGap - (d.halfDays - (at - 1)));
+        }
+
+        /// <summary>A scene's rank-up: the co-op with `key` goes up one rank (its points to the new rank's threshold) and the scene is
+        /// recorded (the next one waits CoopGap). Returns the new rank.</summary>
+        public static int CoopRankUp(SaveData d, string key)
+        {
+            var l = LinkOf(d, Commander, key);
+            int lv = Level(l.points);
+            if (lv < CoopNeed.Length) l.points = Mathf.Max(l.points, CoopNeed[lv]);
+            l.eventAt = d.halfDays + 1;
+            return Level(l.points);
         }
 
         /// <summary>FLARE's co-op rank with `key` (0 … CoopNeed.Length).</summary>

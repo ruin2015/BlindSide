@@ -70,6 +70,8 @@ namespace Blindside.MapEditor
         public int HostageCount => (hostage.HasValue ? 1 : 0) + extraHostages.Count;
         /// <summary>MapData.winRule.</summary>
         public int winRule;
+        /// <summary>MapData.enemyStats: max HP %, hit chance ± points, damage %.</summary>
+        public int enemyHp = 100, enemyAcc, enemyDmg = 100;
         public readonly bool[] defPlaced = new bool[DefenderSlots];
         public readonly Vector2Int[] defCell = new Vector2Int[DefenderSlots];
         public readonly float[] defFacing = new float[DefenderSlots];
@@ -93,6 +95,7 @@ namespace Blindside.MapEditor
             o.captives.AddRange(captives);
             o.extraHostages.AddRange(extraHostages);
             o.winRule = winRule;
+            o.enemyHp = enemyHp; o.enemyAcc = enemyAcc; o.enemyDmg = enemyDmg;
             o.gadgets.AddRange(gadgets);
             return o;
         }
@@ -101,6 +104,7 @@ namespace Blindside.MapEditor
         {
             if (hostage != o.hostage || cameras.Count != o.cameras.Count || exfils.Count != o.exfils.Count || terrorists.Count != o.terrorists.Count
                 || captives.Count != o.captives.Count || extraHostages.Count != o.extraHostages.Count || winRule != o.winRule
+                || enemyHp != o.enemyHp || enemyAcc != o.enemyAcc || enemyDmg != o.enemyDmg
                 || gadgets.Count != o.gadgets.Count) return false;
             for (int i = 0; i < gadgets.Count; i++)
                 if (gadgets[i].cell != o.gadgets[i].cell || gadgets[i].kind != o.gadgets[i].kind) return false;

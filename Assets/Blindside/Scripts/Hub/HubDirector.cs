@@ -17,7 +17,7 @@ namespace Blindside.Hub
     {
         public static HubDirector Active { get; private set; }
         /// <summary>A panel is open: no walking, no camera.</summary>
-        public static bool InputBlocked => Active != null && (Active.Entering || Active.Touring || (Active.screen != null && Active.screen.AnyOpen));
+        public static bool InputBlocked => Active != null && (Active.Entering || Active.Touring || CoopEventPlayer.Playing || (Active.screen != null && Active.screen.AnyOpen));
 
         HubEntrance entrance;
         /// <summary>The squad is still walking in from an operation (HubEntrance).</summary>
@@ -97,6 +97,7 @@ namespace Blindside.Hub
             if (screen == null || player == null) return;
             if (Entering) return;
             if (Touring) return;
+            if (CoopEventPlayer.Playing) return;   // (a co-op event's scene has the screen; it frees the cursor itself)
             if (tour == null && HubTutorial.Due(Blindside.Save.SaveSystem.Current))
             {
                 if (canvas != null) canvas.enabled = false;

@@ -54,8 +54,8 @@ namespace Blindside.Hub
                        actions = new[] { "銃にパーツを取り付ける", "ガジェットを持たせる", "仲間のロードアウトを変える" },
                        line = "隊員・装備管理室。\n銃のカスタムや、仲間のロードアウトを整える。" },
             new Area { room = "訓練所", en = "TRAINING", host = "BASTION", hostLabel = "BASTION (教官)", accent = new Color32(0x9e, 0x6a, 0xbf, 0xff),
-                       actions = new[] { "ステータスを鍛える", "これまでの訓練をやり直す", "BASTIONとトレーニング (½日)" },
-                       line = "訓練所。\nステータスを鍛えたり、訓練をやり直せる。" },
+                       actions = new[] { "ステータスを鍛える", "BASTIONとトレーニング (½日)" },
+                       line = "訓練所。\nここでステータスを鍛えられる。" },
             new Area { room = "炊事場", en = "KITCHEN", hostLabel = "炊事係", accent = new Color32(0xef, 0x82, 0x02, 0xff),
                        actions = new[] { "隊員と炊事支援をする (½日)", "次の出撃で最大HP +10", "一緒に作った隊員とのコープ" },
                        line = "炊事場。\n飯を作れば、次の出撃で効いてくる。" },
@@ -75,7 +75,7 @@ namespace Blindside.Hub
         static readonly Stop[] Stops =
         {
             new Stop { room = "医務室", npcKey = "SERUM", lines = new[] { "一つ目は医務室だ。", "ここでは医療品を買うことができる。\n作戦中に使ってみろ。" } },
-            new Stop { room = "訓練所", npcKey = "BASTION", lines = new[] { "二つ目は訓練所だ。", "ここではお前のステータスを上げられる。\n円滑な作戦のため、積極的に活用しろ。", "また、これまでやった訓練を\nもう一度やることもできる。" } },
+            new Stop { room = "訓練所", npcKey = "BASTION", lines = new[] { "二つ目は訓練所だ。", "ここではお前のステータスを上げられる。\n円滑な作戦のため、積極的に活用しろ。" } },
             new Stop { room = "隊員・装備管理", npcKey = "IGNIS", lines = new[] { "三つ目は隊員・装備管理室だ。", "ここではお前の銃に装備を取り付けたり、\n仲間のロードアウトを変更できる。" } },
             new Stop { room = "炊事場", station = HubStation.Kitchen, lines = new[] { "四つ目は炊事場だ。", "ここでは飯を作って食べられる。\n飯を食った後の作戦では、\nいいことが起きるかもしれないな。" } },
             new Stop { room = "作戦室", npcKey = "CRUSHER", lines = new[] { "最後に作戦室だ。", "ここで次の任務や、\nサブ任務を受けることができる。", "任務までの残り時間は、他の隊員と交流したり、\n訓練をしたりして過ごすといいだろう。" } },
@@ -137,11 +137,12 @@ namespace Blindside.Hub
             Roof(true);
             Hud(true);
             if (skip != null) skip.gameObject.SetActive(false);
-            yield return talk.Run(Speaker, "よし。では、この前できなかった\n訓練の続きをやる。ついて来い。");
+            yield return talk.Run(Speaker, "よし。次の任務までの時間は、\n仲間と過ごすなり、訓練するなり、\n好きに使え。");
             Finish();
         }
 
-        // ---- the end (the last line said, or SKIP held): the tour marked seen, on to the wall training the alarm interrupted ----
+        // ---- the end (the last line said, or SKIP held): the tour marked seen, the player free at the HQ (the training room is no longer
+        // part of the story: the first operation teaches as it is played) ----
         Blindside.Tutorial.TutorialSkipButton skip;
         const float SkipTop = 20f;
         bool finished;
@@ -157,8 +158,10 @@ namespace Blindside.Hub
             var d = SaveSystem.Current;
             if (d != null) { d.hubTutorialDone = true; SaveSystem.Write(true); }
             Force = false;
-            TutorialDirector.Segment = TutorialSegment.Walls;
-            SceneFade.Out(SceneFade.DefaultOut, SceneFlow.GoTutorial);
+            if (talk != null) talk.Close();
+            if (mover != null) mover.enabled = true;
+            if (follow != null) follow.enabled = true;
+            Playing = false;
         }
 
         /// <summary>SKIP held: the tour stops where it is and goes straight to its end.</summary>

@@ -171,6 +171,18 @@ namespace Blindside.Integration
             EnsureBuilt();
             EnsureDebugButton();   // 自動クリア (editor / development builds) — .DebugClear.cs
             Deselect();
+            // the deployment's tactical hologram (Tab held: the enemy's estimated positions) — the attack side only
+            var holo = GetComponent<DeployHologram>() ?? gameObject.AddComponent<DeployHologram>();
+            holo.Bind(units, side, () => hasSide && side == OperatorTeam.Attack && this.turns != null && this.turns.Phase == MatchPhase.Deploy && !this.turns.Over && !cinematicOn,
+                      HoloHostages);
+        }
+
+        readonly List<Vector3> holoHostages = new List<Vector3>(4);
+        IReadOnlyList<Vector3> HoloHostages()
+        {
+            holoHostages.Clear();
+            foreach (var h in hostages) if (h != null && h.Alive) holoHostages.Add(GridSpace.GridToWorld(h.X, h.Y, 0f));
+            return holoHostages;
         }
 
         /// <summary>This component's overlay canvas (unit panel, menu, hint, overhead tags) — dimmed as HUD during a battle cinematic.</summary>
@@ -572,7 +584,7 @@ namespace Blindside.Integration
             AddRescueCommand(u, L);       // the rescue operation: 救出 next to a captive — .Rescue.cs
             L.Add(new Command { id = "wait", kr = "待機", en = "END", ic = "■", ok = true });
             // the tutorial offers only the command it is teaching
-            if (TutorialGate.Active)
+            if (TutorialGate.Active || TutorialGate.Guided)
                 for (int i = 0; i < L.Count; i++)
                     if (!TutorialGate.Allows(L[i].id)) { var c = L[i]; c.ok = false; L[i] = c; }
             return L;

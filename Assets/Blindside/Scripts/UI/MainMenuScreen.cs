@@ -163,9 +163,18 @@ namespace Blindside.UI
             busy = true;
             SaveSystem.NewGame();
             MapStore.SelectedStem = "";
-            // the tutorial: the title's own launch (its wipe, then the tutorial scene)
-            if (title != null) title.LaunchTutorial();
-            else Wipe(SceneFlow.GoTutorial);
+            // no training room first: straight into the story's first operation, which teaches as it is played (Tutorial.TutorialDeployGuide)
+            var first = Blindside.Progress.Campaign.FirstMain();
+            AutoSave.TutorialFinished(first != null ? first.stem : "");
+            Wipe(() => StartFirstOperation(first));
+        }
+
+        static void StartFirstOperation(Blindside.Progress.Quest first)
+        {
+            Blindside.Map.MapData map = null;
+            if (first == null || first.entry == null) map = Blindside.Map.MapLibrary.LoadDefault();
+            else if (first.scene == null) map = MapCatalog.DataOf(first.entry) ?? Blindside.Map.MapLibrary.LoadDefault();
+            SceneFlow.GoBattle(new LaunchRequest { team = Blindside.Data.OperatorTeam.Attack, map = map, sceneName = first != null ? first.scene : null });
         }
 
         public void Load()

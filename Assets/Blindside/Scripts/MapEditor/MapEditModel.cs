@@ -162,6 +162,7 @@ namespace Blindside.MapEditor
             d.rescueIntro = o.captives.Count > 0;   // (the rescue intro and rules)
             d.extraHostages = o.hostage.HasValue ? o.extraHostages.ToArray() : new Vector2Int[0];
             d.winRule = o.winRule;
+            d.enemyStats = new MapEnemyStats { hp = o.enemyHp, acc = o.enemyAcc, dmg = o.enemyDmg };
             // only the defenders placed (a map may field only terrorists)
             var starts = new List<MapDefenderStart>();
             for (int i = 0; i < ObjectState.DefenderSlots; i++)
@@ -230,6 +231,8 @@ namespace Blindside.MapEditor
             var o = new ObjectState();
             if (!d.noHostage && d.InBounds(d.hostage.x, d.hostage.y)) o.hostage = d.hostage;
             o.winRule = d.winRule;
+            var es = MapEnemyStats.Of(d).Clamped();
+            o.enemyHp = es.hp; o.enemyAcc = es.acc; o.enemyDmg = es.dmg;
             if (o.hostage.HasValue && d.extraHostages != null)
                 foreach (var c in d.extraHostages) if (d.InBounds(c.x, c.y) && c != d.hostage && !o.extraHostages.Contains(c)) o.extraHostages.Add(c);
             if (d.captives != null) foreach (var c in d.captives) if (c != null) o.captives.Add(new CaptiveSpot { cell = c.cell, operatorKey = c.operatorKey });
@@ -670,6 +673,18 @@ namespace Blindside.MapEditor
         }
 
         /// <summary>The next win rule (either → wipe → extract → either), as one undo step.</summary>
+        /// <summary>The enemy's strength one step up (dir +1) or down (−1): `which` 0 max HP %, 1 hit chance ± points, 2 damage %. False at a limit.</summary>
+        public bool StepEnemyStat(int which, int dir)
+        {
+            int cur = which == 0 ? Objects.enemyHp : which == 1 ? Objects.enemyAcc : Objects.enemyDmg;
+            int next = which == 1
+                ? Mathf.Clamp(cur + dir * MapEnemyStats.AccStep, MapEnemyStats.MinAcc, MapEnemyStats.MaxAcc)
+                : Mathf.Clamp(cur + dir * MapEnemyStats.PctStep, MapEnemyStats.MinPct, MapEnemyStats.MaxPct);
+            if (next == cur) return false;
+            Commit(o => { if (which == 0) o.enemyHp = next; else if (which == 1) o.enemyAcc = next; else o.enemyDmg = next; });
+            return true;
+        }
+
         public int CycleWinRule()
         {
             Commit(o => o.winRule = (o.winRule + 1) % 3);

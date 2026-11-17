@@ -12,6 +12,9 @@ namespace Blindside.Integration
         public static bool BlockInput;
         /// <summary>Holds every battlefield input even outside a tutorial match (the deployment briefing after the tutorial talks first).</summary>
         public static bool HoldInput;
+        /// <summary>A real match is teaching (the first operation's lessons, TutorialDeployGuide): the menu offers only the Allowed commands and
+        /// MoveFinished / ShotFinished are raised — nothing else of the tutorial mode (the match stays a normal one).</summary>
+        public static bool Guided;
         /// <summary>Input is held right now (the tutorial's BlockInput, or HoldInput).</summary>
         public static bool Holding => (Active && BlockInput) || HoldInput;
         /// <summary>A plain click in MOVE does not plan an automatic path: the path has to be drawn.</summary>
@@ -25,7 +28,7 @@ namespace Blindside.Integration
         /// <summary>The player's unit finished a FIRE: what the line of fire met (a unit, or null) and whether it was an enemy gadget.</summary>
         public static event System.Action<SimUnit, Blindside.Combat.ICombatUnit, bool> ShotFinished;
 
-        public static void RaiseShotFinished(SimUnit u, Blindside.Combat.ICombatUnit target, bool gadget) { if (Active) ShotFinished?.Invoke(u, target, gadget); }
+        public static void RaiseShotFinished(SimUnit u, Blindside.Combat.ICombatUnit target, bool gadget) { if (Active || Guided) ShotFinished?.Invoke(u, target, gadget); }
 
         /// <summary>The last FIRE's direction (grid radians) and how many walls its line went through (the dummy lesson judges it).</summary>
         public static float LastShotAngle;
@@ -42,7 +45,7 @@ namespace Blindside.Integration
         /// <summary>Which wall panels a panel ability may target (null: every valid one) — the lesson's one wall.</summary>
         public static System.Func<int, bool> PanelFilter;
 
-        public static bool Allows(string commandId) => !Active || Allowed.Contains(commandId);
+        public static bool Allows(string commandId) => (!Active && !Guided) || Allowed.Contains(commandId);
 
         public static void Allow(params string[] ids)
         {
@@ -50,12 +53,12 @@ namespace Blindside.Integration
             foreach (var id in ids) Allowed.Add(id);
         }
 
-        public static void RaiseMoveFinished(SimUnit u) { if (Active) MoveFinished?.Invoke(u); }
+        public static void RaiseMoveFinished(SimUnit u) { if (Active || Guided) MoveFinished?.Invoke(u); }
 
         /// <summary>Everything back to a normal match.</summary>
         public static void Reset()
         {
-            Active = false; BlockInput = false; NoAutoPath = false; HoldInput = false;
+            Active = false; BlockInput = false; NoAutoPath = false; HoldInput = false; Guided = false;
             Allowed.Clear();
             MoveFinished = null;
             ShotFinished = null;

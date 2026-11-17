@@ -89,7 +89,7 @@ namespace Blindside.UI
             BuildMapCard();
             BuildMapEditorButton();
             BuildSettings();
-            BuildTutorialButton();
+            // (BuildTutorialButton: out of the flow, kept for bringing it back)
             if (kitTop != null) kitTop.Bind(this);
             if (kitSquad != null) kitSquad.Bind(this, kitSpot);
             if (kitLeft != null) kitLeft.Bind(this);
@@ -181,7 +181,7 @@ namespace Blindside.UI
         {
             if (mapCard == null) { BuildMapCard(); BuildMapEditorButton(); }
             BuildSettings();
-            BuildTutorialButton();
+            // (no チュートリアル button: the training room is out of the game's flow — the first operation teaches as it is played)
             if (kitTop != null) kitTop.Bind(this);
             if (kitSquad != null) kitSquad.Bind(this, kitSpot);
             if (kitLeft != null) kitLeft.Bind(this);

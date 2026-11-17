@@ -44,6 +44,7 @@ namespace Blindside.MapEditor
         public MapCaptive[] captives;       // captured operators (none in older files)
         public Vector2Int[] extraHostages;  // civilian hostages after the first (none in older files)
         public int winRule;                 // MapData.winRule (0 in older files: either)
+        public MapEnemyStats enemy;         // MapData.enemyStats (older files: none — 100 / 0 / 100)
         public MapGadget[] gadgets;         // the defense's gadgets (none in older files)
         public Vector2Int[] cameras;
         public MapExfil[] exfils;
@@ -65,6 +66,7 @@ namespace Blindside.MapEditor
             f.defenders = defs.ToArray();
             f.extraHostages = o.extraHostages.ToArray();
             f.winRule = o.winRule;
+            f.enemy = new MapEnemyStats { hp = o.enemyHp, acc = o.enemyAcc, dmg = o.enemyDmg };
             f.gadgets = new MapGadget[o.gadgets.Count];
             for (int i = 0; i < f.gadgets.Length; i++) f.gadgets[i] = new MapGadget { cell = o.gadgets[i].cell, kind = o.gadgets[i].kind };
             f.captives = new MapCaptive[o.captives.Count];
@@ -157,6 +159,8 @@ namespace Blindside.MapEditor
             if (hasHostage) o.hostage = hostage;
             if (hasHostage && extraHostages != null) o.extraHostages.AddRange(extraHostages);
             o.winRule = winRule;
+            var es = (enemy ?? new MapEnemyStats()).Clamped();
+            o.enemyHp = es.hp; o.enemyAcc = es.acc; o.enemyDmg = es.dmg;
             if (gadgets != null) foreach (var g in gadgets) if (g != null) o.gadgets.Add(new GadgetSpot { cell = g.cell, kind = g.kind });
             foreach (var d in defenders) { o.defPlaced[d.slot] = true; o.defCell[d.slot] = d.cell; o.defFacing[d.slot] = d.facing; }
             o.cameras.AddRange(cameras);

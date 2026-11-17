@@ -536,40 +536,29 @@
         },
         {
             "cell": {
-                "x": 3,
-                "y": 11
+                "x": 11,
+                "y": 5
             },
-            "facing": -1.1364680528640747,
+            "facing": 2.2764923572540283,
             "weapon": "AR"
         },
         {
             "cell": {
-                "x": 12,
-                "y": 11
+                "x": 5,
+                "y": 10
             },
-            "facing": 0.0,
-            "weapon": "AR"
-        },
-        {
-            "cell": {
-                "x": 12,
-                "y": 4
-            },
-            "facing": 1.1816861629486084,
-            "weapon": "AR"
-        },
-        {
-            "cell": {
-                "x": 3,
-                "y": 4
-            },
-            "facing": 0.0,
+            "facing": -1.59783935546875,
             "weapon": "AR"
         }
     ],
     "captives": [],
     "extraHostages": [],
     "winRule": 1,
+    "enemy": {
+        "hp": 50,
+        "acc": -30,
+        "dmg": 50
+    },
     "gadgets": [],
     "cameras": [
         {

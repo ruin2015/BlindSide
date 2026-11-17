@@ -50,6 +50,22 @@ namespace Blindside.Map
         public string weapon = "AR";
     }
 
+    /// <summary>How strong the side the player fights is on this map (the map editor's 敵の強さ): max HP and damage in percent, hit chance
+    /// in percentage points added. Older maps (null): 100 / 0 / 100 — unchanged. AI-vs-AI matches don't use it.</summary>
+    [Serializable]
+    public class MapEnemyStats
+    {
+        public const int MinPct = 10, MaxPct = 200, PctStep = 10, MinAcc = -60, MaxAcc = 30, AccStep = 5;
+        public int hp = 100, acc, dmg = 100;
+
+        public bool IsDefault => hp == 100 && acc == 0 && dmg == 100;
+        public static MapEnemyStats Of(MapData d) => d != null && d.enemyStats != null ? d.enemyStats : new MapEnemyStats();
+        public MapEnemyStats Clamped() => new MapEnemyStats
+        {
+            hp = Mathf.Clamp(hp <= 0 ? 100 : hp, MinPct, MaxPct), acc = Mathf.Clamp(acc, MinAcc, MaxAcc), dmg = Mathf.Clamp(dmg <= 0 ? 100 : dmg, MinPct, MaxPct),
+        };
+    }
+
     [Serializable]
     public class MapDefenderStart
     {
@@ -150,6 +166,9 @@ namespace Blindside.Map
         /// <summary>Played exactly as laid out in the map editor: the defense AI's preparation (DefensePrep — reinforcing walls, adding fields,
         /// cameras and a mirror, sending defenders to ambush posts) is skipped. Off on the built-in house.</summary>
         public bool exactPlacement;
+
+        /// <summary>The enemy's strength set in the map editor (null: unchanged).</summary>
+        public MapEnemyStats enemyStats;
 
         /// <summary>The defense's gadgets placed in the editor.</summary>
         public MapGadget[] gadgets;

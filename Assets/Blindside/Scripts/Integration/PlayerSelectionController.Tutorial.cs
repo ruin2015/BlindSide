@@ -128,6 +128,47 @@ namespace Blindside.Integration
         }
 
         /// <summary>
+        /// The tutorial's VIEW demonstration: `u` is selected, `pressCommand` shows 視界変更 being pressed, the view turns from `fromAng` to
+        /// `toAng` over `sweepSeconds` (the cone follows, the hand rides its far end), and the "click" fixes it there (LockFacing) as a
+        /// real click would. Ends with nothing selected.
+        /// </summary>
+        public IEnumerator TutorialDemoFace(SimUnit u, float fromAng, float toAng, float sweepSeconds,
+                                            System.Func<IEnumerator> pressCommand = null, System.Action onClick = null)
+        {
+            if (u == null) yield break;
+            SelectUnit(u);
+            yield return new WaitForSecondsRealtime(.7f);
+            if (pressCommand != null) yield return pressCommand();
+            EnterFacing(u, false);
+            float t = 0f;
+            while (t < sweepSeconds)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / sweepSeconds);
+                float a = Mathf.LerpAngle(fromAng * Mathf.Rad2Deg, toAng * Mathf.Rad2Deg, p * p * (3f - 2f * p)) * Mathf.Deg2Rad;
+                u.Facing = a;
+                u.View?.SetFacing(a);
+                DemoCursorGrid = new Vector2(u.X + Mathf.Cos(a) * 3f, u.Y + Mathf.Sin(a) * 3f);
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(.4f);
+            onClick?.Invoke();
+            u.LockFacing = true;
+            SelectUnit(u);
+            yield return new WaitForSecondsRealtime(.6f);
+            DemoCursorGrid = null;
+            Deselect();
+        }
+
+        /// <summary>A walkable path for `u` toward `target` (grid), at most `budget` metres (the demonstration's route); null without one.</summary>
+        public List<Vector2> TutorialPlanPath(SimUnit u, Vector2 target, float budget)
+        {
+            if (u == null || movement == null) return null;
+            var p = movement.PlanPath(new Vector2(u.X, u.Y), target.x, target.y, false, u.Team, budget);
+            return p != null && p.Count >= 2 ? p : null;
+        }
+
+        /// <summary>
         /// The tutorial's demonstration: `u` is selected, MOVE is entered, the path `line` (starting at the unit) draws itself over
         /// `drawSeconds`, holds a moment, and is walked as a confirmed MOVE. Ends with nothing selected.
         /// </summary>

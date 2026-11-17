@@ -215,6 +215,53 @@ namespace Blindside.UI.EditorTools
             KitDialogue.Build(canvas.transform, canvas).PoseAt("CRUSHER", "他に聞きたいことはあるか？", "ありません", "もう一度聞かせてください");
         }
 
+        public const string DeployHoloHint = "deploy_holo_hint", DeployHoloOn = "deploy_holo_on";
+
+        /// <summary>The deployment's hologram layer: the TAB hint chip alone, and the header over the hologram (a plain dark-blue picture).</summary>
+        public static void BuildDeployHoloHint(UIPreview.Stage s) => DeployHolo(s, false);
+        public static void BuildDeployHoloOn(UIPreview.Stage s) => DeployHolo(s, true);
+
+        static void DeployHolo(UIPreview.Stage s, bool on)
+        {
+            var canvas = s.NewCanvas("DeployHologram_Canvas", UITheme.CanvasKind.Hud, Blindside.Integration.DeployHologram.SortingOrder);
+            Blindside.Integration.DeployHologram.BuildScreen((RectTransform)canvas.transform, out var view, out var group, out var header, out var count, out var chip);
+            view.color = new Color(.02f, .07f, .16f, 1f);
+            group.alpha = on ? 1f : 0f;
+            view.gameObject.SetActive(on);
+            header.gameObject.SetActive(on);
+            chip.gameObject.SetActive(!on);
+            count.text = "敵の推定位置 · 反応 6";
+        }
+
+        public const string DialogueNarration = "dialogue_narration", DialogueUnknown = "dialogue_unknown", CoopRankUp = "coop_rankup",
+                            CoopRankUpFlip = "coop_rankup_flip";
+
+        /// <summary>A co-op event's narration (no speaker: no plate, no art) and a voice not shown (???: the plate, no art).</summary>
+        public static void BuildDialogueNarration(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("Dialogue_Canvas", UITheme.CanvasKind.Menu, KitDialogue.SortingOrder);
+            KitDialogue.Build(canvas.transform, canvas).PoseAt(null, "――携帯電話が鳴っている……");
+        }
+
+        public static void BuildDialogueUnknown(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("Dialogue_Canvas", UITheme.CanvasKind.Menu, KitDialogue.SortingOrder);
+            KitDialogue.Build(canvas.transform, canvas).PoseAt(Blindside.Progress.CoopEvents.Unknown, "私の息子を死なせておいて、よくも平気な顔で……！");
+        }
+
+        /// <summary>The co-op rank-up card: settled (CRUSHER 1 → 2), and the moment the number turns over.</summary>
+        public static void BuildCoopRankUp(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("CoopRankUp_Canvas", UITheme.CanvasKind.Menu, KitCoopRankUp.SortingOrder);
+            KitCoopRankUp.Build(canvas.transform, canvas).PoseAt("CRUSHER", 1, 2, 2.2f);
+        }
+
+        public static void BuildCoopRankUpFlip(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("CoopRankUp_Canvas", UITheme.CanvasKind.Menu, KitCoopRankUp.SortingOrder);
+            KitCoopRankUp.Build(canvas.transform, canvas).PoseAt("CRUSHER", 0, 1, KitCoopRankUp.NumberAt + .04f);
+        }
+
         public static void BuildTalk(UIPreview.Stage s)
         {
             var hs = Screen(s);

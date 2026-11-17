@@ -101,6 +101,8 @@ namespace Blindside.Save
     {
         public string a = "", b = "";
         public int points;
+        /// <summary>When FLARE's last co-op event with this operator was played: SaveData.halfDays + 1 (0: never).</summary>
+        public int eventAt;
     }
 
     /// <summary>A weapon's mastery (shared by everyone who uses it).</summary>

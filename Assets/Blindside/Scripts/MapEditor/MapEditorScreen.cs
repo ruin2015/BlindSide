@@ -269,6 +269,7 @@ namespace Blindside.MapEditor
             sizeLabel.text = $"{data.width} × {data.height}";
             RefreshWinRule();
             if (winRuleButton != null) winRuleButton.interactable = !ro;
+            foreach (var b in enemyButtons) if (b != null) b.interactable = !ro;
             editorRoot.gameObject.SetActive(true);
             SelectTool(ro ? EditTool.Select : Tool);
             UpdateBottom();
@@ -589,7 +590,51 @@ namespace Blindside.MapEditor
             if (winRuleButton == null || Model == null) return;
             var lbl = winRuleButton.GetComponentInChildren<TMP_Text>();
             if (lbl != null) lbl.text = "勝利: " + MapData.WinRuleText(Model.Objects.winRule);
+            RefreshEnemyStats();
         }
+
+        // ---- 敵の強さ: the enemy's max HP %, hit chance ± and damage % on this map (MapData.enemyStats) ----
+        readonly TMP_Text[] enemyValues = new TMP_Text[3];
+        readonly List<Button> enemyButtons = new List<Button>(6);
+
+        void StepEnemy(int which, int dir)
+        {
+            if (Model == null || ModalDialog.Any || !nameInput.interactable) return;
+            if (Model.StepEnemyStat(which, dir)) RefreshEnemyStats();
+        }
+
+        void RefreshEnemyStats()
+        {
+            if (Model == null || enemyValues[0] == null) return;
+            var o = Model.Objects;
+            enemyValues[0].text = o.enemyHp + "%";
+            enemyValues[1].text = o.enemyAcc == 0 ? "±0" : o.enemyAcc > 0 ? "+" + o.enemyAcc : o.enemyAcc.ToString();
+            enemyValues[2].text = o.enemyDmg + "%";
+        }
+
+        void BuildEnemyPanel(Transform side)
+        {
+            var panel = NewImage("Enemy", side, Paper, false);
+            panel.rectTransform.anchorMin = new Vector2(0, 0); panel.rectTransform.anchorMax = new Vector2(1, 0);
+            panel.rectTransform.pivot = new Vector2(.5f, 0); panel.rectTransform.anchoredPosition = new Vector2(0, StatsH);
+            panel.rectTransform.sizeDelta = new Vector2(0, EnemyH);
+            VBox(panel.transform, 4, new RectOffset(14, 14, 8, 6));
+            NewText(panel.transform, "ENEMY // 敵の強さ", 15, FontStyles.Bold, Foe).gameObject.AddComponent<LayoutElement>().preferredHeight = 22;
+            string[] names = { "最大HP", "命中", "ダメージ" };
+            for (int i = 0; i < 3; i++)
+            {
+                int which = i;
+                var row = NewRect("Row" + i, panel.transform);
+                HBox(row, 6, new RectOffset(0, 0, 0, 0));
+                Size(row, -1, 26);
+                var lbl = NewText(row, names[i], 15, FontStyles.Bold, Ink, TextAlignmentOptions.MidlineLeft, UITheme.TextRole.Title); Size(lbl, 96, 26);
+                enemyButtons.Add(NewButton(row, "−", 36, 26, PaperDark, Ink, 16, () => StepEnemy(which, -1)));
+                enemyValues[i] = NewText(row, "", 17, FontStyles.Bold, Ink, TextAlignmentOptions.Center, UITheme.TextRole.Display); Size(enemyValues[i], 74, 26);
+                enemyButtons.Add(NewButton(row, "＋", 36, 26, PaperDark, Ink, 16, () => StepEnemy(which, 1)));
+            }
+        }
+
+        const float StatsH = 124f, EnemyH = 118f;
 
         static bool IsObjectTool(EditTool t) => (t >= EditTool.Hostage && t <= EditTool.Exfil) || t == EditTool.Terrorist || t == EditTool.Captive || t == EditTool.Gadget;
 
@@ -1206,9 +1251,11 @@ namespace Blindside.MapEditor
             NewText(stats.transform, "WALLS // 統計", 15, FontStyles.Bold, Blue).gameObject.AddComponent<LayoutElement>().preferredHeight = 24;
             statsBody = NewText(stats.transform, "", 16, FontStyles.Bold, Ink, TextAlignmentOptions.TopLeft, UITheme.TextRole.Title); Size(statsBody, -1, 76);
 
+            BuildEnemyPanel(right.transform);
+
             var val = NewImage("Validation", right.transform, Paper, false);
             val.rectTransform.anchorMin = Vector2.zero; val.rectTransform.anchorMax = Vector2.one;
-            val.rectTransform.offsetMin = new Vector2(0, 124); val.rectTransform.offsetMax = new Vector2(0, -206);
+            val.rectTransform.offsetMin = new Vector2(0, StatsH + EnemyH); val.rectTransform.offsetMax = new Vector2(0, -206);
             VBox(val.transform, 6, new RectOffset(14, 14, 10, 6));
             var sepTop = NewImage("Sep", val.transform, PaperDark, false); Size(sepTop, -1, 2);
             NewText(val.transform, "VALIDATION // 検証", 15, FontStyles.Bold, Blue).gameObject.AddComponent<LayoutElement>().preferredHeight = 24;
