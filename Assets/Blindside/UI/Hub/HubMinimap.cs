@@ -22,12 +22,16 @@ namespace Blindside.UI
         Vector2 min; float scale = 1f;
         Transform player;
 
-        public static HubMinimap Build(Transform parent, IList<Bounds> walls, IList<HubNpc> npcs, IList<HubArea> areas, Transform player)
+        /// <summary>The top the minimap was placed at (under the HQ's objective panel with the tactical topbar).</summary>
+        public static float PlacedTop = Top;
+
+        public static HubMinimap Build(Transform parent, IList<Bounds> walls, IList<HubNpc> npcs, IList<HubArea> areas, Transform player, float top = Top)
         {
+            PlacedTop = top;
             var theme = UITheme.Current;
             var rt = HudKit.NewRect("Minimap", parent);
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 1f);
-            rt.anchoredPosition = new Vector2(-Right, -Top);
+            rt.anchoredPosition = new Vector2(-Right, -top);
             rt.sizeDelta = new Vector2(Size, Size);
             var m = rt.gameObject.AddComponent<HubMinimap>();
             m.plate = rt;

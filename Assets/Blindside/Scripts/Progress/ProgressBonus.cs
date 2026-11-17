@@ -3,8 +3,8 @@
 //   防御力 (def)   −1.5% damage taken per point, at most −30%
 //   攻撃力 (atk)   +2% damage per point
 //   機動力 (mob)   +0.2 m move range per point
-//   精密力 (prec)  +0.5 hit chance (percentage points) per point
-//   weapon mastery  per level above 1: +3% damage and +0.3 hit chance (accuracy only a little, by design)
+//   精密力 (prec)  +0.5 critical (headshot) chance (percentage points) per point
+//   weapon mastery  per level above 1: +3% damage and +0.3 critical chance (only scopes raise the hit chance)
 //   attachments     the parts fitted at the HQ, summed (Data.Attachments: hit / headshot by range band, rounds, damage, falloff, SPD,
 //                   mobility, no 銃声 mark) — SimUnit.Gear
 // The same numbers are shown on the HQ's stat panel (Describe*).
@@ -17,13 +17,13 @@ namespace Blindside.Progress
     public static class ProgressBonus
     {
         public const int HpPerPoint = 4;
-        public const float DefPerPoint = .015f, DefMax = .30f, AtkPerPoint = .02f, MovePerPoint = .2f, AccPerPoint = .5f;
-        public const float MasteryDamage = .03f, MasteryAccuracy = .3f;
+        public const float DefPerPoint = .015f, DefMax = .30f, AtkPerPoint = .02f, MovePerPoint = .2f, CritPerPoint = .5f;
+        public const float MasteryDamage = .03f, MasteryCrit = .3f;
 
         public static int Hp(OperatorProgress p) => p.hp * HpPerPoint;
         public static float TakenScale(OperatorProgress p) => 1f - Mathf.Min(DefMax, p.def * DefPerPoint);
         public static float DamageScale(OperatorProgress p, WeaponProgress w) => (1f + p.atk * AtkPerPoint) * (1f + (Mathf.Max(1, w.level) - 1) * MasteryDamage);
-        public static float Accuracy(OperatorProgress p, WeaponProgress w) => p.prec * AccPerPoint + (Mathf.Max(1, w.level) - 1) * MasteryAccuracy;
+        public static float Crit(OperatorProgress p, WeaponProgress w) => p.prec * CritPerPoint + (Mathf.Max(1, w.level) - 1) * MasteryCrit;
         public static float Move(OperatorProgress p) => p.mob * MovePerPoint;
 
         /// <summary>Gives `u` its operator's growth from the session's save (nothing without a session).</summary>
@@ -86,7 +86,7 @@ namespace Blindside.Progress
             }
         }
 
-        /// <summary>What depends on the gun in hand: the growth's damage and accuracy with it (its mastery) and its fitted attachments.
+        /// <summary>What depends on the gun in hand: the growth's damage and critical chance with it (its mastery) and its fitted attachments.
         /// Again after 持ち替え.</summary>
         public static void ApplyWeapon(SimUnit u)
         {
@@ -95,7 +95,7 @@ namespace Blindside.Progress
             var p = d.OperatorOf(u.Op.key);
             var w = d.WeaponOf(u.Weapon != null ? u.Weapon.key : "");
             u.DamageScale = DamageScale(p, w);
-            u.AccuracyBonus = Accuracy(p, w);
+            u.HeadshotBonus = Crit(p, w);
             // the attachments fitted at the HQ to the gun it carries (null when none: the unit plays as before)
             var fit = u.Weapon != null ? p.FindFit(u.Weapon.key) : null;
             u.Gear = fit != null ? Blindside.Data.Attachments.Sum(fit.parts) : null;

@@ -215,7 +215,7 @@ namespace Blindside.Hub
                 {
                     name = KitGrowthPanel.StatNames[i] + "  —  " + Drills[i],
                     note = "訓練 " + done + " / " + HubCatalog.MaxTrain + " · 現在 " + p.StatPoints(i) + " ポイント · 1回で +1 ポイント",
-                    value = max ? "上限" : Yen("", cost), current = done > 0, band = Squad[tab].color,
+                    value = max ? "上限" : "無料", current = done > 0, band = Squad[tab].color,
                     button = max ? "完了" : "訓練", enabled = Editable && !max && D.money >= cost,
                 });
             }
@@ -515,7 +515,7 @@ namespace Blindside.Hub
                     case 1: eff = "被ダメージ −" + (Mathf.Min(Progress.ProgressBonus.DefMax, v * Progress.ProgressBonus.DefPerPoint) * 100f).ToString("0.#") + "%"; break;
                     case 2: eff = "与ダメージ +" + (v * Progress.ProgressBonus.AtkPerPoint * 100f).ToString("0") + "%"; break;
                     case 3: eff = "移動力 +" + (v * Progress.ProgressBonus.MovePerPoint).ToString("0.#") + "m"; break;
-                    default: eff = "命中 +" + (v * Progress.ProgressBonus.AccPerPoint).ToString("0.#"); break;
+                    default: eff = "クリティカル率 +" + (v * Progress.ProgressBonus.CritPerPoint).ToString("0.#") + "%"; break;
                 }
                 into.Add(new HubRow { name = "ステータス  " + StatShort[i], note = eff + " (訓練 " + p.trained[i] + " 回)", value = v + " pt", band = op.color });
             }

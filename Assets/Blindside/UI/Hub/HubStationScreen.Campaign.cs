@@ -230,7 +230,7 @@ namespace Blindside.UI
                 list.Add(new Option { title = o.DisplayName, face = OperatorArt.Face(o.key), sub = "に贈り物をする", value = "コープ Rank " + Campaign.Rank(D, o.key), click = () => GiftItems(o.key) });
             }
             SetOptions("贈り物 — 誰に？", list.ToArray());
-            onBack = () => { ClerkOptions(); };
+            onBack = () => { if (stationKey == "SILENCE") SilenceOptions(); else ClerkOptions(); };
         }
 
         void GiftItems(string key)

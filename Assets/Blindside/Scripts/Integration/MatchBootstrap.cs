@@ -38,6 +38,7 @@ namespace Blindside.Integration
         // growth (Progress.ProgressBonus: the player's operators in a real match); neutral for everyone else
         public float DamageScale { get; set; } = 1f;
         public float AccuracyBonus { get; set; }
+        public float HeadshotBonus { get; set; }
         public float DamageTakenScale { get; set; } = 1f;
         public float MoveBonus { get; set; }
         /// <summary>The fitted attachments (Progress.ProgressBonus from the save); null for everyone else.</summary>

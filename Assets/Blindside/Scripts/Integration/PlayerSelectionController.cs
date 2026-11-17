@@ -456,6 +456,7 @@ namespace Blindside.Integration
                 SelectUnit(uiUnit);
                 return;
             }
+            if (mode == Mode.Menu && gadgetMenu && uiUnit != null) { OpenGadgetMenu(uiUnit, false); return; }   // (the gadget menu: back to the commands)
             if (mode == Mode.Menu || mode == Mode.Idle || mode == Mode.Deploy) { Deselect(); return; }   // ui.mode==='menu'||'deploy'
             if (mode == Mode.Fire && uiUnit != null) { uiUnit.Facing = fireBackup; HideTip(); }
             if (healShot) EndHealAim(true);   // (SERUM's heal shot: the pistol away, the facing back)
@@ -473,6 +474,7 @@ namespace Blindside.Integration
             if (turns != null && turns.Phase == MatchPhase.Deploy) { EnterDeploy(u); return; }   // selectUnit → enterDeploy
             bool changed = uiUnit != u;
             mode = Mode.Menu; uiUnit = u; panelUnit = u;
+            gadgetMenu = false;
             ResetMoveState(); HideHint(); HideTip(); hasFireCast = false;
             ShowUnitPanel(u, !changed);
             ShowOpArt(u);
@@ -584,11 +586,50 @@ namespace Blindside.Integration
             AddItemCommand(u, L, prep);   // the HQ item (破片手榴弾) — .Grenade.cs
             AddRescueCommand(u, L);       // the rescue operation: 救出 next to a captive — .Rescue.cs
             L.Add(new Command { id = "wait", kr = "待機", en = "END", ic = "■", ok = true });
-            // the tutorial offers only the command it is teaching
+            // the tutorial offers only the command it is teaching (flat: its steps name the drone / item commands themselves)
             if (TutorialGate.Active || TutorialGate.Guided)
+            {
                 for (int i = 0; i < L.Count; i++)
                     if (!TutorialGate.Allows(L[i].id)) { var c = L[i]; c.ok = false; L[i] = c; }
+                return L;
+            }
+            return GroupGadgets(u, L);
+        }
+
+        // ---- ガジェット: the drone and the carried items under one command --------------------------------------------------------
+        bool gadgetMenu, menuFresh;
+
+        bool IsGadget(SimUnit u, string id) => (id == "gadget" && u.Team == OperatorTeam.Attack) || id.StartsWith(ItemPrefix);
+
+        /// <summary>The main menu: the gadgets folded into one ガジェット command where the first of them was. The gadget menu: only
+        /// them, and 戻る.</summary>
+        List<Command> GroupGadgets(SimUnit u, List<Command> L)
+        {
+            int at = -1, n = 0;
+            bool any = false;
+            var G = new List<Command>(4);
+            for (int i = 0; i < L.Count; i++)
+            {
+                if (!IsGadget(u, L[i].id)) continue;
+                if (at < 0) at = i;
+                G.Add(L[i]); n++; any |= L[i].ok;
+            }
+            if (gadgetMenu)
+            {
+                G.Add(new Command { id = "back", kr = "戻る", en = "BACK", ic = "◐", ok = true });
+                return G;
+            }
+            if (at < 0) return L;
+            L.RemoveAll(c => IsGadget(u, c.id));
+            L.Insert(at, new Command { id = "gadgets", kr = "ガジェット", en = "GADGET", ic = "✹", ok = any, sub = n + "種" });
             return L;
+        }
+
+        void OpenGadgetMenu(SimUnit u, bool open)
+        {
+            gadgetMenu = open;
+            menuFresh = true;
+            RenderMenu(u);
         }
 
         // panels.some(p => canReinforce(p) && panelNear(p,u)); canReinforce: intact && !reinforced && !mirror,
@@ -622,6 +663,9 @@ namespace Blindside.Integration
             var list = Commands(u);
             int i = list.FindIndex(x => x.id == c);
             if (i < 0 || !list[i].ok) return;
+            if (c == "gadgets") { OpenGadgetMenu(u, true); return; }
+            if (c == "back") { OpenGadgetMenu(u, false); return; }
+            gadgetMenu = false;
             if (c == "move")
             {
                 HideMenu();
@@ -813,7 +857,7 @@ namespace Blindside.Integration
             m.grid[0] = $"{(foe ? MoveRange(u) : M1(u.MoveLeft))}<size=11><color=#9A9C9E>/{MoveRange(u)}m</color></size>";
             m.grid[1] = SpeedOf(u);
             m.grid[2] = w != null ? $"{w.damage}×{Blindside.Combat.CombatModifiers.ShotsOf(u)}" : "-";
-            m.grid[3] = w != null ? w.accuracy.ToString() : "-";
+            m.grid[3] = w != null ? "100" : "-";   // (every shot starts at 100: distance, walls and scopes change it per shot)
             m.grid[4] = w != null ? w.range.ToString() : "-";
 
             m.weapon = wName + (w != null && w.breach ? " · 近接射撃で通常の壁を破壊" : "");
@@ -861,11 +905,12 @@ namespace Blindside.Integration
         {
             if (menuView == null && kitMenu == null) return;
             var L = Commands(u);
-            bool fresh = menuUid != u.Uid || !menuRoot.gameObject.activeSelf;
+            bool fresh = menuFresh || menuUid != u.Uid || !menuRoot.gameObject.activeSelf;
+            menuFresh = false;
             menuUid = u.Uid;
             var models = new List<CommandModel>(L.Count);
             foreach (var c in L) models.Add(new CommandModel { id = c.id, kr = c.kr, en = c.en, ic = c.ic, sub = c.sub, ok = c.ok });
-            string header = $"{(u.Op != null ? u.Op.DisplayName : u.Id)} // COMMAND";
+            string header = $"{(u.Op != null ? u.Op.DisplayName : u.Id)} // {(gadgetMenu ? "GADGET" : "COMMAND")}";
             if (kitMenu != null) kitMenu.Render(header, u.Op != null ? u.Op.color : Blu, models, fresh, id => DoCommand(u, id));
             else menuView.Render(header, models, fresh, id => DoCommand(u, id));
             PositionMenu();

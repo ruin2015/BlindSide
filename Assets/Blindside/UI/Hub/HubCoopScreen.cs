@@ -5,11 +5,11 @@
 //            kana 12, then "RANK" 11 and the rank 30 (blue; MAX at the top) — and a 400 × 5 bar of the way to the next rank under it. The
 //            selected strip turns blue (white text), steps 18 right and gets ➜. Bottom left: 「誰の詳細を確認する？」 in a slanted paper box;
 //            bottom right the 操作説明; the back bar top right.
-//   Detail   the member's illustration on the left over a band in their colour; bottom left a paper plate: the codename 46 + kana, and
-//            the description. Right: an ink card — "Q / E" to step through the members, the face on a paper card with the role, "ROLE"
-//            and the role 30, "RANK" and the rank 64 (gold), ten diamonds (filled up to the rank), 親密度 points and a bar to the next
-//            rank; under it the episode of this rank (CoopStories: 第N話 + its text, a placeholder until written); then the perks by rank
-//            (CoopPerks — unlocked white, the rest dim with the rank that unlocks them).
+//   Detail   (a confidant page) the member's illustration on the right over a band in their colour. Left column: top, an ink card —
+//            "Q / E" to step through the members, ROLE + the role 18, the codename 44 + kana 16, "RANK" and the rank 64 (gold), ten
+//            diamonds, the points and a bar to the next rank; under it the co-op bonus (CoopPerks by rank, 15 — unlocked white, the rest
+//            dim); bottom, a paper plate: 本名 + the real name 30 (OperatorProfiles) and its reading, then the current story (CoopStories:
+//            第N話 + its text). The old layout: UI/Legacy/HubCoopScreen.cs.txt.
 // W / S (↑ ↓) or the pointer picks, F / Enter / a click opens the detail; Q / E (A / D, ← →) step through it; ESC goes back (detail →
 // list → closed). Entrance: the screen fades in (.2) and the strips slide in from the left 50 ms apart (.35 each); the detail's art from
 // the left and its card from the right. ITimedEffect.Evaluate(t), unscaled; texts change only when the member or the view changes.
@@ -29,8 +29,10 @@ namespace Blindside.UI
     public class HubCoopScreen : MonoBehaviour, ITimedEffect
     {
         public const float W = 1440f, H = 810f;
-        public const float RowX = 70f, RowY = 112f, RowStep = 84f, RowSlant = 18f, StripW = 400f, StripH = 42f, RowTilt = 3f;
+        public const float RowX = 70f, RowY = 112f, RowStep = 84f, RowSlant = 18f, StripW = 400f, StripH = 42f, RowTilt = 0f;
         public const float FadeIn = .2f, RowIn = .35f, RowGap = .05f, SideIn = .35f;
+        // the detail: the left column (the card, the perks, the story) and the art on the right
+        public const float LeftX = 40f, LeftW = 660f, CardH = 180f, PerkY = 288f, PerkH = 252f, StoryY = 554f, StoryH = 236f, ArtX = 660f;
         const int MaxRows = 8, Stars = 10;
 
         HubScreen screen;
@@ -47,8 +49,8 @@ namespace Blindside.UI
         }
         readonly Row[] rows = new Row[MaxRows];
 
-        Image dArt, dBand, dFace;
-        TMP_Text dName, dKana, dDesc, dRole, dRank, dCardRole, dPoints, dEpTitle, dEpText, dHeadName;
+        Image dArt, dBand;
+        TMP_Text dName, dKana, dRole, dRank, dPoints, dEpTitle, dEpText, dHeadName, dReal, dReading;
         Image dBar;
         readonly Image[] stars = new Image[Stars];
         readonly List<TMP_Text> perkTexts = new List<TMP_Text>(10);
@@ -93,7 +95,7 @@ namespace Blindside.UI
             Band(listView, "DecoBand", new Color(theme.blue.r, theme.blue.g, theme.blue.b, .78f), 380f, 300f, 1500f, 300f, 24f);
             Band(listView, "DecoBandThin", new Color(1f, 1f, 1f, .08f), 260f, 560f, 1600f, 40f, 24f);
             flareArt = HudKit.NewRect("FlareArt", listView);
-            UILayout.Place(flareArt, 640f, 40f, 820f, 820f);
+            UILayout.Place(flareArt, 660f, 40f, 770f, 770f);
             var fa = flareArt.gameObject.AddComponent<Image>();
             fa.sprite = OperatorArt.Body(Campaign.Commander); fa.preserveAspect = true; fa.raycastTarget = false; fa.enabled = fa.sprite != null;
 
@@ -131,12 +133,12 @@ namespace Blindside.UI
             UILayout.Place(r.rt, r.home.x, r.home.y, StripW + 40f, 76f);
             r.rt.localRotation = Quaternion.Euler(0f, 0f, RowTilt);
             var rolePlate = HudKit.NewRect("RolePlate", r.rt);
-            UILayout.Place(rolePlate, 0f, 0f, 150f, 24f);
+            UILayout.Place(rolePlate, 0f, 0f, 170f, 24f);
             HudKit.AddImage(rolePlate, theme.ink2);
             rolePlate.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 8f);
-            r.role = HudKit.AddText(rolePlate, "", 13f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Role", UITheme.TextRole.Body);
+            r.role = HudKit.AddText(rolePlate, "", 15f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Role", UITheme.TextRole.Body);
             r.role.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(r.role.rectTransform, 12f, 0f, 134f, 24f);
+            UILayout.Place(r.role.rectTransform, 12f, 0f, 150f, 24f);
 
             var strip = HudKit.NewRect("Strip", r.rt);
             UILayout.Place(strip, 0f, 24f, StripW, StripH);
@@ -148,17 +150,18 @@ namespace Blindside.UI
             strip.gameObject.AddComponent<PointerEnter>().onEnter = () => Select(idx);
             r.name = HudKit.AddText(strip, "", 22f, theme.ink, true, TextAlignmentOptions.MidlineLeft, "Name", UITheme.TextRole.Display);
             r.name.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(r.name.rectTransform, 22f, 0f, 170f, StripH);
-            r.kana = HudKit.AddText(strip, "", 12f, theme.dim, false, TextAlignmentOptions.MidlineLeft, "Kana", UITheme.TextRole.Body);
+            UILayout.Place(r.name.rectTransform, 22f, 0f, 140f, StripH);
+            r.kana = HudKit.AddText(strip, "", 15f, theme.dim, false, TextAlignmentOptions.MidlineLeft, "Kana", UITheme.TextRole.Body);
             r.kana.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(r.kana.rectTransform, 190f, 2f, 100f, StripH);
-            r.rankLbl = HudKit.AddText(strip, "RANK", 11f, theme.dim, true, TextAlignmentOptions.MidlineRight, "RankLbl", UITheme.TextRole.Display);
-            UILayout.Place(r.rankLbl.rectTransform, StripW - 176f, 0f, 70f, StripH);
+            UILayout.Place(r.kana.rectTransform, 162f, 2f, 104f, StripH);
+            r.rankLbl = HudKit.AddText(strip, "RANK", 15f, theme.dim, true, TextAlignmentOptions.MidlineRight, "RankLbl", UITheme.TextRole.Display);
+            UILayout.Place(r.rankLbl.rectTransform, StripW - 132f, 0f, 46f, StripH);
             r.rank = HudKit.AddText(strip, "", 30f, theme.blue, true, TextAlignmentOptions.MidlineRight, "Rank", UITheme.TextRole.Display);
             r.rank.textWrappingMode = TextWrappingModes.NoWrap;
             UILayout.Place(r.rank.rectTransform, StripW - 102f, 0f, 90f, StripH);
             r.arrow = HudKit.AddText(r.rt, "➜", 22f, theme.acc, true, TextAlignmentOptions.Center, "Arrow", UITheme.TextRole.Display);
             HudKit.UseSymbolFont(r.arrow);
+            r.arrow.gameObject.AddComponent<LintIgnoreClip>().reason = "the selection arrow hangs off the strip's left edge";
             UILayout.Place(r.arrow.rectTransform, -34f, 24f, 30f, StripH);
 
             var track = HudKit.NewRect("Track", r.rt);
@@ -172,124 +175,111 @@ namespace Blindside.UI
 
         void BuildDetail(UITheme theme)
         {
-            dBand = Band(detailView, "DecoBand", theme.blue, -120f, 260f, 1100f, 360f, -20f).GetComponent<Image>();
+            // the member's illustration on the right over a band in their colour
+            dBand = Band(detailView, "DecoBand", theme.blue, 640f, 230f, 1100f, 380f, 20f).GetComponent<Image>();
             dArtRt = HudKit.NewRect("Art", detailView);
-            UILayout.Place(dArtRt, -40f, 40f, 760f, 760f);
+            UILayout.Place(dArtRt, ArtX, 30f, 780f, 780f);
             artHome = dArtRt.anchoredPosition;
             dArt = dArtRt.gameObject.AddComponent<Image>(); dArt.preserveAspect = true; dArt.raycastTarget = false;
             Tag(detailView, theme, "コープ", "CO-OP");
 
-            // the name plate (bottom left)
-            var plate = HudKit.NewRect("NamePlate", detailView);
-            UILayout.Place(plate, 40f, H - 196f, 660f, 168f);
-            HudKit.AddImage(plate, theme.paper);
-            plate.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 20f);
-            HudKit.Stretch(KitShadow.Behind(plate.GetComponent<Image>().rectTransform, new Color(.02f, .03f, .05f), .5f, 10f, 18f).rectTransform);
-            dName = HudKit.AddText(plate, "", 46f, theme.ink, true, TextAlignmentOptions.BottomLeft, "Name", UITheme.TextRole.Display);
-            dName.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dName.rectTransform, 30f, 8f, 360f, 56f);
-            dKana = HudKit.AddText(plate, "", 16f, theme.dim, true, TextAlignmentOptions.BottomLeft, "Kana", UITheme.TextRole.Body);
-            dKana.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dKana.rectTransform, 300f, 16f, 300f, 40f);
-            var rule = HudKit.NewRect("DecoRule", plate);
-            UILayout.Place(rule, 30f, 70f, 560f, 3f);
-            HudKit.AddImage(rule, theme.ink);
-            dDesc = HudKit.AddText(plate, "", 15f, theme.ink, false, TextAlignmentOptions.TopLeft, "Desc", UITheme.TextRole.Body);
-            dDesc.textWrappingMode = TextWrappingModes.Normal;
-            UILayout.Place(dDesc.rectTransform, 30f, 82f, 590f, 80f);
-
-            // the card (top right)
+            // top left: the codename and the rank
             card = HudKit.NewRect("Card", detailView);
-            UILayout.Place(card, 800f, 96f, 600f, 300f);
+            UILayout.Place(card, LeftX, 96f, LeftW, CardH);
             cardHome = card.anchoredPosition;
             HudKit.AddImage(card, new Color(theme.ink2.r, theme.ink2.g, theme.ink2.b, .96f));
             card.gameObject.AddComponent<CutCornerGraphic>().Set(24f, CutCornerGraphic.Corners.TopRight);
             var head = HudKit.NewRect("Head", card);
-            UILayout.Place(head, 0f, 0f, 600f, 36f);
+            UILayout.Place(head, 0f, 0f, LeftW, 34f);
             HudKit.AddImage(head, theme.ink);
-            var q = HudKit.AddText(head, "Q", 14f, theme.blue, true, TextAlignmentOptions.Center, "Q", UITheme.TextRole.Display);
-            UILayout.Place(q.rectTransform, 12f, 0f, 30f, 36f);
-            var e = HudKit.AddText(head, "E", 14f, theme.blue, true, TextAlignmentOptions.Center, "E", UITheme.TextRole.Display);
-            UILayout.Place(e.rectTransform, 558f, 0f, 30f, 36f);
+            var q = HudKit.AddText(head, "Q", 15f, theme.blue, true, TextAlignmentOptions.Center, "Q", UITheme.TextRole.Display);
+            UILayout.Place(q.rectTransform, 12f, 0f, 30f, 34f);
+            var e = HudKit.AddText(head, "E", 15f, theme.blue, true, TextAlignmentOptions.Center, "E", UITheme.TextRole.Display);
+            UILayout.Place(e.rectTransform, LeftW - 66f, 0f, 30f, 34f);
             dHeadName = HudKit.AddText(head, "", 15f, Color.white, true, TextAlignmentOptions.Center, "Name", UITheme.TextRole.Body);
-            UILayout.Place(dHeadName.rectTransform, 60f, 0f, 480f, 36f);
-
-            var faceCard = HudKit.NewRect("FaceCard", card);
-            UILayout.Place(faceCard, 24f, 54f, 150f, 210f);
-            HudKit.AddImage(faceCard, theme.paper);
-            faceCard.localRotation = Quaternion.Euler(0f, 0f, -3f);
-            var face = HudKit.NewRect("Face", faceCard);
-            UILayout.Place(face, 8f, 8f, 134f, 150f);
-            HudKit.AddImage(face, theme.ink3);
-            face.gameObject.AddComponent<RectMask2D>();
-            var fi = HudKit.NewRect("FaceImage", face); HudKit.Stretch(fi);
-            dFace = fi.gameObject.AddComponent<Image>(); dFace.preserveAspect = true; dFace.raycastTarget = false;
-            dCardRole = HudKit.AddText(faceCard, "", 14f, theme.ink, true, TextAlignmentOptions.Center, "Role", UITheme.TextRole.Title);
-            dCardRole.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dCardRole.rectTransform, 4f, 164f, 142f, 40f);
-
-            var rl = HudKit.AddText(card, "ROLE", 11f, theme.blue, true, TextAlignmentOptions.TopLeft, "RoleEn", UITheme.TextRole.Display);
-            rl.characterSpacing = 12f;
-            UILayout.Place(rl.rectTransform, 200f, 56f, 120f, 16f);
-            dRole = HudKit.AddText(card, "", 30f, Color.white, true, TextAlignmentOptions.TopLeft, "Role", UITheme.TextRole.Title);
+            dHeadName.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dHeadName.rectTransform, 60f, 0f, LeftW - 140f, 34f);
+            var rl = HudKit.AddText(card, "ROLE", 15f, theme.blue, true, TextAlignmentOptions.MidlineLeft, "RoleEn", UITheme.TextRole.Display);
+            rl.characterSpacing = 8f;
+            UILayout.Place(rl.rectTransform, 24f, 44f, 70f, 24f);
+            dRole = HudKit.AddText(card, "", 18f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Role", UITheme.TextRole.Title);
             dRole.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dRole.rectTransform, 200f, 72f, 230f, 44f);
-            var rk = HudKit.AddText(card, "RANK", 14f, theme.acc, true, TextAlignmentOptions.BottomRight, "RankEn", UITheme.TextRole.Display);
-            UILayout.Place(rk.rectTransform, 430f, 70f, 70f, 40f);
+            UILayout.Place(dRole.rectTransform, 96f, 44f, 300f, 24f);
+            dName = HudKit.AddText(card, "", 44f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Codename", UITheme.TextRole.Display);
+            dName.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dName.rectTransform, 24f, 70f, 330f, 54f);
+            dKana = HudKit.AddText(card, "", 16f, Color.Lerp(theme.dim, Color.white, .5f), true, TextAlignmentOptions.MidlineLeft, "Kana", UITheme.TextRole.Body);
+            dKana.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dKana.rectTransform, 24f, 124f, 240f, 24f);
+            var rk = HudKit.AddText(card, "RANK", 15f, theme.acc, true, TextAlignmentOptions.MidlineRight, "RankEn", UITheme.TextRole.Display);
+            UILayout.Place(rk.rectTransform, LeftW - 250f, 60f, 90f, 24f);
             dRank = HudKit.AddText(card, "", 64f, theme.acc, true, TextAlignmentOptions.MidlineRight, "Rank", UITheme.TextRole.Display);
             dRank.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dRank.rectTransform, 490f, 52f, 96f, 76f);
+            UILayout.Place(dRank.rectTransform, LeftW - 156f, 40f, 130f, 80f);
             for (int i = 0; i < Stars; i++)
             {
                 var st = HudKit.NewRect("Star" + i, card);
-                UILayout.Place(st, 206f + i * 36f, 146f, 18f, 18f);
+                UILayout.Place(st, 300f + i * 32f, 130f, 16f, 16f);
                 st.localRotation = Quaternion.Euler(0f, 0f, 45f);
                 stars[i] = HudKit.AddImage(st, theme.ink3);
             }
-            var pl = HudKit.AddText(card, "親密度", 13f, Color.white, true, TextAlignmentOptions.MidlineLeft, "PointsLabel", UITheme.TextRole.Body);
-            UILayout.Place(pl.rectTransform, 200f, 196f, 80f, 22f);
-            dPoints = HudKit.AddText(card, "", 13f, Color.Lerp(theme.dim, Color.white, .5f), true, TextAlignmentOptions.MidlineRight, "Points", UITheme.TextRole.Body);
+            dPoints = HudKit.AddText(card, "", 15f, Color.Lerp(theme.dim, Color.white, .5f), true, TextAlignmentOptions.MidlineLeft, "Points", UITheme.TextRole.Body);
             dPoints.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dPoints.rectTransform, 280f, 196f, 300f, 22f);
+            UILayout.Place(dPoints.rectTransform, 24f, 152f, 330f, 22f);
             var track = HudKit.NewRect("Track", card);
-            UILayout.Place(track, 200f, 224f, 380f, 8f);
+            UILayout.Place(track, 360f, 160f, LeftW - 390f, 6f);
             HudKit.AddImage(track, new Color(1f, 1f, 1f, .14f));
             var fill = HudKit.NewRect("Fill", track);
             fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(0f, 1f); fill.pivot = new Vector2(0f, .5f); fill.offsetMin = fill.offsetMax = Vector2.zero;
             dBar = HudKit.AddImage(fill, theme.acc);
-            var hint = HudKit.AddText(card, "Q / E  切替   ·   ESC  戻る", 11f, theme.dim, true, TextAlignmentOptions.MidlineRight, "Hint", UITheme.TextRole.Body);
-            UILayout.Place(hint.rectTransform, 200f, 262f, 380f, 22f);
 
-            // the episode of this rank
-            epBox = HudKit.NewRect("Episode", detailView);
-            UILayout.Place(epBox, 800f, 408f, 600f, 150f);
+            // under it: what the co-op gives (the unlocked perks white, the rest dim with the rank that unlocks them)
+            perkBox = HudKit.NewRect("Perks", detailView);
+            UILayout.Place(perkBox, LeftX, PerkY, LeftW, PerkH);
+            perkHome = perkBox.anchoredPosition;
+            HudKit.AddImage(perkBox, new Color(theme.ink.r, theme.ink.g, theme.ink.b, .9f));
+            perkBox.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 14f);
+            var chip = HudKit.NewRect("Chip", perkBox);
+            UILayout.Place(chip, 18f, 12f, 280f, 26f);
+            HudKit.AddImage(chip, theme.acc);
+            chip.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 8f);
+            var ph = HudKit.AddText(chip, "CO-OP BONUS // コープ能力", 15f, theme.ink, true, TextAlignmentOptions.MidlineLeft, "Head", UITheme.TextRole.Body);
+            ph.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(ph.rectTransform, 10f, 0f, 265f, 26f);
+            for (int i = 0; i < 9; i++)
+            {
+                var t = HudKit.AddText(perkBox, "", 15f, Color.white, true, TextAlignmentOptions.MidlineLeft, "Perk" + i, UITheme.TextRole.Body);
+                t.textWrappingMode = TextWrappingModes.NoWrap; t.overflowMode = TextOverflowModes.Ellipsis;
+                UILayout.Place(t.rectTransform, 22f, 46f + i * 22f, LeftW - 56f, 22f);
+                perkTexts.Add(t);
+            }
+
+            // bottom left: the real name and the story so far
+            epBox = HudKit.NewRect("Story", detailView);
+            UILayout.Place(epBox, LeftX, StoryY, LeftW, StoryH);
             epHome = epBox.anchoredPosition;
             HudKit.AddImage(epBox, theme.paper);
             epBox.gameObject.AddComponent<SlantedGraphic>().Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, 14f);
             var band = HudKit.NewRect("DecoBand", epBox);
-            UILayout.Place(band, 0f, 0f, 8f, 150f);
+            UILayout.Place(band, 0f, 0f, 8f, StoryH);
             HudKit.AddImage(band, theme.foe);
+            var nl = HudKit.AddText(epBox, "本名", 15f, theme.dim, true, TextAlignmentOptions.MidlineLeft, "RealLabel", UITheme.TextRole.Body);
+            UILayout.Place(nl.rectTransform, 26f, 10f, 50f, 40f);
+            dReal = HudKit.AddText(epBox, "", 30f, theme.ink, true, TextAlignmentOptions.MidlineLeft, "RealName", UITheme.TextRole.Title);
+            dReal.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dReal.rectTransform, 80f, 6f, 260f, 44f);
+            dReading = HudKit.AddText(epBox, "", 15f, theme.dim, true, TextAlignmentOptions.MidlineLeft, "Reading", UITheme.TextRole.Body);
+            dReading.textWrappingMode = TextWrappingModes.NoWrap;
+            UILayout.Place(dReading.rectTransform, 344f, 10f, 260f, 40f);
+            var rule = HudKit.NewRect("DecoRule", epBox);
+            UILayout.Place(rule, 26f, 54f, LeftW - 70f, 3f);
+            HudKit.AddImage(rule, theme.ink);
             dEpTitle = HudKit.AddText(epBox, "", 18f, theme.ink, true, TextAlignmentOptions.TopLeft, "Title", UITheme.TextRole.Title);
-            dEpTitle.textWrappingMode = TextWrappingModes.NoWrap;
-            UILayout.Place(dEpTitle.rectTransform, 26f, 14f, 540f, 26f);
+            dEpTitle.textWrappingMode = TextWrappingModes.NoWrap; dEpTitle.overflowMode = TextOverflowModes.Ellipsis;
+            UILayout.Place(dEpTitle.rectTransform, 26f, 66f, LeftW - 70f, 26f);
             dEpText = HudKit.AddText(epBox, "", 15f, theme.ink, false, TextAlignmentOptions.TopLeft, "Text", UITheme.TextRole.Body);
-            dEpText.textWrappingMode = TextWrappingModes.Normal;
-            UILayout.Place(dEpText.rectTransform, 26f, 48f, 540f, 92f);
-
-            // the perks by rank
-            perkBox = HudKit.NewRect("Perks", detailView);
-            UILayout.Place(perkBox, 800f, 572f, 600f, 226f);
-            perkHome = perkBox.anchoredPosition;
-            HudKit.AddImage(perkBox, new Color(theme.ink2.r, theme.ink2.g, theme.ink2.b, .9f));
-            var ph = HudKit.AddText(perkBox, "コープ能力", 13f, theme.blue, true, TextAlignmentOptions.TopLeft, "Head", UITheme.TextRole.Title);
-            UILayout.Place(ph.rectTransform, 18f, 8f, 300f, 20f);
-            for (int i = 0; i < 9; i++)
-            {
-                var t = HudKit.AddText(perkBox, "", 12.5f, Color.white, true, TextAlignmentOptions.TopLeft, "Perk" + i, UITheme.TextRole.Body);
-                t.textWrappingMode = TextWrappingModes.NoWrap; t.overflowMode = TextOverflowModes.Ellipsis;
-                UILayout.Place(t.rectTransform, 18f, 32f + i * 21f, 566f, 20f);
-                perkTexts.Add(t);
-            }
+            dEpText.textWrappingMode = TextWrappingModes.Normal; dEpText.overflowMode = TextOverflowModes.Ellipsis;
+            UILayout.Place(dEpText.rectTransform, 26f, 98f, LeftW - 70f, StoryH - 110f);
         }
 
         // ---- open / close --------------------------------------------------------------------------------------------------------
@@ -304,6 +294,15 @@ namespace Blindside.UI
         }
 
         public void Close() { gameObject.SetActive(false); }
+
+        /// <summary>Previews: opened, settled on member `select` (the list, or its detail).</summary>
+        public void Pose(int select, bool showDetail)
+        {
+            Open();
+            sel = Mathf.Clamp(select, 0, Mathf.Max(0, ops.Count - 1));
+            if (showDetail) OpenDetail(); else PaintSelection();
+            Evaluate(Duration + 1f);
+        }
 
         void Back()
         {
@@ -381,14 +380,14 @@ namespace Blindside.UI
             int pts = Campaign.Points(D, Campaign.Commander, o.key), rank = Campaign.Level(pts);
             bool max = rank >= Campaign.CoopNeed.Length;
             dArt.sprite = OperatorArt.Body(o.key); dArt.enabled = dArt.sprite != null;
-            dFace.sprite = OperatorArt.Face(o.key); dFace.enabled = dFace.sprite != null;
             dBand.color = new Color(o.color.r, o.color.g, o.color.b, .55f);
             dName.SetText(o.DisplayName);
             dKana.SetText(o.kr ?? "");
-            dDesc.SetText(o.description ?? "");
+            var real = OperatorProfiles.RealName(o.key);
+            dReal.SetText(real.name);
+            dReading.SetText(real.reading);
             dHeadName.SetText(o.DisplayName + "  ·  " + (sel + 1) + " / " + ops.Count);
             dRole.SetText(o.role ?? "");
-            dCardRole.SetText(o.role ?? "");
             dRank.SetText(max ? "MAX" : rank.ToString());
             for (int i = 0; i < Stars; i++) stars[i].color = i < rank ? theme.acc : theme.ink3;
             int next = max ? pts : Campaign.CoopNeed[rank];
@@ -396,13 +395,13 @@ namespace Blindside.UI
             dBar.rectTransform.anchorMax = new Vector2(Campaign.LevelProgress(pts), 1f);
             if (rank == 0)
             {
-                dEpTitle.SetText("まだ物語は始まっていない");
+                dEpTitle.SetText("物語はまだ始まっていない");
                 dEpText.SetText("交流・贈り物・休暇・共同訓練でコープランクを上げると、" + o.DisplayName + "との物語が進む。");
             }
             else
             {
                 var ep = CoopStories.Of(o.key, rank);
-                dEpTitle.SetText("RANK " + rank + "  —  " + ep.title);
+                dEpTitle.SetText("第" + rank + "話  " + ep.title);
                 dEpText.SetText(ep.text);
             }
             var perks = CoopPerks.Lines(o.key);
@@ -412,7 +411,7 @@ namespace Blindside.UI
                 if (i >= perks.Count) { t.SetText(""); continue; }
                 var p = perks[i];
                 bool open = rank >= p.rank;
-                t.SetText("Rank " + p.rank + "   " + p.name + "  —  " + p.text);
+                t.SetText("R" + p.rank + "  " + p.name + " — " + p.text);
                 t.color = open ? Color.white : new Color(1f, 1f, 1f, .32f);
             }
         }
@@ -438,13 +437,13 @@ namespace Blindside.UI
                 return;
             }
             float s = reduce ? 1f : UIEase.Tactical(Mathf.Clamp01((t - FadeIn * .5f) / SideIn));
-            var ap = artHome + new Vector2(-(1f - s) * 160f, 0f);
+            var ap = artHome + new Vector2((1f - s) * 160f, 0f);
             if (dArtRt.anchoredPosition != ap) dArtRt.anchoredPosition = ap;
-            var cp = cardHome + new Vector2((1f - s) * 220f, 0f);
+            var cp = cardHome + new Vector2(-(1f - s) * 220f, 0f);
             if (card.anchoredPosition != cp) card.anchoredPosition = cp;
-            var ep = epHome + new Vector2((1f - s) * 280f, 0f);
+            var ep = epHome + new Vector2(-(1f - s) * 280f, 0f);
             if (epBox.anchoredPosition != ep) epBox.anchoredPosition = ep;
-            var pp = perkHome + new Vector2((1f - s) * 340f, 0f);
+            var pp = perkHome + new Vector2(-(1f - s) * 340f, 0f);
             if (perkBox.anchoredPosition != pp) perkBox.anchoredPosition = pp;
         }
 

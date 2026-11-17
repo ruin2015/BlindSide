@@ -336,7 +336,7 @@ namespace Blindside.Integration
             else if (c.gadget.HasValue) html = "敵の装備 — 破壊";
             else if (c.breachPanel >= 0) html = "散弾射撃 — 壁を破壊";
             else html = "目標未確認" + (c.reinforced ? " · 強化壁で停止" : "");
-            if (c.walls > 0) html += $"\n壁貫通 ×{c.walls} (命中 -{c.walls * 22}%)";
+            if (c.walls > 0) html += $"\n壁貫通 ×{c.walls} (命中率低下 · 最低 {CombatSystem.WallFloor:0}%)";
 
             tipText.text = html;
             tipRoot.gameObject.SetActive(true);

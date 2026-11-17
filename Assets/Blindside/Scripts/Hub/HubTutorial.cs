@@ -47,8 +47,8 @@ namespace Blindside.Hub
             new Area { room = "医務室", en = "MEDICAL", host = "SERUM", hostLabel = "SERUM (衛生兵)", accent = new Color32(0x55, 0xca, 0x8a, 0xff),
                        actions = new[] { "医療キットを買う", "アドロピン注射器・覚醒薬を買う", "作戦中の回復手段を整える" },
                        line = "医務室。\n作戦で使う医療品が手に入る。" },
-            new Area { room = "装備購入", en = "SUPPLY", hostLabel = "補給係", accent = new Color32(0xff, 0xc8, 0x1e, 0xff),
-                       actions = new[] { "アタッチメントを買う", "ガジェットを買う", "隊員に贈り物をする" },
+            new Area { room = "装備購入", en = "SUPPLY", host = "SILENCE", hostLabel = "SILENCE (補給係)", accent = new Color32(0xff, 0xc8, 0x1e, 0xff),
+                       actions = new[] { "武器・アタッチメントを買う", "ガジェットを買う", "隊員に贈り物をする" },
                        line = "装備購入。\nパーツやガジェットを買える。" },
             new Area { room = "隊員・装備管理", en = "LOADOUT", host = "IGNIS", hostLabel = "IGNIS (装備担当)", accent = new Color32(0x00, 0xce, 0xf9, 0xff),
                        actions = new[] { "銃にパーツを取り付ける", "ガジェットを持たせる", "仲間のロードアウトを変える" },
@@ -56,13 +56,13 @@ namespace Blindside.Hub
             new Area { room = "訓練所", en = "TRAINING", host = "BASTION", hostLabel = "BASTION (教官)", accent = new Color32(0x9e, 0x6a, 0xbf, 0xff),
                        actions = new[] { "ステータスを鍛える", "BASTIONとトレーニング (½日)" },
                        line = "訓練所。\nここでステータスを鍛えられる。" },
-            new Area { room = "炊事場", en = "KITCHEN", hostLabel = "炊事係", accent = new Color32(0xef, 0x82, 0x02, 0xff),
+            new Area { room = "炊事場", en = "KITCHEN", host = "GHOST", hostLabel = "GHOST (炊事係)", accent = new Color32(0xef, 0x82, 0x02, 0xff),
                        actions = new[] { "隊員と炊事支援をする (½日)", "次の出撃で最大HP +10", "一緒に作った隊員とのコープ" },
                        line = "炊事場。\n飯を作れば、次の出撃で効いてくる。" },
             new Area { room = "電子戦室", en = "E-WAR", hostLabel = "不在", accent = new Color32(0xb0, 0x5c, 0xff, 0xff),
                        actions = new[] { "現在は使われていない" },
                        line = "電子戦室。……今は空き部屋だが、\nいずれ使う奴らが来る。",
-                       joinedActions = new[] { "SILENCEから武器を買う", "GHOST・SILENCEと話す", "交流・褒賞休暇" },
+                       joinedActions = new[] { "GHOST・SILENCEの部屋", "交流・褒賞休暇" },
                        joinedLine = "電子戦室。\nGHOSTとSILENCEの部屋だ。\n銃が要るならSILENCEに頼め。" },
         };
         // up through the roof, then settled straight over the whole HQ (OverviewPitch: almost vertical — the 8.5 m walls hide no room;
@@ -127,6 +127,7 @@ namespace Blindside.Hub
                 yield return talk.Run(Speaker, "では、一つずつ詳しく見ていくぞ。");
                 foreach (var s in Stops)
                 {
+                    if (s.station == HubStation.Kitchen && !Joined()) continue;
                     yield return CutTo(s);
                     foreach (var line in s.lines) yield return talk.Run(Speaker, line);
                 }
@@ -225,6 +226,7 @@ namespace Blindside.Hub
                 HubArea at = null;
                 foreach (var x in areas) if (x.displayName == a.room) at = x;
                 if (at == null) continue;
+                if (!Joined() && (a.room == "装備購入" || a.room == "炊事場")) continue;   // (no one there before GHOST and SILENCE join)
                 bool joined = a.joinedLine != null && Joined();
                 labels.Add(new HubTourLabels.Room
                 {

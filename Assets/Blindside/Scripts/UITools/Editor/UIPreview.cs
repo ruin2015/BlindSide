@@ -70,6 +70,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.Manage, label = "本部 — IGNIS (ロードアウト / 装備購入)", build = UIPreviewHub.BuildManage },
             new State { name = UIPreviewHub.LoadoutState, label = "本部 — ロードアウト", build = UIPreviewHub.BuildLoadout },
             new State { name = UIPreviewHub.Menu, label = "本部 — メニュー (ESC)", build = UIPreviewHub.BuildMenu },
+            new State { name = UIPreviewHub.Coop, label = "本部 — コープ 一覧", build = UIPreviewHub.BuildCoop },
+            new State { name = UIPreviewHub.CoopDetail, label = "本部 — コープ 詳細 (CRUSHER)", build = UIPreviewHub.BuildCoopDetail },
             new State { name = UIPreviewHub.StationSerum, label = "本部 — 医務室 (SERUM)", build = UIPreviewHub.BuildStationSerum },
             new State { name = UIPreviewHub.StationIgnis, label = "本部 — IGNIS", build = UIPreviewHub.BuildStationIgnis },
             new State { name = UIPreviewHub.StationBastion, label = "本部 — 訓練所 (隊員を選ぶ)", build = UIPreviewHub.BuildStationBastion },
@@ -113,6 +115,7 @@ namespace Blindside.UITools.EditorTools
             new State { name = "hud_moved", label = "HUD — 移動後 (CRUSHER 4.2/7m)", build = s => BuildHud(s, HudState.Moved) },
             new State { name = "hud_prep", label = "HUD — 防衛準備 (PREPARATION, ROUND 00)", build = s => BuildHud(s, HudState.Prep) },
             new State { name = "hud_cmd_long", label = "HUD — 命令メニュー 最長の能力名 (FLARE ブリーチングランチャー)", build = s => BuildHud(s, HudState.CmdLong) },
+            new State { name = "hud_cmd_gadget", label = "HUD — ガジェットメニュー (ドローン・破片手榴弾・閃光弾)", build = s => BuildHud(s, HudState.CmdGadget) },
             new State { name = "hud_cmd_disabled", label = "HUD — 命令メニュー 無効ボタン (CRUSHER 移動力0・能力0回)", build = s => BuildHud(s, HudState.CmdDisabled) },
             new State { name = "hud_longdesc", label = "HUD — 最長の能力説明 (VOLT)", build = s => BuildHud(s, HudState.LongDesc) },
             new State { name = "hud_hint_move", label = "HUD — 案内バー 移動中 + ログ", build = s => BuildHud(s, HudState.HintMove) },
@@ -486,7 +489,7 @@ namespace Blindside.UITools.EditorTools
         // ================================================================
         //  HUD (sample data: the attack squad of the default match, round 1)
         // ================================================================
-        enum HudState { Selected, Unselected, Hit, Ended, MoveDialog, Banner, LongDesc, Moved, Prep, CmdLong, CmdDisabled, HintMove, HintFire, HintLong, LogFull, Banner1, Banner3, Banner4, Contact, Headshot, HeadshotLock, EndNormal, EndHover, EndDisabled, LogHistory }
+        enum HudState { Selected, Unselected, Hit, Ended, MoveDialog, Banner, LongDesc, Moved, Prep, CmdLong, CmdDisabled, CmdGadget, HintMove, HintFire, HintLong, LogFull, Banner1, Banner3, Banner4, Contact, Headshot, HeadshotLock, EndNormal, EndHover, EndDisabled, LogHistory }
 
         // Tab's full battle log over the HUD: three rounds of sample lines (HudLog.History is static — cleared and refilled here)
         static void BuildLogHistory(Stage s)
@@ -556,7 +559,7 @@ namespace Blindside.UITools.EditorTools
         static void BuildHud(Stage s, HudState state)
         {
             var squad = SampleSquad(state);
-            Unit selected = state == HudState.Selected || state == HudState.MoveDialog || state == HudState.HintMove || state == HudState.HintFire || state == HudState.HintLong || state == HudState.LogFull || state == HudState.Moved || state == HudState.CmdDisabled ? squad[0]
+            Unit selected = state == HudState.Selected || state == HudState.MoveDialog || state == HudState.HintMove || state == HudState.HintFire || state == HudState.HintLong || state == HudState.LogFull || state == HudState.Moved || state == HudState.CmdDisabled || state == HudState.CmdGadget ? squad[0]
                 : state == HudState.Hit || state == HudState.CmdLong ? squad[1] : null;
             if (state == HudState.Moved) squad[0].moveLeft = 4.2f;                // CRUSHER after a 2.8m move
             if (state == HudState.CmdDisabled) squad[0].moveLeft = 0f;            // moved all the way: 移動 / 攻撃 / 能力 are disabled
@@ -716,6 +719,11 @@ namespace Blindside.UITools.EditorTools
             if (state == HudState.LogFull)
                 hint.Set("配置を確認したら[作戦開始]を押してください", "配置した隊員をクリックすると、再度降下させられます", new List<HintButton>(), null);
 
+            if (state == HudState.CmdGadget)
+            {
+                menu.Render($"{selected.op.key} // GADGET", selected.op.color, Gadgets(), false, null);
+                menu.Root.anchoredPosition = new Vector2(340f, -150f);
+            }
             if (state == HudState.Selected || state == HudState.CmdLong || state == HudState.CmdDisabled)
             {
                 menu.Render($"{selected.op.key} // COMMAND", selected.op.color, Commands(selected, state == HudState.CmdDisabled), false, null);
@@ -741,7 +749,7 @@ namespace Blindside.UITools.EditorTools
             m.grid[0] = $"{M1(u.moveLeft)}<size=11><color=#9A9C9E>/{u.MoveRange}m</color></size>";
             m.grid[1] = op.mv.ToString();
             m.grid[2] = w != null ? $"{w.damage}×{w.shots}" : "-";
-            m.grid[3] = w != null ? w.accuracy.ToString() : "-";
+            m.grid[3] = w != null ? "100" : "-";
             m.grid[4] = w != null ? w.range.ToString() : "-";
             m.weapon = wName + (w != null && w.breach ? " · 近接射撃で通常の壁を破壊" : "");
             m.abilityName = op.abilityName;
@@ -762,9 +770,18 @@ namespace Blindside.UITools.EditorTools
                 new CommandModel { id = "face", kr = "視界変更", en = "VIEW", ic = "◐", ok = true, sub = "" },
                 new CommandModel { id = "fire", kr = "攻撃", en = "FIRE", ic = "✛", ok = !spent },
                 new CommandModel { id = "skill", kr = op.abilityName, en = "ABILITY", ic = "✦", ok = charges > 0, sub = charges >= 99 ? "∞" : charges + "回" },
-                new CommandModel { id = "gadget", kr = "ドローン", en = "DRONE", ic = "⌖", ok = true, sub = "展開" },
+                new CommandModel { id = "gadgets", kr = "ガジェット", en = "GADGET", ic = "✹", ok = true, sub = "3種" },
                 new CommandModel { id = "wait", kr = "待機", en = "END", ic = "■", ok = true },
             };
         }
+
+        /// <summary>The ガジェット menu: the drone every operator carries, the items picked at the HQ, and 戻る.</summary>
+        static List<CommandModel> Gadgets() => new List<CommandModel>
+        {
+            new CommandModel { id = "gadget", kr = "ドローン", en = "DRONE", ic = "⌖", ok = true, sub = "展開" },
+            new CommandModel { id = "item:frag", kr = "破片手榴弾", en = "FRAG", ic = "✹", ok = true, sub = "1個" },
+            new CommandModel { id = "item:flash", kr = "閃光弾", en = "FLASH", ic = "✦", ok = true, sub = "1個" },
+            new CommandModel { id = "back", kr = "戻る", en = "BACK", ic = "◐", ok = true },
+        };
     }
 }

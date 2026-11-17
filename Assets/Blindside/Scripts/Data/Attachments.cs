@@ -9,19 +9,20 @@
 //   8倍スコープ           中・遠距離命中 +5 · 近距離命中 −3 · ヘッドショット +5
 //   16倍スコープ          遠距離命中 +10 · 近距離命中 −10 · ヘッドショット +20
 //   サプレッサー          the shot leaves no 銃声 mark for the enemy · 攻撃力 −2%
-//   マズルブレーキ        the volley's first round: 命中 +10 · ヘッドショット +5 (every round)
-//   コンペンセイター      命中 +5 · ヘッドショット +3
-//   フラッシュハイダー    攻撃力 +5% · 命中 +3
+//   マズルブレーキ        ヘッドショット +8
+//   コンペンセイター      ヘッドショット +6
+//   フラッシュハイダー    攻撃力 +5% · ヘッドショット +2
 //   ロングバレル          no damage falloff with distance
 //   クイックドローマガジン SPD +1 (who fires first on a mutual sighting)
 //   拡張マガジン          rounds per volley +1
 //   ベルトマガジン        rounds per volley +2 · 機動力 −10%
 //   ドラムマガジン        rounds per volley +2 · 命中 −5
 //   折りたたみストック    機動力 +10%
-//   固定ストック          命中 +10
-//   調整式ストック        命中 +5 · 機動力 +5%
-//   バーチカルグリップ    命中 +10 · ヘッドショット +5
-//   アングルグリップ      命中 +5 · 機動力 +10%
+//   固定ストック          ヘッドショット +6
+//   調整式ストック        ヘッドショット +3 · 機動力 +5%
+//   バーチカルグリップ    ヘッドショット +10
+//   アングルグリップ      ヘッドショット +3 · 機動力 +10%
+// Only the optics (光学機器) raise the hit chance; the other parts give critical (headshot) chance instead.
 // Several parts add up (percentages add, then apply once).
 using System.Collections.Generic;
 using System.Text;
@@ -88,19 +89,19 @@ namespace Blindside.Data
             new Attachment { key = "scope8x",     slot = 1, art = "04_scope_8x",           name = "8倍スコープ",            price = 10000, accMid = 5, accFar = 5, accNear = -3, headshot = 5 },
             new Attachment { key = "scope16x",    slot = 1, art = "05_scope_16x",          name = "16倍スコープ",           price = 12000, accFar = 10, accNear = -10, headshot = 20 },
             new Attachment { key = "suppressor",  slot = 0, art = "06_suppressor",         name = "サプレッサー",           price = 8000,  silenced = true, damagePct = -2 },
-            new Attachment { key = "muzzlebrake", slot = 0, art = "07_muzzle_brake",       name = "マズルブレーキ",         price = 6000,  firstAcc = 10, headshot = 5 },
-            new Attachment { key = "compensator", slot = 0, art = "08_compensator",        name = "コンペンセイター",       price = 6000,  acc = 5, headshot = 3 },
-            new Attachment { key = "flashhider",  slot = 0, art = "09_flash_hider",        name = "フラッシュハイダー",     price = 5000,  damagePct = 5, acc = 3 },
+            new Attachment { key = "muzzlebrake", slot = 0, art = "07_muzzle_brake",       name = "マズルブレーキ",         price = 6000,  headshot = 8 },
+            new Attachment { key = "compensator", slot = 0, art = "08_compensator",        name = "コンペンセイター",       price = 6000,  headshot = 6 },
+            new Attachment { key = "flashhider",  slot = 0, art = "09_flash_hider",        name = "フラッシュハイダー",     price = 5000,  damagePct = 5, headshot = 2 },
             new Attachment { key = "extbarrel",   slot = 4, art = "10_extended_barrel",    name = "ロングバレル",           price = 9000,  noFalloff = true },
             new Attachment { key = "quickmag",    slot = 3, art = "11_quickdraw_magazine", name = "クイックドローマガジン", price = 6000,  speed = 1 },
             new Attachment { key = "extmag",      slot = 3, art = "12_extended_magazine",  name = "拡張マガジン",           price = 7000,  extraShots = 1 },
             new Attachment { key = "beltmag",     slot = 3, art = "13_belt_magazine",      name = "ベルトマガジン",         price = 11000, extraShots = 2, mobilityPct = -10 },
             new Attachment { key = "drummag",     slot = 3, art = "14_drum_magazine",      name = "ドラムマガジン",         price = 9000,  extraShots = 2, acc = -5 },
             new Attachment { key = "foldstock",   slot = 5, art = "15_folding_stock",      name = "折りたたみストック",     price = 5000,  mobilityPct = 10 },
-            new Attachment { key = "fixedstock",  slot = 5, art = "16_fixed_stock",        name = "固定ストック",           price = 5000,  acc = 10 },
-            new Attachment { key = "adjstock",    slot = 5, art = "17_adjustable_stock",   name = "調整式ストック",         price = 7000,  acc = 5, mobilityPct = 5 },
-            new Attachment { key = "vgrip",       slot = 2, art = "18_vertical_grip",      name = "バーチカルグリップ",     price = 5000,  acc = 10, headshot = 5 },
-            new Attachment { key = "agrip",       slot = 2, art = "19_angled_grip",        name = "アングルグリップ",       price = 5000,  acc = 5, mobilityPct = 10 },
+            new Attachment { key = "fixedstock",  slot = 5, art = "16_fixed_stock",        name = "固定ストック",           price = 5000,  headshot = 6 },
+            new Attachment { key = "adjstock",    slot = 5, art = "17_adjustable_stock",   name = "調整式ストック",         price = 7000,  headshot = 3, mobilityPct = 5 },
+            new Attachment { key = "vgrip",       slot = 2, art = "18_vertical_grip",      name = "バーチカルグリップ",     price = 5000,  headshot = 10 },
+            new Attachment { key = "agrip",       slot = 2, art = "19_angled_grip",        name = "アングルグリップ",       price = 5000,  headshot = 3, mobilityPct = 10 },
         };
 
         public static Attachment Of(string key)

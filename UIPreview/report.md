@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-17 21:27
+Screen 1440x810 · 0 issues · generated 2026-11-18 01:54
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -45,6 +45,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_manage | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_loadout | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_menu | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_coop | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hub_coop_detail | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_station_serum | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_station_ignis | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_station_bastion | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -88,6 +90,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hud_moved | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_prep | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_cmd_long | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| hud_cmd_gadget | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_cmd_disabled | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_longdesc | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_hint_move | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -162,70 +165,73 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 84종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 87종)
 
 - BattleCallout ×2
 - Brighten ×6
-- Chip ×613
+- Chip ×625
 - ClickRelay ×5
-- CornerBrackets ×30
-- CutCornerGraphic ×256
+- CornerBrackets ×31
+- CutCornerGraphic ×264
 - EngagePreview ×5
 - ExpGainPopup ×2
-- HazardStripe ×169
+- HazardStripe ×205
 - HubArmoryScreen ×7
-- HubHover ×75
+- HubCoopScreen ×2
+- HubHover ×74
 - HubListPanel ×5
 - HubLoadoutScreen ×3
 - HubMenu ×2
 - HubMinimap ×1
 - HubPointer ×54
-- HubScreen ×30
+- HubScreen ×32
 - HubShopScreen ×5
 - HubSquadScreen ×2
 - HubStationScreen ×5
 - HubTalkPanel ×1
+- HubTopbar ×32
 - HubTourLabels ×1
 - IntroBriefing ×3
 - IntroHoloScreen ×1
 - IntroMiaCards ×1
 - IntroSubtitle ×6
 - IntroTitleAssemble ×2
-- KitBannerStrip ×57
-- KitBrighten ×131
+- KitBannerStrip ×58
+- KitBrighten ×133
 - KitChoice ×5
-- KitCommandMenu ×16
+- KitCommandMenu ×17
 - KitCoopRankUp ×2
 - KitDialogue ×5
 - KitGradient ×12
 - KitGrowthPanel ×1
 - KitLogHistory ×1
 - KitMenuLogo ×6
-- KitMissionBar ×38
+- KitMissionBar ×39
 - KitOptionsPanel ×5
 - KitPointer ×59
-- KitRoster ×38
+- KitRoster ×39
 - KitSaveIndicator ×1
-- KitShadow ×141
+- KitShadow ×144
 - KitSlider ×6
 - KitStepper ×1
 - KitSupportBadge ×1
-- KitSweep ×196
+- KitSweep ×202
 - KitSwitch ×4
 - KitTextButton ×65
-- KitTint ×325
+- KitTint ×332
 - KitTitleLeft ×6
-- LintIgnoreClip ×902
+- LintIgnoreClip ×917
 - LintIgnoreOverlap ×342
 - MainMenuScreen ×6
 - OperationResultScreen ×5
 - PauseMenu ×6
+- PointerEnter ×4
 - ResultScreen ×3
-- SegmentedBar ×317
-- SlantedGraphic ×2843
-- SlantedMask ×311
+- SegmentedBar ×322
+- SlantedGraphic ×2948
+- SlantedMask ×317
 - StageClick ×2
-- TacticalPanel ×775
+- TacticalPanel ×793
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialForecastTour ×1
@@ -238,15 +244,15 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
 - TutorialWallPopup ×1
-- UIContactAlert ×38
-- UIGlitchImage ×343
-- UIGlitchName ×60
-- UIGlitchText ×148
-- UIHeadshotBadge ×38
+- UIContactAlert ×39
+- UIGlitchImage ×350
+- UIGlitchName ×62
+- UIGlitchText ×152
+- UIHeadshotBadge ×39
 - UIPerspective ×5
-- UIPerspectiveVertex ×268
-- UIPhaseBanner ×38
-- UIPulse ×38
+- UIPerspectiveVertex ×245
+- UIPhaseBanner ×39
+- UIPulse ×39
 - WallIllustration ×5
 
 ## 미리보기 상태 (Render Previews)
@@ -283,6 +289,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hub_manage | 1440x810 | 本部 — IGNIS (ロードアウト / 装備購入) |
 | hub_loadout | 1440x810 | 本部 — ロードアウト |
 | hub_menu | 1440x810 | 本部 — メニュー (ESC) |
+| hub_coop | 1440x810 | 本部 — コープ 一覧 |
+| hub_coop_detail | 1440x810 | 本部 — コープ 詳細 (CRUSHER) |
 | hub_station_serum | 1440x810 | 本部 — 医務室 (SERUM) |
 | hub_station_ignis | 1440x810 | 本部 — IGNIS |
 | hub_station_bastion | 1440x810 | 本部 — 訓練所 (隊員を選ぶ) |
@@ -326,6 +334,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | hud_moved | 1440x810 | HUD — 移動後 (CRUSHER 4.2/7m) |
 | hud_prep | 1440x810 | HUD — 防衛準備 (PREPARATION, ROUND 00) |
 | hud_cmd_long | 1440x810 | HUD — 命令メニュー 最長の能力名 (FLARE ブリーチングランチャー) |
+| hud_cmd_gadget | 1440x810 | HUD — ガジェットメニュー (ドローン・破片手榴弾・閃光弾) |
 | hud_cmd_disabled | 1440x810 | HUD — 命令メニュー 無効ボタン (CRUSHER 移動力0・能力0回) |
 | hud_longdesc | 1440x810 | HUD — 最長の能力説明 (VOLT) |
 | hud_hint_move | 1440x810 | HUD — 案内バー 移動中 + ログ |

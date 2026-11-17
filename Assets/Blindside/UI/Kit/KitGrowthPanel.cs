@@ -34,7 +34,7 @@ namespace Blindside.UI
             "1ポイントで被ダメージ −1.5% (最大30%)",
             "1ポイントごとに与えるダメージ +2%",
             "1ポイントごとに移動力 +0.2m",
-            "1ポイントごとに命中率 +0.5",
+            "1ポイントごとにクリティカル率 +0.5%",
         };
 
         RectTransform pop, box;
@@ -263,8 +263,8 @@ namespace Blindside.UI
             masteryText.SetText("熟練度 Lv {0}", (float)wprog.level);
             int wneed = ProgressRules.MasteryNeed(wprog.level);
             masteryFill.anchorMax = new Vector2(wneed > 0 ? Mathf.Clamp01(wprog.exp / (float)wneed) : 1f, 1f);
-            float wd = (Mathf.Max(1, wprog.level) - 1) * ProgressBonus.MasteryDamage * 100f, wa = (Mathf.Max(1, wprog.level) - 1) * ProgressBonus.MasteryAccuracy;
-            masteryEffect.SetText("ダメージ +{0:0}%  命中 +{1:1}", wd, wa);
+            float wd = (Mathf.Max(1, wprog.level) - 1) * ProgressBonus.MasteryDamage * 100f, wa = (Mathf.Max(1, wprog.level) - 1) * ProgressBonus.MasteryCrit;
+            masteryEffect.SetText("ダメージ +{0:0}%  クリティカル +{1:1}%", wd, wa);
 
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
@@ -311,7 +311,7 @@ namespace Blindside.UI
                     case 1: effects[i].SetText("-{0:1}%", Mathf.Min(ProgressBonus.DefMax, v * ProgressBonus.DefPerPoint) * 100f); break;
                     case 2: effects[i].SetText("+{0:0}%", v * ProgressBonus.AtkPerPoint * 100f); break;
                     case 3: effects[i].SetText("+{0:1}m", v * ProgressBonus.MovePerPoint); break;
-                    default: effects[i].SetText("+{0:1}", v * ProgressBonus.AccPerPoint); break;
+                    default: effects[i].SetText("+{0:1}%", v * ProgressBonus.CritPerPoint); break;
                 }
                 bool canPlus = editable && left > 0, canMinus = editable && add[i] > 0;
                 plus[i].interactable = canPlus; minus[i].interactable = canMinus;

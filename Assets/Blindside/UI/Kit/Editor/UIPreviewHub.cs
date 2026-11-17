@@ -113,6 +113,18 @@ namespace Blindside.UI.EditorTools
         public static void BuildLoadout(UIPreview.Stage s) => Screen(s).OpenStation(HubStation.Loadout, 1);
         public static void BuildSquad(UIPreview.Stage s) { var hs = Screen(s); hs.Menu.Open(); hs.OpenStation(HubStation.Growth, 0); }
         public static void BuildMenu(UIPreview.Stage s) => Screen(s).Menu.Open();
+        public const string Coop = "hub_coop", CoopDetail = "hub_coop_detail";
+        /// <summary>hub_coop: the members' list; hub_coop_detail: CRUSHER's page at rank 2 (the bonus, the real name, the story).</summary>
+        public static void BuildCoop(UIPreview.Stage s) => CoopScreen(s).Pose(0, false);
+        public static void BuildCoopDetail(UIPreview.Stage s) => CoopScreen(s).Pose(0, true);
+
+        static HubCoopScreen CoopScreen(UIPreview.Stage s)
+        {
+            var hs = Screen(s);
+            Blindside.Progress.Campaign.LinkOf(hs.Data, Blindside.Progress.Campaign.Commander, "CRUSHER").points = 30;
+            Blindside.Progress.Campaign.LinkOf(hs.Data, Blindside.Progress.Campaign.Commander, "SERUM").points = 12;
+            return hs.Coop;
+        }
         /// <summary>hub_bench: the workbench on FLARE's MX50 (suppressor + 4x scope fitted); hub_bench_pick: its 光学機器 picker open.</summary>
         public static void BuildBench(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, -1);
         public static void BuildBenchPick(UIPreview.Stage s) => Screen(s).LoadoutScreen.Pose(1, 1);

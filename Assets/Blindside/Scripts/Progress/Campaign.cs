@@ -121,7 +121,21 @@ namespace Blindside.Progress
         // ---- the calendar ----------------------------------------------------------------------------------------------------------
         public static int DayNumber(SaveData d) => d.halfDays / 2 + 1;
         public static bool IsNight(SaveData d) => (d.halfDays & 1) == 1;
-        public static string TimeName(SaveData d) => IsNight(d) ? "夜" : "昼";
+        public static string TimeName(SaveData d) => IsNight(d) ? "午後" : "午前";
+
+        // the calendar's face at the HQ (HubScreen): DAY 1 is 4/1, the weather fixed per day (no randomness spent)
+        static readonly System.DateTime FirstDay = new System.DateTime(2027, 4, 1);
+        static readonly string[] WeekJp = { "日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日" };
+        static readonly string[] WeekEn = { "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT" };
+        static readonly string[] WeatherJp = { "晴れ", "晴れ", "曇り", "晴れ", "雨", "曇り", "晴れ" };
+        static readonly string[] WeatherEn = { "SUNNY", "SUNNY", "CLOUDY", "SUNNY", "RAIN", "CLOUDY", "SUNNY" };
+
+        public static System.DateTime Date(SaveData d) => FirstDay.AddDays(DayNumber(d) - 1);
+        public static string WeekdayJp(SaveData d) => WeekJp[(int)Date(d).DayOfWeek];
+        public static string WeekdayEn(SaveData d) => WeekEn[(int)Date(d).DayOfWeek];
+        static int WeatherIndex(SaveData d) => (DayNumber(d) * 5 + 3) % WeatherJp.Length;
+        public static string WeatherJpOf(SaveData d) => WeatherJp[WeatherIndex(d)];
+        public static string WeatherEnOf(SaveData d) => WeatherEn[WeatherIndex(d)];
 
         /// <summary>Days until the next main quest is due (−1: none is due).</summary>
         public static int DaysLeft(SaveData d)

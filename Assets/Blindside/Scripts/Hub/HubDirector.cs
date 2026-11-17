@@ -44,6 +44,7 @@ namespace Blindside.Hub
         {
             Active = this;
             if (view == null) view = Camera.main;
+            StaffTheDesks();
             // an operator who hasn't joined the squad yet (GHOST, SILENCE before the rescue) isn't at the HQ
             foreach (var n in FindObjectsByType<HubNpc>(FindObjectsInactive.Exclude))
             {
@@ -72,6 +73,39 @@ namespace Blindside.Hub
                 entrance.Begin(player, view, day);
                 if (canvas != null) canvas.enabled = false;   // (the HQ's own labels come up when it ends)
             }
+        }
+
+        /// <summary>The supply desk and the kitchen have no one until the rescue: then SILENCE takes the supply desk (her guns, the
+        /// parts, the gadgets, the gifts) and GHOST the kitchen (炊事支援), each where the old clerk / cook stood.</summary>
+        static void StaffTheDesks()
+        {
+            HubNpc clerk = null, cook = null, ghost = null, silence = null;
+            foreach (var n in FindObjectsByType<HubNpc>(FindObjectsInactive.Exclude))
+            {
+                if (!n.CanTalk && n.station == HubStation.Shop) clerk = n;
+                else if (!n.CanTalk && n.station == HubStation.Kitchen) cook = n;
+                else if (n.operatorKey == "GHOST") ghost = n;
+                else if (n.operatorKey == "SILENCE") silence = n;
+            }
+            Take(clerk, InSquad("SILENCE") ? silence : null, HubStation.Shop, "装備購入 · 武器調達");
+            Take(cook, InSquad("GHOST") ? ghost : null, HubStation.Kitchen, "炊事場 · 炊事支援");
+        }
+
+        static bool InSquad(string key)
+        {
+            foreach (var o in HubCatalog.Squad) if (o != null && o.key == key) return true;
+            return false;
+        }
+
+        static void Take(HubNpc desk, HubNpc op, HubStation station, string caption)
+        {
+            if (desk == null) return;
+            desk.gameObject.SetActive(false);
+            if (op == null) return;
+            op.transform.SetPositionAndRotation(desk.transform.position, desk.transform.rotation);
+            op.station = station;
+            op.caption = caption;
+            op.radius = desk.radius;
         }
 
         List<Bounds> Walls()

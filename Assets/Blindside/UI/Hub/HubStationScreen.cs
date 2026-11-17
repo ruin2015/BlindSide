@@ -287,11 +287,14 @@ namespace Blindside.UI
                              new Option { title = "パーツ", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 1) });
         }
 
-        // SILENCE (after the rescue): the guns — the squad's arms dealer — and her talk
+        // SILENCE (after the rescue) runs the supply desk: the guns — the squad's arms dealer —, the parts and gadgets, gifts, her talk
         void SilenceOptions()
         {
             SetOptions(null, new Option { title = "武器", sub = "を買う", icon = "⌖", click = () => screen.Shop.OpenWeapons(),
                                           hoverLine = "いい銃は、いい情報と同じ。手に入れるには少しコストがかかるの。" },
+                             new Option { title = "アタッチメント", sub = "を買う", icon = "⬢", click = () => screen.OpenStation(HubStation.Shop, 1) },
+                             new Option { title = "ガジェット", sub = "を買う", icon = "✹", click = () => screen.OpenStation(HubStation.Shop, 2) },
+                             new Option { title = "贈り物", sub = "を仲間に贈る", icon = "✚", click = GiftTargets },
                              new Option { title = "会話", sub = "SILENCEと話す", icon = "◎", click = () => { TalkOptions("SILENCE"); onBack = SilenceOptions; } });
             onBack = null;
         }
@@ -375,25 +378,24 @@ namespace Blindside.UI
 
         void BastionPartner(int stat)
         {
-            var squad = HubCatalog.Squad;
-            var list = new Option[squad.Count];
-            for (int i = 0; i < squad.Count; i++)
+            // FLARE always trains alongside: the list is the partner (not FLARE herself)
+            var list = new List<Option>();
+            foreach (var op in HubCatalog.Squad)
             {
-                var op = squad[i];
+                if (op == null || op.key == Campaign.Commander) continue;
                 var p = D.OperatorOf(op.key);
                 int done = p.trained[stat];
                 bool max = done >= HubCatalog.MaxTrain;
-                int cost = HubCatalog.TrainCost(done);
-                list[i] = new Option
+                list.Add(new Option
                 {
                     title = op.DisplayName, face = OperatorArt.Face(op.key),
                     sub = KitGrowthPanel.StatNames[stat] + " " + p.StatPoints(stat) + " pt  ·  訓練 " + done + " / " + HubCatalog.MaxTrain + "  ·  ½日",
-                    value = max ? "上限" : cost.ToString("N0") + " 円",
-                    enabled = Editable && !max && D.money >= cost,
+                    value = max ? "上限" : "無料",
+                    enabled = Editable && !max,
                     click = () => Train(op, stat),
-                };
+                });
             }
-            SetOptions(KitGrowthPanel.StatNames[stat] + "を鍛える — 隊員を選ぶ", list);
+            SetOptions(KitGrowthPanel.StatNames[stat] + "を鍛える — 隊員を選ぶ", list.ToArray());
             SetLine(HubCatalog.TrainPartnerLine);
             onBack = () => { BastionStats(); var l = HubCatalog.StationLines("BASTION"); SetLine(l[0]); };
         }

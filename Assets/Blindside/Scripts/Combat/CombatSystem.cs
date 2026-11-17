@@ -153,24 +153,26 @@ namespace Blindside.Combat
         /// -22 per wall in the way, +15 on a preemptive shot. Clamped 5..95.
         /// </summary>
         public const float SmokePenalty = 30f;
+        public const float RangeFalloff = 4f, RangeFloor = 80f, WallPenalty = 25f, WallFloor = 50f;
 
         public static int HitChance(ICombatUnit attacker, ICombatUnit target, ShotPath path, bool preempt)
         {
+            // every shot starts at 100: past the gun's range it falls RangeFalloff a tile, down to RangeFloor; through walls it falls
+            // WallPenalty a wall more, down to WallFloor. Only scopes (attachments) raise it again; smoke / flashbangs lower it.
             WeaponData w = attacker.Weapon;
             float d = Distance(attacker, target);
-            float c = w.accuracy;
-            if (w.breach && d <= 2.5f) c += 15f;
-            if (d > w.range) c -= (d - w.range) * w.accuracyFalloffPerTile;
-            c -= path.Walls * 22f;
+            float c = 100f;
+            if (d > w.range) c -= (d - w.range) * RangeFalloff;
+            c = Mathf.Max(c, RangeFloor);
+            if (path.Walls > 0) c = Mathf.Max(c - path.Walls * WallPenalty, WallFloor);
             if (path.Smoked) c -= SmokePenalty;
-            if (preempt) c += 15f;
             if (attacker is ICombatModifiers m)
             {
-                if (m.AccuracyBonus != 0f) c += m.AccuracyBonus;   // growth (精密力 / mastery)
+                if (m.AccuracyBonus != 0f) c += m.AccuracyBonus;   // the map's 敵の強さ (enemies only)
                 var g = m.Gear;
-                if (g != null) c += g.AccuracyAt(d);               // attachments (flat + the range band's)
+                if (g != null) c += g.AccuracyAt(d);               // scopes (flat + the range band's), item effects
             }
-            return JsRound(c, 5, 95);
+            return JsRound(c, 5, 100);
         }
 
         /// <summary>
@@ -191,6 +193,7 @@ namespace Blindside.Combat
             c -= path.Walls * 4f;
             var g = CombatModifiers.GearOf(attacker);
             if (g != null) c += g.headshot;                        // attachments (scopes, grips …)
+            if (attacker is ICombatModifiers hm && hm.HeadshotBonus != 0f) c += hm.HeadshotBonus;   // growth (精密力 / mastery)
             return JsRound(c, 2, 60);
         }
 
@@ -299,7 +302,7 @@ namespace Blindside.Combat
             // attachments: extra rounds, the first round's own hit chance (マズルブレーキ); none without gear
             var gear = CombatModifiers.GearOf(attacker);
             int shots = CombatModifiers.ShotsOf(attacker);
-            int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(chance + gear.firstAcc, 5, 95) : chance;
+            int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(chance + gear.firstAcc, 5, 100) : chance;
             // the gun's damage at this distance (its own falloff curve, or none with a ロングバレル; the gear's 攻撃力 %), ×1.4 on a preemptive shot
             int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(attacker, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
             // growth: the shooter's 攻撃力 / mastery, the target's 防御力 (only when set: a unit without growth keeps the exact numbers)
@@ -593,7 +596,7 @@ namespace Blindside.Combat
             o.hsChance = HeadshotChance(attacker, target, path, preempt);
             var gear = CombatModifiers.GearOf(attacker);
             o.shots = CombatModifiers.ShotsOf(attacker);
-            int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(o.chance + gear.firstAcc, 5, 95) : o.chance;
+            int firstChance = gear != null && gear.firstAcc != 0f ? JsRound(o.chance + gear.firstAcc, 5, 100) : o.chance;
             int dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(attacker, Distance(attacker, target)) * (preempt ? 1.4f : 1f));
             if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
             if (CoopRules.IsExposed(target)) { o.hsChance = Mathf.Min(o.hsChance >= 100 ? 100 : 95, o.hsChance * 2); dmg *= 2; }

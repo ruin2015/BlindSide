@@ -19,7 +19,7 @@
 // Motion (unscaled): Evaluate(t) — the screen fades in (.2), the panel slides from the right (.45), the card from the left with a turn
 // (.4), the tabs drop, the money bar slides; the rows come in one after another from the right (.04 apart). Close plays it
 // backwards (.28) before hiding and raises Closed. The pick eases (.14) in
-// colour, size and offset; the list scrolls smoothly; the dialog pops (.22). Keys: ↑ ↓ / W S / the wheel pick, Enter / a click buys.
+// colour, size and offset; the list scrolls smoothly; the dialog pops (.22). Keys: ↑ ↓ / W S pick, the wheel scrolls the list, Enter / a click buys.
 // Rows are rebuilt on a tab change or a purchase only; nothing is allocated per frame.
 using System.Collections.Generic;
 using TMPro;
@@ -628,7 +628,8 @@ namespace Blindside.UI
         }
 
         // ---- the pick -------------------------------------------------------------------------------------------------------------
-        void Hover(int i) { if (!asking && i != pick) SetPick(i); }
+        // (the pointer picks the row under it without scrolling: the wheel moves the list)
+        void Hover(int i) { if (!asking && i != pick) SetPick(i, false); }
 
         void ClickRow(int i)
         {
@@ -638,19 +639,27 @@ namespace Blindside.UI
             Ask();
         }
 
-        void SetPick(int i)
+        void SetPick(int i, bool follow = true)
         {
             if (products.Count == 0) return;
             i = Mathf.Clamp(i, 0, products.Count - 1);
             if (i == pick) return;
             pick = i;
-            ShowPick(false);
+            ShowPick(false, follow);
+        }
+
+        /// <summary>The wheel: the list moves a row a notch (the pick stays; the pointer picks what comes under it).</summary>
+        void WheelScroll(float wheel)
+        {
+            float area = RowsBottom - RowsTop;
+            float max = Mathf.Max(0f, ContentHeight() - area + 10f);
+            scrollGoal = Mathf.Clamp(scrollGoal - Mathf.Sign(wheel) * (RowH * RowSmall + RowGap), 0f, max);
         }
 
         /// <summary>The card shows the pick (its picture glitches in again).</summary>
-        void ShowPick(bool first)
+        void ShowPick(bool first, bool follow = true)
         {
-            ScrollToPick();
+            if (follow || first) ScrollToPick();
             if (first) scroll = scrollGoal;
             if (products.Count == 0)
             {
@@ -917,7 +926,7 @@ namespace Blindside.UI
                 }
                 if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) { Sfx.Ui(); Ask(); }
             }
-            if (wheel < 0f) SetPick(pick + 1); else if (wheel > 0f) SetPick(pick - 1);
+            if (wheel != 0f) WheelScroll(wheel);
         }
 
         /// <summary>Previews: posed settled — tab `tab` of the shop (or the medicines), `select` picked, the dialog open with `count`.</summary>

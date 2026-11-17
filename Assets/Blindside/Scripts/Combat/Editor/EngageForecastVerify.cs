@@ -36,6 +36,7 @@ namespace Blindside.Combat.Editor
             public IUnitView View => null;
             public float DamageScale { get; set; } = 1f;
             public float AccuracyBonus { get; set; }
+            public float HeadshotBonus { get; set; }
             public float DamageTakenScale { get; set; } = 1f;
             public float MoveBonus => 0f;
             public AttachmentEffect Gear { get; set; }

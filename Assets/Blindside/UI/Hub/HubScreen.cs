@@ -79,7 +79,8 @@ namespace Blindside.Hub
             HudKit.Stretch(s.root);
             s.labelsRoot = HudKit.NewRect("Labels", s.root);
             HudKit.Stretch(s.labelsRoot);
-            s.BuildTopbar();
+            if (UseKitTopbar) s.kitTopbar = HubTopbar.Build(s.root);
+            else s.BuildTopbar();   // (the old topbar)
             s.BuildPrompt();
             s.BuildHint();
             s.list = HubListPanel.Build(s.root);
@@ -98,6 +99,8 @@ namespace Blindside.Hub
             s.coop = HubCoopScreen.Build(s.root, s);
             s.menu = HubMenu.Build(s.root, () => s.list.Open(s.squadC), s.SaveNow, s.ToTitle, () => s.coop.Open());
             s.menu.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.coop.IsOpen;
+            s.menu.Data = () => s.Data;
+            s.menu.Live = () => !(SaveSystem.Current == null && Application.isPlaying);
             s.station.Covered = () => s.list.IsOpen || s.growth.IsOpen || s.loadout.IsOpen || s.armory.IsOpen || s.shop.IsOpen || s.squadPick.IsOpen;
             s.shop.Closed = s.station.Reenter;
             s.RefreshTopbar();
@@ -107,6 +110,10 @@ namespace Blindside.Hub
 
         void OnDestroy() => SaveSystem.Saved -= OnSaved;
         void OnSaved(bool auto) { RefreshTopbar(); if (station != null && station.IsOpen) station.RefreshMoney(); if (shop != null && shop.IsOpen) shop.RefreshMoney(); }
+
+        /// <summary>The tactical top HUD (HubTopbar: date, weather, 午前 / 午後, the objective). Off: the old topbar.</summary>
+        public static bool UseKitTopbar = true;
+        HubTopbar kitTopbar;
 
         // ---- build -------------------------------------------------------------------------------------------------------------
         void BuildTopbar()
@@ -169,6 +176,7 @@ namespace Blindside.Hub
         /// <summary>The place name next to 「本部」 (only redrawn when it changes).</summary>
         public void SetLocation(string name)
         {
+            if (kitTopbar != null) { kitTopbar.SetLocation(name); return; }
             if (name == location) return;
             location = name;
             locationText.SetText(string.IsNullOrEmpty(name) ? "—" : name);
@@ -180,7 +188,7 @@ namespace Blindside.Hub
         public void BuildMinimap(IList<Bounds> walls, IList<HubNpc> npcs, IList<HubArea> areas, Transform player)
         {
             if (minimap != null) HudKit.DestroySafe(minimap.gameObject);
-            minimap = HubMinimap.Build(root, walls, npcs, areas, player);
+            minimap = HubMinimap.Build(root, walls, npcs, areas, player, kitTopbar != null ? HubTopbar.MapTop : HubMinimap.Top);
             minimap.transform.SetSiblingIndex(labelsRoot.GetSiblingIndex() + 1);   // under the panels
         }
 
@@ -310,7 +318,7 @@ namespace Blindside.Hub
             var camPos = cam.transform.position;
             // the minimap's corner (labels under it are hidden: it is see-through)
             var full = root.rect;
-            float mapX = full.width - HubMinimap.Right - HubMinimap.Size - 110f, mapY = full.height - HubMinimap.Top - HubMinimap.Size - 42f;
+            float mapX = full.width - HubMinimap.Right - HubMinimap.Size - 110f, mapY = full.height - HubMinimap.PlacedTop - HubMinimap.Size - 42f;
             bool hasMap = minimap != null;
             for (int i = 0; i < labels.Count; i++)
             {
@@ -408,6 +416,7 @@ namespace Blindside.Hub
         public void RefreshTopbar()
         {
             var d = Data;
+            if (kitTopbar != null) { kitTopbar.Refresh(d, !(SaveSystem.Current == null && Application.isPlaying)); return; }
             if (SaveSystem.Current == null && Application.isPlaying) { moneyText.SetText("¥ —"); rankText.SetText("—"); dayText.SetText("DAY —"); dueText.SetText(""); return; }
             moneyText.SetText(HubContentBase.Yen("", d.money));
             rankText.SetText(Blindside.Progress.RankTable.Name(Blindside.Progress.RankTable.RankOf(d.rankPoints)));

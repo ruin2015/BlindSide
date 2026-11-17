@@ -150,7 +150,7 @@ namespace Blindside.Hub
             new Gadget { key = "kit_mid",   name = "中級医療キット", note = "体力を50回復する",   price = 2500, medical = true, art = "21_medkit_mid", heal = 50 },
             new Gadget { key = "kit_high",  name = "上級医療キット", note = "体力を80回復する",   price = 4000, medical = true, art = "22_medkit_high", heal = 80 },
             new Gadget { key = "adrophin",  name = "アドロピン注射器", note = "3ターンの間、機動力+20%・追加体力+30", price = 5000, medical = true, art = "23_adrophin_injector", turns = 3, mobilityPct = 20, bonusHp = 30 },
-            new Gadget { key = "stimulant", name = "覚醒薬",         note = "3ターンの間、命中率+20%・ヘッドショット率+10%", price = 5000, medical = true, art = "24_stimulant", turns = 3, accPct = 20, headshotPct = 10 },
+            new Gadget { key = "stimulant", name = "覚醒薬",         note = "3ターンの間、ヘッドショット率+20%", price = 5000, medical = true, art = "24_stimulant", turns = 3, headshotPct = 20 },
             new Gadget { key = "defib",     name = "除細動器",       note = "KIA時に自動で使用し、体力50%で復帰する", price = 10000, medical = true, art = "25_defibrillator", revivePct = 50 },
         };
 
@@ -183,7 +183,7 @@ namespace Blindside.Hub
         public const int MaxTrain = 10;
 
         /// <summary>The price of an operator's `done`-th training session in one stat (yen).</summary>
-        public static int TrainCost(int done) => 3000 + 2000 * Mathf.Max(0, done);
+        public static int TrainCost(int done) => 0;   // (training is free: it costs half a day)
 
         // ---- operations ----------------------------------------------------------------------------------------------------------
         public sealed class Operation
