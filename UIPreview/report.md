@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-17 17:04
+Screen 1440x810 · 0 issues · generated 2026-11-17 21:27
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -162,11 +162,11 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 83종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 84종)
 
 - BattleCallout ×2
 - Brighten ×6
-- Chip ×575
+- Chip ×613
 - ClickRelay ×5
 - CornerBrackets ×30
 - CutCornerGraphic ×256
@@ -201,6 +201,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitGrowthPanel ×1
 - KitLogHistory ×1
 - KitMenuLogo ×6
+- KitMissionBar ×38
 - KitOptionsPanel ×5
 - KitPointer ×59
 - KitRoster ×38
@@ -214,17 +215,17 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitTextButton ×65
 - KitTint ×325
 - KitTitleLeft ×6
-- LintIgnoreClip ×904
+- LintIgnoreClip ×902
 - LintIgnoreOverlap ×342
 - MainMenuScreen ×6
 - OperationResultScreen ×5
 - PauseMenu ×6
 - ResultScreen ×3
 - SegmentedBar ×317
-- SlantedGraphic ×3261
+- SlantedGraphic ×2843
 - SlantedMask ×311
 - StageClick ×2
-- TacticalPanel ×1231
+- TacticalPanel ×775
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialForecastTour ×1

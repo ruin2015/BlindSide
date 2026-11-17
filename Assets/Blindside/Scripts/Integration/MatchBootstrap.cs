@@ -864,7 +864,11 @@ namespace Blindside.Integration
             }
             else selection.BindDeploy(null);
             ai.Abilities = abilities; ai.AbilityCtx = abilityCtx;
-            if (hud != null) hud.Bind(turns, combat, ai, units, selection, playerTeam);
+            if (hud != null)
+            {
+                hud.CamerasLeft = () => { int n = 0; foreach (var c in abilityCtx.Cameras) if (c.alive) n++; return n; };
+                hud.Bind(turns, combat, ai, units, selection, playerTeam);
+            }
             if (visionPolys != null) visionPolys.Bind(vision, map, units, playerTeam, selection);
             BindBattleDirector(combat, units, hostage);
 

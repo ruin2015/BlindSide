@@ -610,6 +610,30 @@ namespace Blindside.UITools.EditorTools
                 topbar.SetObjective("① 人質を救出地点4か所(EXFIL A〜D)のいずれかまで護送\n② または防衛チームを全員制圧", five, five);
             }
 
+            // the mission bar HudController puts in the old bar's place (useMissionBar): the clear condition, the enemies left, the goals —
+            // the hit shows a goal just failed (味方を一人も失わない, mid-flash); the preparation is the defense side's
+            var mission = KitMissionBar.Replace(topbar);
+            var goalTexts = new List<string> { "味方を一人も失わない", "10ラウンド以内にクリア", "監視カメラをすべて破壊" };
+            var goalStates = new List<KitMissionBar.Goal> { KitMissionBar.Goal.Pending, KitMissionBar.Goal.Pending, KitMissionBar.Goal.Done };
+            if (state == HudState.Prep)
+            {
+                mission.SetCondition("15ラウンド終了まで人質を死守", "または攻撃チームを全員制圧");
+                mission.SetEnemies(5);
+                mission.SetGoals(goalTexts, new List<KitMissionBar.Goal> { KitMissionBar.Goal.Pending, KitMissionBar.Goal.Pending, KitMissionBar.Goal.Pending });
+            }
+            else
+            {
+                mission.SetCondition("人質を救出地点4か所(EXFIL A〜D)のいずれかまで護送", "または敵を全員制圧");
+                mission.SetEnemies(state == HudState.Hit ? 4 : 5);
+                mission.SetGoals(goalTexts, goalStates);
+                if (state == HudState.Hit)
+                {
+                    goalStates[0] = KitMissionBar.Goal.Failed;
+                    mission.SetGoals(goalTexts, goalStates);
+                }
+            }
+            mission.Evaluate(state == HudState.Hit ? .05f : 0f);   // (settled; the hit: just into the failure flash)
+
             log.PreviewLine("作戦開始 — 攻撃チームが建物の外に降下", Blindside.UI.HudLogType.Ally);
             log.PreviewLine("クラッシャー: 壁を破壊 (2,9)", Blindside.UI.HudLogType.Ally);
             if (state == HudState.Hit) log.PreviewLine("アルゴス → フレア: 2/3 命中, 36 ダメージ (ヘッドショット ×1)", Blindside.UI.HudLogType.Foe);

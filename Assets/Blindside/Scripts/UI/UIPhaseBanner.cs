@@ -40,7 +40,7 @@ namespace Blindside.UI
         /// <summary>The banner's texts and colour, without playing it.</summary>
         public void SetContent(string main, string kr, string sub, Color color)
         {
-            Fit(mainText, main, 60f, 1.05f); Fit(krText, kr, 16f, 1.25f); Fit(subText, sub, 12f, 1.25f);
+            Fit(mainText, main, 60f, 1.05f); Fit(krText, kr, 18f, 1.25f); Fit(subText, sub, 15f, 1.25f);   // (15 and up: readable at a glance)
             krText.color = color;
             foreach (var b in colorBlocks) b.color = color;
             lastSpacing = -999f;

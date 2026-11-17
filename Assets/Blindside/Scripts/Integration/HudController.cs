@@ -21,6 +21,13 @@ namespace Blindside.Integration
         public GameObject content;
         [Tooltip("The kit top bar (Prefabs/UI/HUD_Topbar.prefab: logo, phase + round, objective + survivor pips).")]
         public KitTopbar kitTopbar;
+        [Tooltip("The top bar is the mission bar (clear condition top centre; enemies left and the goals top right), put in place of kitTopbar " +
+                 "when the match is bound. Off: the old kit bar (phase + round, objective + survivor pips) as before.")]
+        public bool useMissionBar = true;
+        [Tooltip("The mission bar (UI/Kit/KitMissionBar); made beside kitTopbar at Bind when empty.")]
+        public KitMissionBar missionBar;
+        /// <summary>The enemy surveillance cameras still working (the map's and ARGUS's) — MatchBootstrap sets it; the 監視カメラ goal reads it.</summary>
+        public System.Func<int> CamerasLeft;
         [Tooltip("Legacy bar (UI/Legacy/HUD_Topbar.prefab); used only when kitTopbar is empty.")]
         public HudTopbar topbar;
         [Tooltip("Legacy objective (inside the legacy bar); used only when kitTopbar is empty.")]
@@ -73,6 +80,8 @@ namespace Blindside.Integration
             if (selection != null) { selection.SelectionChanged += MarkDirty; selection.UnitsChanged += MarkDirty; }
 
             if (content != null) content.SetActive(true);   // $('#hud').classList.remove('hidden')
+            if (useMissionBar && missionBar == null && kitTopbar != null) missionBar = KitMissionBar.Replace(kitTopbar);
+            BindGoals();
             BuildRoster();
             Refresh();
         }
@@ -219,6 +228,8 @@ namespace Blindside.Integration
                 card.SetState(u.HP, u.MaxHP, st, selected == u, u.Alive && u.Ended && my, !u.Alive);
             }
 
+            if (missionBar != null) { RefreshMission(); return; }
+
             // ---- #phaseBadge ----
             if (topbar != null || kitTopbar != null)
             {
@@ -281,6 +292,88 @@ namespace Blindside.Integration
                 else objective.Set(body, ally, enemy);
             }
             if (kitTopbar == null && topbar != null) topbar.Relayout();
+        }
+
+        // ================================================================
+        //  The mission bar: the clear condition, the enemies left, the goals (the operation's challenges, as RankRules will judge them
+        //  at the end — a goal that can no longer be met shows 失敗 at once)
+        // ================================================================
+        readonly List<Blindside.Flow.MapChallenge> goals = new List<Blindside.Flow.MapChallenge>(4);
+        readonly List<string> goalTexts = new List<string>(4);
+        readonly List<KitMissionBar.Goal> goalStates = new List<KitMissionBar.Goal>(4);
+
+        void BindGoals()
+        {
+            goals.Clear(); goalTexts.Clear(); goalStates.Clear();
+            if (TutorialGate.Active) return;   // (the training hall has no rank)
+            // the same list the rank is judged by (MatchAward: the save's last map; no save: the built-in house's)
+            var save = Blindside.Save.SaveSystem.Current;
+            foreach (var g in Blindside.Progress.Challenges.Of(save != null ? save.lastMap ?? "" : ""))
+            {
+                if (g == null) continue;
+                goals.Add(g);
+                goalTexts.Add(Blindside.Progress.Challenges.Text(g));
+                goalStates.Add(KitMissionBar.Goal.Pending);
+            }
+        }
+
+        void RefreshMission()
+        {
+            ClearCondition(out var l1, out var l2);
+            missionBar.SetCondition(l1, l2);
+
+            int foes = 0, lost = 0;
+            foreach (var u in units)
+            {
+                if (u.Captive || u.Reserve) continue;   // (a captive isn't fighting yet; a reserve isn't on the map)
+                if (u.Team == side) { if (!u.Alive) lost++; }
+                else if (u.Alive) foes++;
+            }
+            missionBar.SetEnemies(foes);
+
+            bool over = turns.Over;
+            bool won = over && turns.Result == (side == OperatorTeam.Attack ? MatchResult.AttackWins : MatchResult.DefenseWins);
+            int cams = CamerasLeft != null ? CamerasLeft() : -1;
+            for (int i = 0; i < goals.Count; i++)
+            {
+                var g = goals[i];
+                KitMissionBar.Goal st;
+                switch (g.kind)
+                {
+                    case Blindside.Flow.ChallengeKind.NoLosses:
+                        st = lost > 0 ? KitMissionBar.Goal.Failed : over ? (won ? KitMissionBar.Goal.Done : KitMissionBar.Goal.Failed) : KitMissionBar.Goal.Pending; break;
+                    case Blindside.Flow.ChallengeKind.WithinRounds:
+                        st = turns.Round > g.value ? KitMissionBar.Goal.Failed : over ? (won ? KitMissionBar.Goal.Done : KitMissionBar.Goal.Failed) : KitMissionBar.Goal.Pending; break;
+                    case Blindside.Flow.ChallengeKind.AllCameras:
+                        st = cams == 0 ? KitMissionBar.Goal.Done : over ? KitMissionBar.Goal.Failed : KitMissionBar.Goal.Pending; break;
+                    default:
+                        st = foes == 0 ? KitMissionBar.Goal.Done : over ? KitMissionBar.Goal.Failed : KitMissionBar.Goal.Pending; break;
+                }
+                goalStates[i] = st;
+            }
+            missionBar.SetGoals(goalTexts, goalStates);
+        }
+
+        /// <summary>The side's clear condition in one or two lines (the old objective's ① / ② without the numbering).</summary>
+        void ClearCondition(out string a, out string b)
+        {
+            b = null;
+            int hostages = MatchBootstrap.HostageCount;
+            var exfils = Blindside.Map.ExfilZone.All;
+            string zone = exfils.Count == 1 ? $"救出地点(EXFIL {exfils[0].Name})" : $"救出地点{Blindside.Map.ExfilZone.RangeText}のいずれか";
+            string who = hostages > 1 ? $"人質{hostages}人全員" : "人質";
+            if (TutorialGate.Active) { a = "クラッシャーの指示に従って訓練を進める"; return; }
+            if (side == OperatorTeam.Defense)
+            {
+                a = $"{TurnManager.MaxRound}ラウンド終了まで人質を死守";
+                b = "または攻撃チームを全員制圧";
+                return;
+            }
+            if (MatchBootstrap.RescueMatch) { a = "拘束された" + string.Join("・", MatchBootstrap.RescueKeys) + "を救出"; b = "または防衛チームを全員制圧"; return; }
+            if (hostages == 0) { a = "敵を全員制圧"; return; }
+            if (MatchBootstrap.WinRule == Blindside.Map.MapData.WinWipe) { a = "敵を全員制圧"; b = "人質を死なせない"; return; }
+            a = $"{who}を{zone}まで護送";
+            b = MatchBootstrap.WinRule == Blindside.Map.MapData.WinExtract ? "人質を死なせない" : "または敵を全員制圧";
         }
     }
 }

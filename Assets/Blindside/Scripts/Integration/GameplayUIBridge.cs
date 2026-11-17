@@ -194,8 +194,14 @@ namespace Blindside.Integration
                         if (playerTeam == OperatorTeam.Defense) phaseBanner.Play("PREPARATION", "防衛準備フェーズ — 壁の強化・装置の設置・配置", "BEFORE BREACH", UIPalette.Accent);
                         else phaseBanner.Play("PREPARE", "準備フェーズ", "防衛チームの要塞化を進めてください", UIPalette.Accent);
                         break;
-                    case MatchPhase.Attack: phaseBanner.Play("ATTACKER PHASE", "攻撃ターン", "部隊を展開してください", UIPalette.Blue); break;
-                    case MatchPhase.Defense: phaseBanner.Play("DEFENDER PHASE", "防衛ターン", "区域を死守してください", UIPalette.Foe); break;
+                    // which side's turn it is for the player, and which round (the top bar no longer shows either)
+                    case MatchPhase.Attack:
+                    case MatchPhase.Defense:
+                        bool mine = TurnManager.ActingTeam(phase) == side;
+                        string kr = (mine ? "味方フェーズ" : "敵フェーズ") + " — ラウンド " + turns.Round + " / " + TurnManager.MaxRound;
+                        if (phase == MatchPhase.Attack) phaseBanner.Play("ATTACKER PHASE", kr, "部隊を展開してください", mine ? UIPalette.Blue : UIPalette.Foe);
+                        else phaseBanner.Play("DEFENDER PHASE", kr, "区域を死守してください", mine ? UIPalette.Blue : UIPalette.Foe);
+                        break;
                 }
             };
 

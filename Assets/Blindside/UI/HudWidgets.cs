@@ -78,7 +78,7 @@ namespace Blindside.UI
             var imgL = Block("DecoBlockL", -390f);
             var imgR = Block("DecoBlockR", 390f);
 
-            // .tx{top:28}: small 12 / b 60 / span 16
+            // .tx{top:28}: small 12 / b 60 / span 16 (now small 15 / span 18: every banner text 15 and up)
             var tx = MakeRect("Tx", strip, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             var txGroup = tx.gameObject.AddComponent<CanvasGroup>();
             txGroup.blocksRaycasts = false;
@@ -91,10 +91,10 @@ namespace Blindside.UI
                 t.raycastTarget = false;
                 return t;
             }
-            var subTmp = Row("Small", 28f, 15f, 12f, Color.Lerp(theme.ink, Color.white, .65f), UITheme.TextRole.Display);
+            var subTmp = Row("Small", 22f, 20f, 15f, Color.Lerp(theme.ink, Color.white, .65f), UITheme.TextRole.Display);
             subTmp.characterSpacing = 20f;                        // letter-spacing:.2em
-            var mainTmp = Row("Title", 43f, 63f, 60f, Color.white, UITheme.TextRole.Display);
-            var krTmp = Row("Kr", 106f, 20f, 16f, theme.blue, UITheme.TextRole.Body);
+            var mainTmp = Row("Title", 44f, 63f, 60f, Color.white, UITheme.TextRole.Display);
+            var krTmp = Row("Kr", 108f, 24f, 18f, theme.blue, UITheme.TextRole.Body);
 
             banner.strip = strip; banner.group = group; banner.shape = shape;
             banner.maskBox = maskBox; banner.maskInner = maskInner; banner.stripeTop = lineTop; banner.stripeBottom = lineBottom;
