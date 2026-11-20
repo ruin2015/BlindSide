@@ -141,11 +141,11 @@ namespace Blindside.Rendering
             float dx = end.x - from.x, dz = end.z - from.z;
             float len = Mathf.Sqrt(dx * dx + dz * dz);
 
-            // the round: a particle streak flying the line (FxBullet), the old flat beam kept faint under it so the line still reads
+            // the round: the flat beam, and a particle streak flying the line over it (FxBullet)
             FxBullet.Tracer(from, end);
-            var beam = MakePrimitive(PrimitiveType.Cube, new Color32(0xff, 0xf0, 0xb4, 0x60), mid, new Vector3(len, 0.02f, 0.02f));
+            var beam = MakePrimitive(PrimitiveType.Cube, new Color32(0xff, 0xf0, 0xb4, 0xff), mid, new Vector3(len, 0.035f, 0.035f));
             beam.transform.rotation = Quaternion.Euler(0f, -Mathf.Atan2(dz, dx) * Mathf.Rad2Deg, 0f);
-            Attach(beam, FxKind.Fade, 0.12f);
+            Attach(beam, FxKind.Fade, 0.2f);
 
             Vector3 at = muzzle ?? shooterPos + GridSpace.FacingToWorldDirection(shooterFacing) * 0.55f;
             if (!muzzle.HasValue) at.y = 0.55f;

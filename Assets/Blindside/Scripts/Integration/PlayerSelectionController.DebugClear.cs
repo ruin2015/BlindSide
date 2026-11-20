@@ -44,7 +44,11 @@ namespace Blindside.Integration
         /// <summary>Every frame: the debug skip offered while the player can act (editor / development builds only).</summary>
         void SyncDebugSkip()
         {
-            if (!(Application.isEditor || Debug.isDebugBuild)) return;
+#if !UNITY_EDITOR
+            return;   // (the editor only: never in a player build, development builds included)
+#else
+            if (!Application.isEditor) return;
+#endif
             bool want = turns != null && !turns.Over && hasSide && !cinematicOn && PlayerCanAct();
             if (want && debugSkip == null)
                 debugSkip = EscHoldSkip.Begin(debugSkipAction ?? (debugSkipAction = DebugClearMap), .3f,

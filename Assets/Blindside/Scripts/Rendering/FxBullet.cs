@@ -13,7 +13,7 @@ namespace Blindside.Rendering
 {
     public static class FxBullet
     {
-        const float TracerSpeed = 140f, TracerStretch = .014f;
+        const float TracerSpeed = 80f, TracerStretch = .022f;   // (slow and long enough to be seen for a few frames)
 
         static Transform root;
         static ParticleSystem tracer, mist, drops, flash, sparks, dust, grit;
@@ -87,7 +87,7 @@ namespace Blindside.Rendering
 
             // the round: one stretched hot particle a shot (its velocity and life set at the emit)
             tracer = FxBlast.Make(go, "Tracer", glowMat, ParticleSystemRenderMode.Stretch,
-                life: new Vector2(.05f, .05f), size: new Vector2(.045f, .055f), speed: Vector2.zero,
+                life: new Vector2(.05f, .05f), size: new Vector2(.07f, .085f), speed: Vector2.zero,
                 from: new Color(1f, .95f, .72f, 1f), to: new Color(1f, .8f, .45f, .6f), grow: 1f);
             Stretch(tracer, 1f, TracerStretch);
             GameTime(tracer);
@@ -157,6 +157,8 @@ namespace Blindside.Rendering
             var main = ps.main;
             main.useUnscaledTime = false;
             main.maxParticles = 256;
+            // (the emitters sit wherever their last burst was — the battle stage is far off the map: never paused as "off screen")
+            main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate;
         }
     }
 }

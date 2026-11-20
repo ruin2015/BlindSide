@@ -38,7 +38,9 @@ namespace Blindside.UI
 
         public static void Add(string text, HudLogType type = HudLogType.Normal)
         {
-            Debug.Log($"[Log] {text}");
+#if UNITY_EDITOR
+            Debug.Log($"[Log] {text}");   // (the editor's console only: a build doesn't write every line to its log)
+#endif
             recent.Add((text, type));
             while (recent.Count > MaxLines) recent.RemoveAt(0);
             history.Add((text, type, Round));

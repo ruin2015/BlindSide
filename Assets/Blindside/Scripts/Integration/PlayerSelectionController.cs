@@ -692,7 +692,9 @@ namespace Blindside.Integration
             if (c == "skill" && StartAbility(u)) return;                         // all ten abilities (.Ability.cs / .SupportAbility.cs)
             if (c == "gadget" && u.Team == OperatorTeam.Defense) { HideMenu(); OpenCamPanel(u); return; }   // openCamPanel(u) (.Cameras.cs)
             if (c == "gadget" && droneOps != null) { StartDrone(u); return; }                                // deploy / steer the drone (.Drone.cs)
+#if UNITY_EDITOR
             Debug.Log($"[PlayerSelection] {u.Op?.key ?? u.Id}: '{list[i].kr}' ({c}) コマンド — 実行ロジックはまだ接続されていません。");
+#endif
         }
 
         // ================================================================

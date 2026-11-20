@@ -585,7 +585,8 @@ namespace Blindside.Rendering
             if (unitAnimator != null) unitAnimator.PlayHit();
             if (!headshot)
             {
-                FxBullet.Hit(TorsoPoint, Vector3.zero, false);   // (particles: the mist and droplets of a body hit)
+                CombatFx.Spark(TorsoPoint, new Color32(0xff, 0xd2, 0x7a, 0xff));
+                FxBullet.Hit(TorsoPoint, Vector3.zero, false);   // (and particles: the mist and droplets of a body hit)
                 return;
             }
             var at = HeadPoint;

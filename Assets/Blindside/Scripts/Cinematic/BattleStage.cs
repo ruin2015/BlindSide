@@ -397,7 +397,8 @@ namespace Blindside.Cinematic
             MuzzleFlash.Play(m, dir);   // particles + its own light, on the gun's muzzle
             Casing(s);
             var aim = t.Torso + new Vector3(0f, (float)(rng.NextDouble() - .5) * .2f, (float)(rng.NextDouble() - .5) * .3f);
-            FxBullet.Tracer(m, aim);   // the round leaving (particles: a hot streak)
+            Beam(m, aim, new Color32(0xff, 0xf0, 0xb4, 0xff), .03f, .07f);
+            FxBullet.Tracer(m, aim);   // the round leaving (the beam, and a particle streak over it)
             Kick?.Invoke(.035f);
         }
 
@@ -414,6 +415,9 @@ namespace Blindside.Cinematic
             if (e.ShieldBlocked)
             {
                 var at = t.Torso + new Vector3(t.Dir * .32f, 0f, 0f);
+                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .03f, .08f);
+                Sparks(at, Color.white, 12, 3.2f);
+                Blob(at, Color.white, .3f, .1f);
                 FxBullet.Tracer(from, at);
                 FxBullet.Shield(at, at - from);
                 t.Flinch(.05f, false);
@@ -427,6 +431,9 @@ namespace Blindside.Cinematic
                 float side = (float)(rng.NextDouble() - .5) * 2f;
                 var at = t.Home + new Vector3(-t.Dir * (2.2f + (float)rng.NextDouble() * 2.5f), .02f + (float)rng.NextDouble() * 1.1f,
                                               Mathf.Sign(side) * (.6f + Mathf.Abs(side) * .6f) * t.Scale);
+                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .025f, .08f);
+                Dust(at, 3, .35f);
+                Chips(at, 5);
                 FxBullet.Tracer(from, at);
                 FxBullet.Miss(at, at - from);
                 Popup(t, "ミス", new Color32(0xb8, 0xc0, 0xca, 0xff), 2.2f);
@@ -435,6 +442,9 @@ namespace Blindside.Cinematic
             {
                 // a critical round after the volley's first: no close-ups again — the hit and its クリティカル number
                 var at = t.Head;
+                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .035f, .08f);
+                Blob(at, Color.white, .28f, .08f);
+                Sparks(at, new Color32(0xff, 0xd2, 0x7a, 0xff), 10, 3f);
                 FxBullet.Tracer(from, at);
                 FxBullet.Hit(at, at - from, true);
                 t.Flinch(.16f, true);
@@ -444,8 +454,12 @@ namespace Blindside.Cinematic
             else if (e.Headshot)
             {
                 var at = t.Head;
+                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .035f, .08f);
                 FxBullet.Tracer(from, at);
                 Cut(Shot.Head, t);
+                Blob(at, Color.white, .36f, .09f);
+                Sparks(at, new Color32(0xff, 0xd2, 0x7a, 0xff), 16, 3.6f);
+                Sparks(at, Color.white, 8, 2.4f);
                 FxBullet.Hit(at, at - from, true);
                 t.Flinch(.22f, true);
                 Kick?.Invoke(.1f);
@@ -456,6 +470,9 @@ namespace Blindside.Cinematic
             else
             {
                 var at = t.Torso + new Vector3(0f, (float)(rng.NextDouble() - .5) * .18f, (float)(rng.NextDouble() - .5) * .16f);
+                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .03f, .07f);
+                Blob(at, new Color32(0xff, 0xb1, 0x3b, 0xff), .18f, .08f);
+                Sparks(at, new Color32(0xff, 0xc8, 0x6a, 0xff), 9, 2.8f);
                 FxBullet.Tracer(from, at);
                 FxBullet.Hit(at, at - from, false);
                 t.Flinch(.13f, true);

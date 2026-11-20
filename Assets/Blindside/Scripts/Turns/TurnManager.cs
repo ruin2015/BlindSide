@@ -167,7 +167,9 @@ namespace Blindside.Turns
                     if (!u.Alive) continue;
                     if (u.Team == OperatorTeam.Attack) atkAlive++; else defAlive++;
                 }
+#if UNITY_EDITOR
                 Debug.Log($"Round {Round}: 攻撃 {atkAlive}名 / 防衛 {defAlive}名 生存");
+#endif
             }
             OnPhaseBegin?.Invoke(phase);
             CheckWin();   // phase(): `beginPhase(team); if(checkWin()) return;` — a gas death at the phase start ends it here
