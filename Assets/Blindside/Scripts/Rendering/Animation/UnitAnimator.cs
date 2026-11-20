@@ -124,6 +124,9 @@ namespace Blindside.Rendering
         /// breathing plays while the camera moves). Actions (fire, hit, …) keep their own speed.</summary>
         public bool HoldClips;
 
+        /// <summary>The body's movement is not a walk right now (a hit's knock-back, a shake): the legs stay planted.</summary>
+        public bool SuppressWalk;
+
         // ================================================================
         //  Actions
         // ================================================================
@@ -290,7 +293,8 @@ namespace Blindside.Rendering
             lastPos = pos; hasLast = true;
 
             float speed = vel.magnitude;
-            bool moving = !dead && speed > .25f;
+            // (a figure shoved by a hit — the battle stage's knock-back and shake — moves without walking: SuppressWalk)
+            bool moving = !dead && !SuppressWalk && speed > .25f;
             bool aiming = !dead && (ForceAim || CombatReady || (Selected && Profile.aimWhenSelected) || now < aimUntil || now < upperEnd);
             bool upperOn = aiming || (moving && (moveUpperClip.IsValid() || aimClip.IsValid()));
             float k = Profile.crossFade > 0f ? 1f - Mathf.Exp(-dt / (Profile.crossFade * .5f)) : 1f;

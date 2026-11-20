@@ -585,10 +585,11 @@ namespace Blindside.Rendering
             if (unitAnimator != null) unitAnimator.PlayHit();
             if (!headshot)
             {
-                CombatFx.Spark(TorsoPoint, new Color32(0xff, 0xd2, 0x7a, 0xff));
+                FxBullet.Hit(TorsoPoint, Vector3.zero, false);   // (particles: the mist and droplets of a body hit)
                 return;
             }
             var at = HeadPoint;
+            FxBullet.Hit(at, Vector3.zero, true);
             CombatFx.Spark(at, new Color32(0xff, 0x2a, 0x44, 0xff), 0.22f, 0.15f);
             CombatFx.Boom(at, new Color32(0xff, 0x2a, 0x44, 0xff), 18);
             CombatFx.Ring(at, Color.white, 0.42f, 1.1f);

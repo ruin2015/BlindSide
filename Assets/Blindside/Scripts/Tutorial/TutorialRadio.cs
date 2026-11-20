@@ -30,11 +30,40 @@ namespace Blindside.Tutorial
         /// <summary>How far above BoxBottom the box wants to sit (eased): the director sets it while the unit panel is up.</summary>
         public float Lift;
         float liftNow;
-        float BoxYPos => BoxBottom + liftNow;
+        float BoxYPos => compactNow ? CompactY() : BoxBottom + liftNow;
         /// <summary>How far right of BoxX the box wants to sit (eased): out from under the attack forecast while that is up.</summary>
         public float Shift;
         float shiftNow;
-        float BoxXPos => BoxX + shiftNow;
+        float BoxXPos => compactNow ? BoxX : BoxX + shiftNow;
+        /// <summary>The short form over a battle cinematic: smaller (CompactScale), on the left just above the middle — clear of the duel
+        /// cards along the bottom (both sides) — with only the face, the name and the line (no tag, no voice bars).</summary>
+        public bool Compact;
+        bool compactNow;
+        public const float CompactScale = .7f;   // (the line's 22 → 15.4, the name's 22 → 15.4: still at the type floor)
+        float SlideSign => 1f;   // (in from the left, either form)
+        /// <summary>The short form's bottom: the screen's middle (its box rises from there).</summary>
+        float CompactY()
+        {
+            var parent = box.parent as RectTransform;
+            float h = parent != null ? parent.rect.height : 1080f;
+            return h * .5f;
+        }
+        void ApplyCompact()
+        {
+            if (compactNow == Compact) return;
+            compactNow = Compact;
+            box.localScale = Vector3.one * (compactNow ? CompactScale : 1f);
+            tagText.gameObject.SetActive(!compactNow);
+            for (int i = 0; i < bars.Length; i++) bars[i].gameObject.SetActive(!compactNow);
+        }
+        /// <summary>Render Previews: the short form at once (`lift`: the full form's lift kept for when it goes back).</summary>
+        public void PoseCompact(float lift)
+        {
+            Compact = true; ApplyCompact();
+            Lift = liftNow = lift;
+        }
+        /// <summary>The radio's opening crackle (the in-game radio: SoundBank RadioOn), on each time it comes up.</summary>
+        public bool OpenSound = true;
         public static readonly Color CrusherColor = UIPalette.Hex("#EAAF20");
 
         public Canvas canvas;
@@ -49,8 +78,11 @@ namespace Blindside.Tutorial
         public const string HqName = "HQ  <size=16><color=#9AA0A8>無線機</color></size>";
 
         /// <summary>Who is talking: CRUSHER (his face) or the HQ radio (an "HQ" mark in the slot, red accents, the emergency channel).</summary>
+        string voiceKey = "CRUSHER";   // whose voice the typing blip is (an operator key; the HQ radio: a man's)
+
         public void SetSpeaker(bool hq)
         {
+            voiceKey = hq ? null : "CRUSHER";
             nameText.text = hq ? HqName : CrusherName;
             nameText.color = hq ? UIPalette.Foe : CrusherColor;
             tagText.text = hq ? "RADIO // EMERGENCY" : "RADIO // CH-07";
@@ -70,6 +102,7 @@ namespace Blindside.Tutorial
         /// <summary>Another squad member on the radio (the match's spot / contact calls): their face, codename and colour.</summary>
         public void SetOperator(string key, string en, string kr, Color color)
         {
+            voiceKey = key;
             nameText.text = $"{en}  <size=16><color=#9AA0A8>{kr}</color></size>";
             nameText.color = color;
             tagText.text = "RADIO // SQUAD";
@@ -104,8 +137,10 @@ namespace Blindside.Tutorial
         public void Say(string text, bool waitClick = true)
         {
             opening = !open;
+            if (opening && OpenSound) SoundBank.Play(Snd.RadioOn, .6f);
             open = true; closeClock = -1f;
             gameObject.SetActive(true);
+            ApplyCompact();
             line.text = text;
             line.maxVisibleCharacters = 99999;
             line.ForceMeshUpdate();
@@ -132,11 +167,12 @@ namespace Blindside.Tutorial
                 closeClock += dt;
                 float k = 1f - Mathf.Clamp01(closeClock / CloseTime);
                 group.alpha = k;
-                box.anchoredPosition = new Vector2(BoxXPos - SlideFrom * (1f - k), BoxYPos);
+                box.anchoredPosition = new Vector2(BoxXPos - SlideFrom * SlideSign * (1f - k), BoxYPos);
                 if (closeClock >= CloseTime) { closeClock = -1f; gameObject.SetActive(false); }
                 return;
             }
             if (!open) return;
+            ApplyCompact();
             liftNow = Mathf.MoveTowards(liftNow, Lift, LiftSpeed * dt);
             shiftNow = Mathf.MoveTowards(shiftNow, Shift, LiftSpeed * 2f * dt);
             clock += dt;
@@ -164,13 +200,17 @@ namespace Blindside.Tutorial
             // open: slide + fade; the face comes in through a few flickers
             float o = opening ? UIEase.Tactical(t / OpenTime) : 1f;
             group.alpha = o;
-            box.anchoredPosition = new Vector2(BoxXPos - SlideFrom * (1f - o), BoxYPos);
+            box.anchoredPosition = new Vector2(BoxXPos - SlideFrom * SlideSign * (1f - o), BoxYPos);
             float flick = opening && t < OpenTime + .12f ? ((int)(t * 30f) % 3 == 0 ? .25f : 1f) : 1f;
             faceGroup.alpha = flick;
 
             float lt = t - typeStart;
             int shown = Mathf.Clamp(Mathf.FloorToInt(lt * CharsPerSecond), 0, chars);
-            if (line.maxVisibleCharacters != shown) line.maxVisibleCharacters = shown;
+            if (line.maxVisibleCharacters != shown)
+            {
+                SoundBank.Blip(voiceKey, line.text, line.maxVisibleCharacters, shown);   // the speaker's voice, a character at a time
+                line.maxVisibleCharacters = shown;
+            }
 
             // the voice
             float speakEnd = chars / CharsPerSecond;

@@ -167,6 +167,9 @@ namespace Blindside.Integration
             if (combat != null) { combat.OnKill -= OnKillCallout; combat.OnKill += OnKillCallout; combat.OnSupportFire -= OnSupportCallout; combat.OnSupportFire += OnSupportCallout; }
             GameplayUIBridge.VolleyShown -= OnVolleyCallout;
             GameplayUIBridge.VolleyShown += OnVolleyCallout;
+            Blindside.Cinematic.BattleStage.Fell -= OnStageFell;
+            Blindside.Cinematic.BattleStage.Fell += OnStageFell;
+            killCallsHeld.Clear();
             BindMovement(bridge);
             EnsureBuilt();
             EnsureDebugButton();   // who an ESC tap belongs to; the debug skip itself is SyncDebugSkip — .DebugClear.cs
@@ -205,6 +208,8 @@ namespace Blindside.Integration
             ResetCallouts();
             if (combat != null) { combat.OnKill -= OnKillCallout; combat.OnSupportFire -= OnSupportCallout; }
             GameplayUIBridge.VolleyShown -= OnVolleyCallout;
+            Blindside.Cinematic.BattleStage.Fell -= OnStageFell;
+            killCallsHeld.Clear();
             turns = null; units = null; hostage = null; map = null; hasSide = false; hostages.Clear(); HostageList = null;
             vision = null; marks = null; shownToPlayer = null;
             movement = null; combat = null; busy = false; modal = false;
@@ -212,7 +217,7 @@ namespace Blindside.Integration
         }
 
         // (a scene left mid-match never reaches Unbind: a destroyed controller left on this static hook would throw on the next shot and stop the match)
-        void OnDestroy() => GameplayUIBridge.VolleyShown -= OnVolleyCallout;
+        void OnDestroy() { GameplayUIBridge.VolleyShown -= OnVolleyCallout; Blindside.Cinematic.BattleStage.Fell -= OnStageFell; }
 
         // Port of playerCanAct(): G.state==='game' && !G.busy && !G.over && !G.modal && phase is the
         // player's. TurnManager only parks for the player during their own Attack/Defense phase.

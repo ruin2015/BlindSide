@@ -222,7 +222,7 @@ namespace Blindside.Tutorial
             if (showFoes) SyncFoes();
             if (radio == null || mb == null) return;
             bool show = !entranceOn && (mb.battleDirector == null || !mb.battleDirector.Directing);
-            radio.Lift = sel != null && sel.UnitPanelUp ? RadioLiftOverPanel : 0f;   // (bottom left, over the unit panel while it's up)
+            radio.Lift = sel != null ? sel.TutorialRadioLift : 0f;   // (bottom left, over the unit panel / the hint bar while up)
             // the attack forecast covers the left of the screen: the radio steps out to its right while it is up
             radio.Shift = sel != null && sel.AimForecastLive != null ? RadioShiftPastForecast : 0f;
             if (radio.canvas.enabled != show) radio.canvas.enabled = show;
@@ -1412,6 +1412,7 @@ namespace Blindside.Tutorial
                     t += speed * Time.unscaledDeltaTime;
                     var p = Vector2.Lerp(a, b, Mathf.Clamp01(t / len));
                     u.MoveTo(p.x, p.y);
+                    if (u.Team == Blindside.Data.OperatorTeam.Attack) BattleSounds.Step();   // (the squad's footsteps, as on a real move)
                     yield return null;
                 }
             }

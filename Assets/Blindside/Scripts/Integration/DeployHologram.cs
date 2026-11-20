@@ -91,7 +91,7 @@ namespace Blindside.Integration
             var kb = Keyboard.current;
             bool hold = (kb != null && kb.tabKey.isPressed) || DebugHold || Pinned;
             if (hold && root == null) Build();
-            if (hold && !holding) buildClock = 0f;
+            if (hold && !holding) { buildClock = 0f; Blindside.UI.SoundBank.Play(Blindside.UI.Snd.Hologram, .8f); }   // (the view turning holographic)
             holding = hold;
             float dt = Time.unscaledDeltaTime;
             shown = Mathf.MoveTowards(shown, hold ? 1f : 0f, dt / FadeTime);
@@ -112,6 +112,43 @@ namespace Blindside.Integration
             if (view.gameObject.activeSelf != showView) view.gameObject.SetActive(showView);
             if (header.gameObject.activeSelf != showView) header.gameObject.SetActive(showView);
             if (chip.gameObject.activeSelf == showView) chip.gameObject.SetActive(!showView);
+
+            // the rescue operation: the captives' M.I.A cards over the hologram, each tied to where it is held
+            EnsureMiaCards();
+            if (miaCanvas != null)
+            {
+                bool m = showView && hold;
+                if (miaCanvas.gameObject.activeSelf != m) miaCanvas.gameObject.SetActive(m);
+                if (m) miaCards.Tick(buildClock, Camera.main, miaMarker);
+            }
+        }
+
+        // ---- the rescue operation's M.I.A cards (IntroMiaCards, as the rescue intro shows them) ----
+        public const int MiaSortingOrder = 40;
+        const float MiaCardAt = .15f, MiaCardStep = .12f, MiaMarkerZ = 1.2f;
+        Canvas miaCanvas;
+        Blindside.Cinematic.IntroMiaCards miaCards;
+        readonly List<SimUnit> miaUnits = new List<SimUnit>(2);
+        System.Func<int, Vector3> miaMarker;
+
+        void EnsureMiaCards()
+        {
+            if (miaCanvas != null || !MatchBootstrap.RescueMatch || units == null) return;
+            miaUnits.Clear();
+            foreach (var u in units) if (u.Captive && u.Alive && u.Op != null) miaUnits.Add(u);
+            if (miaUnits.Count == 0) return;
+            var cgo = new GameObject("DeployHologram_MiaCanvas", typeof(RectTransform));
+            cgo.transform.SetParent(transform, false);
+            miaCanvas = cgo.AddComponent<Canvas>();
+            miaCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            miaCanvas.sortingOrder = MiaSortingOrder;   // (over the HUD while Tab is held)
+            UITheme.Current.ApplyTo(cgo.AddComponent<CanvasScaler>(), UITheme.CanvasKind.Menu);
+            miaCards = Blindside.Cinematic.IntroMiaCards.Build(cgo.transform);
+            var d = Blindside.Map.MapLibrary.Current;
+            float mid = d != null ? d.width * .5f : 13f;
+            for (int i = 0; i < miaUnits.Count; i++) miaCards.Add(miaUnits[i].Op, MiaCardAt + i * MiaCardStep, miaUnits[i].X > mid);
+            miaMarker = i => GridSpace.GridToWorld(miaUnits[i].X, miaUnits[i].Y, MiaMarkerZ);
+            cgo.SetActive(false);
         }
 
         /// <summary>The hologram `t` seconds after Tab went down: the walls built up from the ground, the grid spreading, the contacts pulsing.</summary>
@@ -451,6 +488,8 @@ namespace Blindside.Integration
             contacts.Clear(); hostMarks.Clear();
             if (canvas != null) Destroy(canvas.gameObject);
             canvas = null; view = null; viewGroup = null; header = chip = null; headerCount = null;
+            if (miaCanvas != null) Destroy(miaCanvas.gameObject);
+            miaCanvas = null; miaCards = null; miaUnits.Clear();
             shown = 0f; holding = false; Showing = false; TabTaken = false;
         }
 

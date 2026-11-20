@@ -1121,6 +1121,11 @@
     ],
     "extraHostages": [],
     "winRule": 1,
+    "enemy": {
+        "hp": 75,
+        "acc": -10,
+        "dmg": 75
+    },
     "gadgets": [
         {
             "cell": {

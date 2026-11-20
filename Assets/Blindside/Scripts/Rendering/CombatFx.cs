@@ -127,6 +127,8 @@ namespace Blindside.Rendering
             var end = targetPos + side * off + fwd * (1.5f + b * 2f);
             end.y = targetPos.y + (b - .5f) * .4f;
             TracerTo(shooterPos, shooterFacing, end, muzzle);
+            var floor = new Vector3(end.x, .03f, end.z);
+            FxBullet.Miss(floor, end - (muzzle ?? shooterPos));   // (where the stray round comes down: dust and grit)
         }
 
         /// <summary>The same beam + muzzle flash to an exact end point (no jitter, no random numbers). With the gun's
@@ -139,9 +141,11 @@ namespace Blindside.Rendering
             float dx = end.x - from.x, dz = end.z - from.z;
             float len = Mathf.Sqrt(dx * dx + dz * dz);
 
-            var beam = MakePrimitive(PrimitiveType.Cube, new Color32(0xff, 0xf0, 0xb4, 0xff), mid, new Vector3(len, 0.035f, 0.035f));
+            // the round: a particle streak flying the line (FxBullet), the old flat beam kept faint under it so the line still reads
+            FxBullet.Tracer(from, end);
+            var beam = MakePrimitive(PrimitiveType.Cube, new Color32(0xff, 0xf0, 0xb4, 0x60), mid, new Vector3(len, 0.02f, 0.02f));
             beam.transform.rotation = Quaternion.Euler(0f, -Mathf.Atan2(dz, dx) * Mathf.Rad2Deg, 0f);
-            Attach(beam, FxKind.Fade, 0.2f);
+            Attach(beam, FxKind.Fade, 0.12f);
 
             Vector3 at = muzzle ?? shooterPos + GridSpace.FacingToWorldDirection(shooterFacing) * 0.55f;
             if (!muzzle.HasValue) at.y = 0.55f;

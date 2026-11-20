@@ -1,5 +1,5 @@
 // Battle stage for BattleDirector: an urban street far off the map (Origin, beyond the camera's far plane from the map)
-// where copies of the two fighters face each other down the street, the opening shooter on the left. Each volley is
+// where copies of the two fighters face each other down the street, the player's side on the left (BattleDirector). Each volley is
 // cut like a firefight: first the shooter alone (front three-quarter, low) firing — muzzle flashes, ejected casings,
 // rounds streaking off-screen — then a cut to the unit being shot at, where those rounds land (sparks, dust, the
 // hit reaction, damage numbers; a headshot snaps to a close-up on the head). Return fire is the same cut reversed.
@@ -190,21 +190,24 @@ namespace Blindside.Cinematic
             var s = ActorOf(e.Attacker); var t = ActorOf(e.Target);
             if (s == null || t == null || s.Dead) { Impact(e); return; }
             Cut(Shot.Face, s);
-            After(CritFire, () => CritRound(s, t));
+            Blindside.UI.BattleSounds.StageCloseup();   // (the close-up's sound opens with its cut)
+            After(CritFire, () => CritRound(s, t, 0));
             After(CritLead, () => Impact(e));
         }
 
         /// <summary>The critical round leaving the muzzle: a bigger flash, a hot streak, a harder kick.</summary>
-        void CritRound(BattleActor s, BattleActor t)
+        void CritRound(BattleActor s, BattleActor t, int round)
         {
             if (s.Dead) return;
             s.Recoil();
             s.PlayFire();
+            Blindside.UI.BattleSounds.StageGun(s.Unit, round);
             Vector3 m = s.Muzzle, dir = new Vector3(s.Dir, 0f, 0f);
             MuzzleFlash.Play(m, dir);
             Blob(m + dir * .08f, new Color32(0xff, 0xc8, 0x1e, 0xff), .34f, .1f);
             Sparks(m + dir * .1f, new Color32(0xff, 0xd2, 0x7a, 0xff), 10, 3.4f);
             Beam(m, t.Head, new Color32(0xff, 0x3b, 0x54, 0xff), .06f, .12f);
+            FxBullet.Tracer(m, t.Head);
             Casing(s);
             Kick?.Invoke(.08f);
         }
@@ -225,13 +228,16 @@ namespace Blindside.Cinematic
                 volleyCritIndex = e.CritAt;                  // (known from the first round: the one the close-ups belong to)
                 Claim(e);
                 int n = Mathf.Max(1, e.Shots);
-                float interval = n >= 4 ? BurstInterval : FewInterval;
+                // (a gun whose sound is a whole burst fires at that burst's own spacing: the flashes land on its reports)
+                float gap = Blindside.UI.BattleSounds.RoundGap(e.Attacker);
+                float interval = gap > 0f ? gap : n >= 4 ? BurstInterval : FewInterval;
                 volleyZoomed = volleyCritIndex >= 0 && volleyCritIndex < n;
                 float lead = 0f;
                 if (volleyZoomed)
                 {
                     // the zoom first: the shooter's face in close-up, then its cut as it fires
                     Cut(Shot.Face, s);
+                    Blindside.UI.BattleSounds.StageCloseup();   // (the close-up's sound opens with its cut)
                     lead = ZoomLead;
                     After(lead, () => { if (volleyShooter == s) { s.Advance(true); Cut(Shot.Shooter, s); } });
                 }
@@ -240,24 +246,31 @@ namespace Blindside.Cinematic
                 for (int k = 0; k < n; k++)
                 {
                     bool isCrit = k == crit;
-                    After(lead + AimBeat + k * interval, () => { if (isCrit) CritRound(s, t); else MuzzleBurst(s, t); });
+                    int round = k;
+                    After(lead + AimBeat + k * interval, () => { if (isCrit) CritRound(s, t, round); else MuzzleBurst(s, t, round); });
                 }
                 float burst = lead + AimBeat + (n - 1) * interval + AfterBurst;
                 pendingImpacts.Add(e);
                 After(burst, () => { if (volleyShooter == s) { Cut(Shot.Target, t); targetUp = true; FlushImpacts(); } });
+                lastLandAt = now + burst + LandOffset(e);
                 busyUntil = now + burst + ImpactTime(e);
-                return burst + ImpactTime(e);
+                HoldForKill(e);
+                return busyUntil - now;
             }
             Claim(e);
             if (!targetUp)
             {
                 pendingImpacts.Add(e);
+                lastLandAt = Mathf.Max(busyUntil, now) + LandOffset(e);   // (it lands once those before it have played: FlushImpacts)
                 busyUntil = Mathf.Max(busyUntil, now) + ImpactTime(e);
+                HoldForKill(e);
                 return busyUntil - now;
             }
-            Land(e);
+            lastLandAt = now + LandOffset(e);
             busyUntil = Mathf.Max(busyUntil, now + ImpactTime(e));
-            return ImpactTime(e);
+            HoldForKill(e);
+            Land(e);
+            return busyUntil - now;
         }
 
         // ---- 支援射撃: an ally joins the fight — it steps in beside the shooter, its face in close-up with the badge, then it fires ----
@@ -287,6 +300,9 @@ namespace Blindside.Cinematic
             float lead = SupportFace + SupportAim + SupportFly;
             float total = wait + lead + (CritCut(e) ? HeadshotSeconds : ImpactSeconds);
             busyUntil = now + total;
+            lastLandAt = now + wait + lead;
+            HoldForKill(e);
+            total = busyUntil - now;
             After(wait, () =>
             {
                 var s = SupporterFor(e.Attacker, t);
@@ -297,7 +313,7 @@ namespace Blindside.Cinematic
                 Cut(Shot.Face, s);
                 Support?.Invoke(e.Attacker);
                 After(SupportFace, () => { s.Advance(true); Cut(Shot.Shooter, s); });
-                After(SupportFace + SupportAim, () => { if (CritCut(e)) CritRound(s, t); else MuzzleBurst(s, t); });
+                After(SupportFace + SupportAim, () => { if (CritCut(e)) CritRound(s, t, 0); else MuzzleBurst(s, t, 0); });
                 After(lead, () => { Cut(Shot.Target, t); Impact(e); });
             });
             return total;
@@ -315,36 +331,73 @@ namespace Blindside.Cinematic
             pendingImpacts.Clear();
         }
 
-        /// <summary>Death of `u` once the queued impacts have landed; returns how long until it has played out.</summary>
+        // ---- the fall: on the killing round itself (ShotEvent.Kills) — the moment it goes in, the world drops into slow motion and
+        // the body goes straight into its fall (no flinch first); a kill with no round on the stage (a blast) falls after what plays ----
+        /// <summary>When the last queued round lands (unscaled).</summary>
+        float lastLandAt = -1f;
+        /// <summary>A round's landing within its slot: the close-up's critical round lands CritLead in; any other at once.</summary>
+        float LandOffset(ShotEvent e) => e.Headshot && Cine(e) && !volleyZoomed ? CritLead : 0f;
+        public const float FallHitStop = .04f, FallSlow = 1.5f, FallSlowScale = .25f;
+        /// <summary>The fall's hit stop and slow motion (seconds of stop, seconds of slow, the slow's time scale): the director's time.</summary>
+        public Action<float, float, float> FallTime;
+        /// <summary>A body going down on the stage (its K.I.A): the squad radio's kill call waits for it.</summary>
+        public static event Action<ICombatUnit> Fell;
+        /// <summary>How long a fall holds the stage in real time (the slow motion stretches the clip).</summary>
+        static float FallHold => DeathSeconds + FallHitStop + FallSlow * (1f - FallSlowScale);
+
+        /// <summary>`a` goes down now: the fall, the slow motion, its sound, K.I.A.</summary>
+        void Fall(BattleActor a)
+        {
+            if (a == null || a.Dead) return;
+            // (a headshot's close-up holds a moment on the hit, then shows the body going)
+            if (shot == Shot.Head && camActor == a) After(.28f, () => Cut(Shot.Target, a)); else Cut(Shot.Target, a);
+            a.Die();
+            FallTime?.Invoke(FallHitStop, FallSlow, FallSlowScale);
+            Blindside.UI.BattleSounds.StageFall(a.Unit);
+            Kick?.Invoke(.09f);
+            Dust(a.Home + new Vector3(-a.Dir * .45f, .05f, 0f), 4, .5f);
+            Kia?.Invoke(a.Label);
+            Fell?.Invoke(a.Unit);
+            busyUntil = Mathf.Max(busyUntil, Time.unscaledTime + FallHold);
+        }
+
+        /// <summary>Death of `u` (the kill, reported after the volley); returns how long until it has played out. Fallen already on
+        /// its killing round: only the rest of the fall. Otherwise (no round of it on the stage) after what is playing.</summary>
         public float PlayDeath(ICombatUnit u)
         {
             var a = ActorOf(u);
             if (a == null) return 0f;
             float now = Time.unscaledTime;
-            float start = Mathf.Max(0f, busyUntil - now) + .08f;
-            After(start, () =>
-            {
-                Cut(Shot.Target, a);
-                a.Die();
-                Kick?.Invoke(.06f);
-                Dust(a.Home + new Vector3(-a.Dir * .45f, .05f, 0f), 4, .5f);
-                Kia?.Invoke(a.Label);
-            });
-            busyUntil = now + start + DeathSeconds;
-            return start + DeathSeconds;
+            if (a.Dead || killPending.Contains(u)) return Mathf.Max(0f, busyUntil - now);
+            float start = Mathf.Max(0f, Mathf.Max(busyUntil, lastLandAt) - now) + .02f;
+            After(start, () => Fall(a));
+            busyUntil = Mathf.Max(busyUntil, now + start + FallHold);
+            return busyUntil - now;
+        }
+
+        /// <summary>Targets whose killing round is queued (not landed yet): their fall comes with it, not from PlayDeath.</summary>
+        readonly HashSet<ICombatUnit> killPending = new HashSet<ICombatUnit>();
+
+        /// <summary>A killing round just queued (landing at lastLandAt): its target falls with it, and the stage holds for the fall.</summary>
+        void HoldForKill(ShotEvent e)
+        {
+            if (!e.Kills || e.Target == null) return;
+            killPending.Add(e.Target);
+            busyUntil = Mathf.Max(busyUntil, lastLandAt + FallHold);
         }
 
         // ---- the shooter's cut: muzzle flash, light, casing, a round streaking off toward the target ----
-        void MuzzleBurst(BattleActor s, BattleActor t)
+        void MuzzleBurst(BattleActor s, BattleActor t, int round)
         {
             if (s.Dead) return;
             s.Recoil();
             s.PlayFire();
+            Blindside.UI.BattleSounds.StageGun(s.Unit, round);   // (the report with the flash)
             Vector3 m = s.Muzzle, dir = new Vector3(s.Dir, 0f, 0f);
             MuzzleFlash.Play(m, dir);   // particles + its own light, on the gun's muzzle
             Casing(s);
             var aim = t.Torso + new Vector3(0f, (float)(rng.NextDouble() - .5) * .2f, (float)(rng.NextDouble() - .5) * .3f);
-            Beam(m, aim, new Color32(0xff, 0xf0, 0xb4, 0xff), .03f, .07f);
+            FxBullet.Tracer(m, aim);   // the round leaving (particles: a hot streak)
             Kick?.Invoke(.035f);
         }
 
@@ -354,13 +407,15 @@ namespace Blindside.Cinematic
             Landed?.Invoke(e);   // the HP bar drops now, as the round lands
             var s = ActorOf(e.Attacker); var t = ActorOf(e.Target);
             if (s == null || t == null) return;
+            Blindside.UI.BattleSounds.StageImpact(e, e.Headshot && Cine(e));   // (the sound as the round lands)
             Vector3 from = s.Muzzle;
+            bool kills = e.Kills;
+            if (kills) killPending.Remove(e.Target);
             if (e.ShieldBlocked)
             {
                 var at = t.Torso + new Vector3(t.Dir * .32f, 0f, 0f);
-                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .03f, .08f);
-                Sparks(at, Color.white, 12, 3.2f);
-                Blob(at, Color.white, .3f, .1f);
+                FxBullet.Tracer(from, at);
+                FxBullet.Shield(at, at - from);
                 t.Flinch(.05f, false);
                 t.PlayDodge(true);
                 Kick?.Invoke(.04f);
@@ -372,18 +427,16 @@ namespace Blindside.Cinematic
                 float side = (float)(rng.NextDouble() - .5) * 2f;
                 var at = t.Home + new Vector3(-t.Dir * (2.2f + (float)rng.NextDouble() * 2.5f), .02f + (float)rng.NextDouble() * 1.1f,
                                               Mathf.Sign(side) * (.6f + Mathf.Abs(side) * .6f) * t.Scale);
-                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .025f, .08f);
-                Dust(at, 3, .35f);
-                Chips(at, 5);
+                FxBullet.Tracer(from, at);
+                FxBullet.Miss(at, at - from);
                 Popup(t, "ミス", new Color32(0xb8, 0xc0, 0xca, 0xff), 2.2f);
             }
             else if (e.Headshot && !Cine(e))
             {
                 // a critical round after the volley's first: no close-ups again — the hit and its クリティカル number
                 var at = t.Head;
-                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .035f, .08f);
-                Blob(at, Color.white, .28f, .08f);
-                Sparks(at, new Color32(0xff, 0xd2, 0x7a, 0xff), 10, 3f);
+                FxBullet.Tracer(from, at);
+                FxBullet.Hit(at, at - from, true);
                 t.Flinch(.16f, true);
                 Kick?.Invoke(.07f);
                 Popup(t, $"<size=60%>クリティカル</size>\n{e.Damage}", new Color32(0xff, 0xc8, 0x1e, 0xff), 2.6f);
@@ -391,11 +444,9 @@ namespace Blindside.Cinematic
             else if (e.Headshot)
             {
                 var at = t.Head;
-                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .035f, .08f);
+                FxBullet.Tracer(from, at);
                 Cut(Shot.Head, t);
-                Blob(at, Color.white, .36f, .09f);
-                Sparks(at, new Color32(0xff, 0xd2, 0x7a, 0xff), 16, 3.6f);
-                Sparks(at, Color.white, 8, 2.4f);
+                FxBullet.Hit(at, at - from, true);
                 t.Flinch(.22f, true);
                 Kick?.Invoke(.1f);
                 Popup(t, $"<size=60%>クリティカル</size>\n{e.Damage}", new Color32(0xff, 0xc8, 0x1e, 0xff), 2.8f);
@@ -405,13 +456,14 @@ namespace Blindside.Cinematic
             else
             {
                 var at = t.Torso + new Vector3(0f, (float)(rng.NextDouble() - .5) * .18f, (float)(rng.NextDouble() - .5) * .16f);
-                Beam(from, at, new Color32(0xff, 0xf0, 0xb4, 0xff), .03f, .07f);
-                Blob(at, new Color32(0xff, 0xb1, 0x3b, 0xff), .18f, .08f);
-                Sparks(at, new Color32(0xff, 0xc8, 0x6a, 0xff), 9, 2.8f);
+                FxBullet.Tracer(from, at);
+                FxBullet.Hit(at, at - from, false);
                 t.Flinch(.13f, true);
                 Kick?.Invoke(.05f);
                 Popup(t, e.Damage.ToString(), Color.white, 2.6f);
             }
+            // the killing round: the body goes with it — slow motion from the moment it lands
+            if (kills) Fall(t);
         }
 
         void Update()
@@ -904,6 +956,7 @@ namespace Blindside.Cinematic
             public void PlayFire() { if (anim != null) anim.PlayFire(); }
 
             public void Advance(bool on) => stepTarget = on ? .4f : 0f;
+            float stillUntil = -1f, deathClock;
             public void Recoil() => recoil = .06f;
 
             /// <summary>The figure's height over the old 1 m capsule's (head at .8), at least 1.</summary>
@@ -928,6 +981,9 @@ namespace Blindside.Cinematic
                 step = Mathf.MoveTowards(step, stepTarget, dt * 3.2f);
                 recoil = Mathf.MoveTowards(recoil, 0f, dt * .9f);
                 knock = Mathf.MoveTowards(knock, 0f, dt * 1.1f);
+                // a knock-back (and its shake, and the settle after) is a shove, not steps: the legs stay planted
+                if (knock > .001f || recoil > .001f) stillUntil = now + .25f;
+                if (anim != null) anim.SuppressWalk = now < stillUntil;
                 float x = Dir * (step - recoil - knock);
                 float bob = deathT0 < 0f ? Mathf.Sin(now * 2.4f + bobPhase) * .012f : 0f;
                 float shake = knock > .01f ? Mathf.Sin(now * 90f) * knock * .25f : 0f;
@@ -939,10 +995,11 @@ namespace Blindside.Cinematic
                     float p = (now - flashT) / .22f;
                     if (p >= 1f) flashT = -1f; else white = 1f - p;
                 }
-                if (deathT0 >= 0f && !AnimDeath)   // with a death clip the model falls by itself
+                if (deathT0 >= 0f) deathClock += dt * Time.timeScale;   // (the fall keeps the director's hit stop and slow motion)
+                if (deathT0 >= 0f && !AnimDeath)   // with a death clip the model falls by itself (at game time: slowed the same)
                 {
                     // falls back, away from the opponent, and stays down in the street
-                    float p = (now - deathT0) / .5f;
+                    float p = deathClock / .5f;
                     float e = 1f - Mathf.Pow(1f - Mathf.Clamp01(p), 3f);
                     root.rotation = Quaternion.AngleAxis(Dir * 82f * e, Vector3.forward) * RestRotation();
                     root.position = home + new Vector3(x, 0f, 0f);

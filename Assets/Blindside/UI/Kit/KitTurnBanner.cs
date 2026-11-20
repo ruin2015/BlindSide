@@ -56,8 +56,21 @@ namespace Blindside.UI
 
         public const string DeployLabel = "BEFORE BREACH", DeployTitle = "DEPLOYMENT", PrepTitle = "PREPARATION";
 
+        /// <summary>The banner held on screen (the defeat): it comes in as usual, then stays from HoldAt — the title blipping now and then
+        /// (every HoldBlipEvery) — until Hide.</summary>
+        public void PlayHold(string label, string titleText, Color color)
+        {
+            turnText.text = label ?? "";
+            Begin(titleText, color);
+            hold = true;
+        }
+
+        public const float HoldAt = 1.3f, HoldBlipEvery = 3.2f;
+        bool hold;
+
         void Begin(string titleText, Color color)
         {
+            hold = false;
             gameObject.SetActive(true);
             title.text = ghostRText.text = ghostCText.text = titleText;
             turnText.color = color;
@@ -67,7 +80,7 @@ namespace Blindside.UI
             Evaluate(0f);
         }
 
-        public void Hide() { running = false; gameObject.SetActive(false); }
+        public void Hide() { running = false; hold = false; gameObject.SetActive(false); }
 
         // ---- ITimedEffect -----------------------------------------------------------------------------------------------------
         static float Ease(float p) => UIEase.Tactical(Mathf.Clamp01(p));
@@ -83,6 +96,12 @@ namespace Blindside.UI
 
         public void Evaluate(float t)
         {
+            // held: past HoldAt it stays put, but for a blip of the title every HoldBlipEvery
+            if (hold && t > HoldAt)
+            {
+                float c = (t - HoldAt) % HoldBlipEvery;
+                t = c < BlipTime ? BlipAt + c : HoldAt;
+            }
             bool reduce = UIMotionSettings.reduceMotion;
             float outK = Ease((t - OutFrom) / (Total - OutFrom));            // 0 → 1 while it leaves
 
@@ -143,7 +162,7 @@ namespace Blindside.UI
             if (!running) return;
             clock += Time.unscaledDeltaTime;
             Evaluate(clock);
-            if (clock >= Total) { running = false; gameObject.SetActive(false); }
+            if (clock >= Total && !hold) { running = false; gameObject.SetActive(false); }
         }
 
         // ---- build ------------------------------------------------------------------------------------------------------------

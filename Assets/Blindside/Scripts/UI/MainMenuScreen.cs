@@ -52,6 +52,11 @@ namespace Blindside.UI
         public KitTextButton newGameButton, loadButton, quitButton;
         public DialogView dialog;
         public HazardStripe diag;
+        /// <summary>The first show's signal tuning in (KitTitleNoise) over the menu; the logo's heavy intro starts LogoAt into it.</summary>
+        public KitTitleNoise noise;
+        public const float LogoAt = .75f;
+        float noiseStart = Never;
+        bool logoWaiting;
         readonly RectTransform[] rows = new RectTransform[3];
         readonly Vector2[] homes = new Vector2[3];
         readonly CanvasGroup[] rowGroups = new CanvasGroup[3];
@@ -88,6 +93,11 @@ namespace Blindside.UI
         void Update()
         {
             clock += Time.unscaledDeltaTime;
+            if (logoWaiting && clock >= LogoAt)
+            {
+                logoWaiting = false;
+                if (logo != null) { logo.gameObject.SetActive(true); logo.PlayEnter(true); }
+            }
             if (enterStart > Never && clock - enterStart > Duration) enterStart = Never;
             Evaluate(clock);
             HandleEscape();
@@ -238,23 +248,39 @@ namespace Blindside.UI
         /// <summary>The entrance from the start: heavy = the logo's strong glitch intro (the first show in a run).</summary>
         public void PlayEnter(bool heavy)
         {
-            entriesDelay = heavy ? HeavyDelay : CalmDelay;
+            // heavy (the first show): the signal tunes in first (KitTitleNoise), the logo's heavy intro starts LogoAt into it
+            entriesDelay = heavy ? HeavyDelay + LogoAt : CalmDelay;
             clock = 0f; enterStart = 0f;
-            if (logo != null) logo.PlayEnter(heavy);
+            noiseStart = heavy ? 0f : Never;
+            logoWaiting = heavy;
+            if (logo != null)
+            {
+                logo.gameObject.SetActive(!heavy);
+                if (!heavy) logo.PlayEnter(false);
+            }
+            if (heavy && Application.isPlaying) SoundBank.Play(Snd.UiGlitch, .8f);   // (the static's crackle)
             Evaluate(0f);
         }
 
-        /// <summary>Previews (edit mode): the menu `t` seconds into its entrance (the logo too).</summary>
+        /// <summary>Previews (edit mode): the menu `t` seconds into its entrance (the logo too; heavy: the noise first).</summary>
         public void PoseAt(float t, bool heavy)
         {
-            entriesDelay = heavy ? HeavyDelay : CalmDelay;
+            entriesDelay = heavy ? HeavyDelay + LogoAt : CalmDelay;
             clock = t; enterStart = 0f;
-            if (logo != null) logo.PoseAt(t, heavy);
+            noiseStart = heavy ? 0f : Never;
+            logoWaiting = false;
+            if (logo != null)
+            {
+                bool shown = !heavy || t >= LogoAt;
+                logo.gameObject.SetActive(shown);
+                if (shown) logo.PoseAt(heavy ? t - LogoAt : t, heavy);
+            }
             Evaluate(t);
         }
 
         public void Evaluate(float t)
         {
+            if (noise != null) noise.Evaluate(noiseStart > Never ? t - noiseStart : KitTitleNoise.RunTime);
             bool reduce = UIMotionSettings.reduceMotion;
             bool entering = enterStart > Never;
             for (int i = 0; i < rowCount; i++)
@@ -323,6 +349,10 @@ namespace Blindside.UI
             logo = lr.gameObject.AddComponent<KitMenuLogo>();
             logo.size = LogoSize;
             logo.Build();
+
+            // the first show's noise: over the whole menu (its entries too), under the dialog
+            noise = KitTitleNoise.Build(root);
+            noise.gameObject.AddComponent<LintIgnoreOverlap>().reason = "the title's opening noise covers the whole screen for 1.5s on purpose";
 
             dialog = DialogView.Build(root, OnDialogYes, CloseDialog);
 

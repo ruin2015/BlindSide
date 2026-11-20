@@ -55,7 +55,12 @@ namespace Blindside.Cinematic
             public TMP_Text labelText;
             public Material mat;
             public Color matBase, labelColor;
+            public bool sounded;   // its glitch drop has played
         }
+        /// <summary>The marker's drop sound (holo_mark: a glitch rising into its hit, MarkHitIn s into the file): started so the hit lands
+        /// on the impact.</summary>
+        const string MarkSound = "holo_mark";
+        const float MarkHitIn = .35f, MarkVol = 1f;
         readonly List<Marker> markers = new List<Marker>(2);
         Vector3 hostage;
         static readonly int ColorId = Shader.PropertyToID("_Color");
@@ -303,6 +308,11 @@ namespace Blindside.Cinematic
             float drop = SlamHeight * (1f - p * p);                    // accelerating down: driven in
             float since = t - (m.slamAt + SlamTime);
             float flash = since >= 0f ? Mathf.Exp(-since / (FlashTime * .35f)) : 0f;
+            if (!m.sounded && since >= -MarkHitIn)
+            {
+                m.sounded = true;
+                if (since < .2f) Blindside.UI.SoundBank.Play(MarkSound, MarkVol);   // (not when the clock jumped past it: a skip)
+            }
 
             // diamond + label come down together; after impact the diamond bobs and turns
             float bob = since > 0f ? Mathf.Sin(since * 2.4f) * .15f * Mathf.Clamp01(since * 2f) : 0f;

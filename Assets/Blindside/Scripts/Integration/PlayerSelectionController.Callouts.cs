@@ -31,15 +31,90 @@ namespace Blindside.Integration
         public const string CKill = "{0}を倒した！";
         public const string CPreempted = "くっ、{0}の先制攻撃だ！";
         public const string CSupport = "支援する！";
+        /// <summary>One of the squad down: another calls for them ({0} = the fallen one's name).</summary>
+        public const string CDown = "おい！？ {0}、応答しろ！";
+        /// <summary>The squad's first attack phase of an operation (as the first operation's CRUSHER opens it): {0} = its name.</summary>
+        public const string COpStart = "作戦名「{0}」、開始する。";
+        bool opStartCalled;
+
+        /// <summary>The operation's opening call, once, at the first attack phase: CRUSHER says it (or whoever leads when he isn't out).</summary>
+        void CallOperationStart()
+        {
+            var d = Blindside.Map.MapLibrary.Current;
+            string name = d == null ? null : !string.IsNullOrEmpty(d.operationNameJa) ? d.operationNameJa : d.operationCode;
+            if (string.IsNullOrEmpty(name) || units == null) return;
+            SimUnit lead = null;
+            for (int i = 0; i < units.Count; i++)
+            {
+                var u = units[i];
+                if (u.Team != side || !u.Alive || u.Op == null || u.Reserve) continue;
+                if (u.Op.key == "CRUSHER") { lead = u; break; }
+                if (lead == null) lead = u;
+            }
+            if (lead != null) Callout(lead, string.Format(COpStart, name), true);
+        }
         /// <summary>The radio over the battle cinematic's letterbox (8% of 1013 + a gap).</summary>
         public const float CinematicLift = 92f;
 
-        /// <summary>An enemy fell to one of ours: the shooter says so.</summary>
+        /// <summary>An enemy fell to one of ours: the shooter says so. One of ours down: another of the squad calls for them.</summary>
         void OnKillCallout(Blindside.Combat.ICombatUnit victim, Blindside.Combat.ICombatUnit killer)
         {
-            if (!(victim is SimUnit v) || !(killer is SimUnit k) || k.Team != side || v.Team == side) return;
-            CalledOut(v);
-            Callout(k, string.Format(CKill, Name(v)), true);
+            if (!(victim is SimUnit v)) return;
+            SimUnit speaker; string line;
+            if (v.Team == side)
+            {
+                speaker = DownCaller(v);
+                if (speaker == null) return;
+                line = string.Format(CDown, Name(v));
+            }
+            else
+            {
+                if (!(killer is SimUnit k) || k.Team != side) return;
+                CalledOut(v);
+                speaker = k; line = string.Format(CKill, Name(v));
+            }
+            // on the battle stage the fall comes later (after the rounds land): the call waits for it (K.I.A on screen)
+            if (Blindside.Cinematic.BattleDirector.StageHoldsHp && Blindside.Cinematic.BattleDirector.StageHandlesHeadshots)
+            {
+                killCallsHeld.Add((v, speaker, line));
+                return;
+            }
+            Callout(speaker, line, true);
+        }
+
+        /// <summary>Who calls for a fallen squad member: CRUSHER when he is up, else the first of the squad still standing.</summary>
+        SimUnit DownCaller(SimUnit down)
+        {
+            SimUnit pick = null;
+            for (int i = 0; i < units.Count; i++)
+            {
+                var u = units[i];
+                if (u == down || u.Team != side || !u.Alive || !u.Placed || u.Captive || u.Op == null) continue;
+                if (u.Op.key == "CRUSHER") return u;
+                if (pick == null) pick = u;
+            }
+            return pick;
+        }
+
+        readonly List<(SimUnit victim, SimUnit speaker, string line)> killCallsHeld = new List<(SimUnit, SimUnit, string)>(2);
+
+        /// <summary>The battle stage shows a fall (BattleStage.Fell): a call held for it goes out now.</summary>
+        void OnStageFell(Blindside.Combat.ICombatUnit u)
+        {
+            for (int i = killCallsHeld.Count - 1; i >= 0; i--)
+            {
+                if (killCallsHeld[i].victim != u) continue;
+                Callout(killCallsHeld[i].speaker, killCallsHeld[i].line, true);
+                killCallsHeld.RemoveAt(i);
+            }
+        }
+
+        /// <summary>Held calls whose fall will never be shown (the stage skipped or gone): out now.</summary>
+        void FlushKillCalls()
+        {
+            if (killCallsHeld.Count == 0 || Blindside.Cinematic.BattleDirector.StageHoldsHp) return;
+            foreach (var c in killCallsHeld) Callout(c.speaker, c.line, true);
+            killCallsHeld.Clear();
         }
 
         /// <summary>An ally joins in with 支援射撃: it says so on the radio.</summary>
@@ -147,11 +222,18 @@ namespace Blindside.Integration
             {
                 // over the unit panel, as the tutorial's radio does; in a battle cinematic over the letterbox and above its canvases
                 callRadio.Lift = cinematicOn ? CinematicLift : UnitPanelUp ? 236f : 0f;
+                callRadio.Compact = cinematicOn;   // (in a battle: the short form, left of the middle, off the duel cards)
                 int order = cinematicOn ? EngagePreview.SortingOrder + 1 : 4;
                 if (callRadio.canvas.sortingOrder != order) callRadio.canvas.sortingOrder = order;
                 if (!callRadio.canvas.enabled) callRadio.canvas.enabled = true;
             }
             if (callUntil >= 0f && now >= callUntil && !modal) NextCallout();
+            FlushKillCalls();
+            if (!opStartCalled && side == OperatorTeam.Attack && turns.Phase == MatchPhase.Attack && turns.AwaitingPlayer && turns.Round <= 1)
+            {
+                opStartCalled = true;
+                CallOperationStart();
+            }
 
             // an enemy coming into one of our operators' sight
             if (now < nextSight || vision == null || units == null) return;
@@ -177,7 +259,7 @@ namespace Blindside.Integration
 
         void ResetCallouts()
         {
-            callQueue.Clear(); callUntil = -1f; enemiesInSight.Clear(); calledAt.Clear(); cinematicOn = false;
+            callQueue.Clear(); callUntil = -1f; enemiesInSight.Clear(); calledAt.Clear(); cinematicOn = false; opStartCalled = false;
             if (callRadio != null) callRadio.Close();
         }
     }

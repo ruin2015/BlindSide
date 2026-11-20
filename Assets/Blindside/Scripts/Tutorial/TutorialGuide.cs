@@ -104,7 +104,13 @@ namespace Blindside.Tutorial
         public void CursorLocal(Vector2 local) { cursorGoal = cursorPos = local; cursor.gameObject.SetActive(true); }
 
         /// <summary>A click where the pointer is now (it dips; a ring spreads).</summary>
-        public void Click() { clickT = clock; clickAt = cursorPos; }
+        public void Click()
+        {
+            clickT = clock; clickAt = cursorPos;
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.UiConfirm, DemoClickVol);   // (the demonstration's click is heard like the player's own)
+        }
+
+        const float DemoClickVol = .7f;
 
         public void HideCursor() { cursor.gameObject.SetActive(false); ripple.gameObject.SetActive(false); clickT = -1f; }
 

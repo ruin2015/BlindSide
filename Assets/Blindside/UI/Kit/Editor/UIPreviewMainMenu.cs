@@ -3,7 +3,9 @@
 // MainMenuScreen.BackgroundPath (the plain background when it is not there yet):
 //   menu_save         settled, a save exists (ニューゲーム / 読み込み / ゲーム終了)
 //   menu_nosave       settled, no save (ニューゲーム / ゲーム終了)
-//   menu_logo_heavy   0.4s into the first show: the heavy glitch intro (letters jumping and split, strips sliding, the word shaking)
+//   menu_noise_snow   0.25s into the first show: black and TV snow (KitTitleNoise)
+//   menu_noise_reveal 0.9s into the first show: the title breaking through the thinning snow, torn strips, the logo's intro starting
+//   menu_logo_heavy   0.4s into the logo's heavy glitch intro (letters jumping and split, strips sliding, the word shaking)
 //   menu_glitch       settled, inside a burst of the calm glitch loop
 //   menu_hover        settled, the pointer over ニューゲーム (the text grown and white)
 //   menu_confirm      ニューゲーム over a save: the overwrite question
@@ -41,7 +43,12 @@ namespace Blindside.UITools.EditorTools
 
         public static void BuildSave(UIPreview.Stage s) => Menu(s, true).PoseAt(SettledT, false);
         public static void BuildNoSave(UIPreview.Stage s) => Menu(s, false).PoseAt(SettledT, false);
-        public static void BuildLogoHeavy(UIPreview.Stage s) => Menu(s, true).PoseAt(HeavyT, true);
+        public static void BuildLogoHeavy(UIPreview.Stage s) => Menu(s, true).PoseAt(MainMenuScreen.LogoAt + HeavyT, true);
+        /// <summary>The first show's noise (KitTitleNoise): all snow on black, then the title breaking through it.</summary>
+        public static void BuildNoiseSnow(UIPreview.Stage s) => Menu(s, true).PoseAt(NoiseSnowT, true);
+        public static void BuildNoiseReveal(UIPreview.Stage s) => Menu(s, true).PoseAt(NoiseRevealT, true);
+        public const string NoiseSnow = "menu_noise_snow", NoiseReveal = "menu_noise_reveal";
+        public const float NoiseSnowT = .25f, NoiseRevealT = .9f;
 
         /// <summary>A time inside the calm loop's burst (the second loop's window, a step in).</summary>
         public static float GlitchT(KitMenuLogo l) => l.EnterTime + KitMenuLogo.Period * (1f + KitMenuLogo.BurstFrom) + KitMenuLogo.StepTime * 1.5f;

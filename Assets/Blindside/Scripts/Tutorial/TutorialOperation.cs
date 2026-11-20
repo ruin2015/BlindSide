@@ -440,14 +440,10 @@ namespace Blindside.Tutorial
                 Pan(IgnisCell.x, IgnisCell.y, 600f);
                 yield return Wait(.6f);
                 ignis.Reserve = false;
-                ignis.MoveTo(IgnisCell.x, IgnisCell.y);
+                // down a rope like the squad's deployment (the rope, the descent, the landing's dust, shake and thud)
+                yield return sel.TutorialRappel(ignis, IgnisCell.x, IgnisCell.y);
                 ignis.Facing = Mathf.PI / 2f;
-                ignis.Airborne = true; ignis.Placed = false; ignis.RZ = 7f;
-                float t = 0f;
-                while (t < .55f) { t += Time.unscaledDeltaTime; float p = Mathf.Clamp01(t / .55f); ignis.RZ = 7f * (1f - p * p); yield return null; }
                 ignis.RZ = 0f; ignis.Airborne = false; ignis.Placed = true;
-                CombatFx.Ring(GridSpace.GridToWorld(ignis.X, ignis.Y, .08f), new Color32(0xd6, 0xc9, 0xa8, 0xff), .5f, .9f);
-                if (cam != null) cam.Shake(.08f);
                 ignis.MoveLeft = 0f; ignis.Acted = false; ignis.Ended = false; ignis.AbilityUsed = false;
                 if (ignis.Charges < 1) ignis.Charges = 1;
                 yield return Wait(.4f);
@@ -495,7 +491,8 @@ namespace Blindside.Tutorial
             Pan(spot.x, spot.y, 450f);
             while (!turns.Over)
             {
-                who.MoveLeft = budget; who.Ended = false; who.Acted = false;
+                // (enough to get there from wherever he stands: a unit left further off than the step expects can still reach the mark)
+                who.MoveLeft = Mathf.Max(budget, Vector2.Distance(new Vector2(who.X, who.Y), spot) + 4f); who.Ended = false; who.Acted = false;
                 moved = false;
                 yield return Guided(who, "move", GMove, line, goal, () => moved && movedUnit == who && !sel.Busy, GridSpace.GridToWorld(spot.x, spot.y, 1.9f), GTarget, TDraw);
                 if (Vector2.Distance(new Vector2(who.X, who.Y), spot) <= ArriveRadius) break;
@@ -536,6 +533,9 @@ namespace Blindside.Tutorial
             TutorialGate.PanelFilter = id => id == panelId;
             var m = Mark(centre, UIPalette.Accent);
             string skill = "「" + (who.Op != null ? who.Op.abilityName : "能力") + "」をクリック";
+            // the hammer only reaches a wall right beside him: stopped short of it (anywhere inside the mark's circle), he steps up to it
+            // himself — otherwise the ability would light no wall and the step could never be done
+            if (who.Op != null && who.Op.key == "CRUSHER" && !Blindside.Abilities.AbilitySystem.PanelNear(p, who)) yield return StepUpTo(who, p);
             who.AbilityUsed = false; who.Ended = false;
             if (who.Charges < 1) who.Charges = 1;
             yield return Guided(who, "skill", skill, line, goal, () => map.TileAt(cell.x, cell.y) == until && !sel.Busy, GridSpace.GridToWorld(centre.x, centre.y, 1.3f), pickLabel, null);
@@ -543,6 +543,32 @@ namespace Blindside.Tutorial
             who.Ended = false;
             Unmark(m);
             yield return Wait(.4f);
+        }
+
+        /// <summary>`who` walks straight up to the panel's nearest cell, stopping half a metre off its face (inside the hammer's reach).</summary>
+        IEnumerator StepUpTo(SimUnit who, WallPanel p)
+        {
+            var at = new Vector2(who.X, who.Y);
+            Vector2 best = at; float bd = float.MaxValue;
+            foreach (var c in p.cells)
+            {
+                var q = new Vector2(Mathf.Clamp(at.x, c.x - .5f, c.x + .5f), Mathf.Clamp(at.y, c.y - .5f, c.y + .5f));
+                float d = (q - at).sqrMagnitude;
+                if (d < bd) { bd = d; best = q; }
+            }
+            var off = at - best;
+            var goal = off.sqrMagnitude > 1e-4f ? best + off.normalized * .5f : at;
+            float len = Vector2.Distance(at, goal), t = 0f;
+            if (len < .02f) yield break;
+            who.Facing = Mathf.Atan2(goal.y - at.y, goal.x - at.x);
+            while (t < len)
+            {
+                t += 2.4f * Time.unscaledDeltaTime;
+                var pos = Vector2.Lerp(at, goal, Mathf.Clamp01(t / len));
+                who.MoveTo(pos.x, pos.y);
+                BattleSounds.Step();
+                yield return null;
+            }
         }
 
         IEnumerator DroneStep(SimUnit who, SimUnit foe)
@@ -669,10 +695,17 @@ namespace Blindside.Tutorial
 
         static IEnumerator Wait(float s) { float t = 0f; while (t < s) { t += Time.unscaledDeltaTime; yield return null; } }
 
-        // the radio over the unit panel while that is up
+        // the radio over the unit panel / the hint bar while up; the radio, its cards and the guide step aside while a battle cinematic is
+        // on screen (its duel cards and EXP card take the corners)
+        Canvas guideCanvas;
         void LateUpdate()
         {
-            if (radio != null && sel != null) radio.Lift = sel.UnitPanelUp ? 236f : 0f;
+            if (radio == null || sel == null) return;
+            radio.Lift = sel.TutorialRadioLift;
+            bool show = mb == null || mb.battleDirector == null || !mb.battleDirector.Directing;
+            if (radio.canvas.enabled != show) radio.canvas.enabled = show;
+            if (guideCanvas == null && guide != null) guideCanvas = guide.GetComponentInParent<Canvas>();
+            if (guideCanvas != null && guideCanvas.enabled != show) guideCanvas.enabled = show;
         }
 
         void Finish()

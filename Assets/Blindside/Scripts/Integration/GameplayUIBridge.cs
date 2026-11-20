@@ -104,6 +104,7 @@ namespace Blindside.Integration
         public bool useDuelPanel = true;
         KitDuelPanel duel;
         ICombatUnit duelL, duelR;
+        CombatSystem boundCombat;   // (the other side's numbers before it fires: VolleyNumbers)
 
         // an ally in its operator's own colour, an enemy red, the hostage amber
         static Color SideColor(ICombatUnit u, OperatorTeam side) =>
@@ -124,8 +125,12 @@ namespace Blindside.Integration
             if (!duel.Visible || L != duelL || R != duelR)
             {
                 duelL = L; duelR = R;
-                DuelSide(true, L, aLeft ? atk : null, aLeft ? hit : null, aLeft ? hs : null);
-                DuelSide(false, R, aLeft ? null : atk, aLeft ? null : hit, aLeft ? null : hs);
+                // the side not firing yet shows what it would answer with (always both sides' numbers, the enemy's included)
+                string oAtk = null, oHit = null, oHs = null;
+                if (boundCombat != null && boundCombat.VolleyNumbers(t, a, out int oc, out int od, out int os, out int oh))
+                { oAtk = $"{od}×{os}"; oHit = $"{oc}%"; oHs = $"{oh}%"; }
+                DuelSide(true, L, aLeft ? atk : oAtk, aLeft ? hit : oHit, aLeft ? hs : oHs);
+                DuelSide(false, R, aLeft ? oAtk : atk, aLeft ? oHit : hit, aLeft ? oHs : hs);
             }
             else duel.SetStats(aLeft, atk, hit, hs);   // the return fire: its side's numbers
             string tag = preempt ? "PREEMPTIVE · 先制攻撃 ×1.4" : "ENGAGE · 交戦";
@@ -218,6 +223,7 @@ namespace Blindside.Integration
         public void Bind(CombatSystem combat, TurnManager turns, EnemyAI ai, OperatorTeam? playerTeam = null)
         {
             boundTurns = turns;
+            boundCombat = combat;
             side = playerTeam ?? OperatorTeam.Attack;
             if (combatPanel != null) combatPanel.Hide();
             combat.Presenter = this;   // shoot()'s combatShow/…/combatHide
@@ -267,6 +273,9 @@ namespace Blindside.Integration
             {
                 if (phaseBanner == null) return;
                 if (TutorialGate.Active) return;   // the tutorial opens with its own entrance, no phase banner
+                // the banner's glitch-in: the deployment / preparation and each turn change
+                if (phase == MatchPhase.Deploy || phase == MatchPhase.Prep || phase == MatchPhase.Attack || phase == MatchPhase.Defense)
+                    Blindside.UI.SoundBank.Play(Blindside.UI.Snd.UiGlitch, .8f);
                 switch (phase)
                 {
                     case MatchPhase.Deploy:
@@ -339,6 +348,7 @@ namespace Blindside.Integration
                 // the player's own win: the radio and 作戦成功 (OperationResultScreen) take its place
                 var mb = FindAnyObjectByType<MatchBootstrap>();
                 if (mb != null && mb.PlayerWonRealMatch(result)) return;
+                if (mb != null && mb.PlayerLostMatch(result)) return;   // (the player's loss: KitDefeatScreen's DEFEAT banner)
                 string main = result == MatchResult.AttackWins ? "ATTACKER VICTORY" : "DEFENDER VICTORY";
                 phaseBanner.Play(main, result == MatchResult.AttackWins ? "攻撃チーム勝利" : "防衛チーム勝利", reason, UIPalette.Accent);
             };

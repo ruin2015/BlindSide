@@ -146,6 +146,7 @@ namespace Blindside.Cinematic
         float savedTimeScale = 1f;
         bool frozen;
         float slowHsUntil, slowKillUntil, holdUntil;
+        float stageStopUntil, stageSlowUntil, stageSlowScale = 1f;
 
         ICombatUnit shooter, target;
         BattlefieldCamera bcam;
@@ -348,6 +349,7 @@ namespace Blindside.Cinematic
             beginFrame = lastPumpFrame = Time.frameCount; lastPump = Time.unscaledTime;
             savedTimeScale = Time.timeScale; frozen = false;
             slowHsUntil = slowKillUntil = holdUntil = 0f;
+            stageStopUntil = stageSlowUntil = 0f;
             shooter = first; target = second;
             openingShooter = first; zoomExtra = 0f;
             if (k != Kind.Full) calloutPending = 0;
@@ -375,7 +377,9 @@ namespace Blindside.Cinematic
                     {
                         try
                         {
-                            stage = BattleStage.TryBuild(first, second, second, P.stageFov);
+                            // the player's side always on the left, the enemy on the right — whoever opens (AI against AI: the opener left)
+                            var onRight = IsPlayer(second) && !IsPlayer(first) ? first : second;
+                            stage = BattleStage.TryBuild(first, second, onRight, P.stageFov);
                             if (stage != null)
                             {
                                 stageOwner = this;
@@ -385,6 +389,13 @@ namespace Blindside.Cinematic
                                 stage.IsAlly = IsPlayer;   // the player's critical rounds open on the shooter's face
                                 stage.Support = ShowSupportBadge;
                                 stage.Landed = e => { if (e.Damage > 0 && !skipping) Safe(() => StageHit?.Invoke(e.Target, e.Damage)); };
+                                stage.FallTime = (stop, slow, scale) =>
+                                {
+                                    if (skipping || degraded) return;
+                                    float n = Time.unscaledTime;
+                                    stageStopUntil = n + stop; stageSlowUntil = n + stop + slow; stageSlowScale = scale;
+                                    ApplyTimeScale();
+                                };
                             }
                         }
                         catch (Exception e) { Debug.LogException(e); CleanupStage(); }
@@ -571,6 +582,7 @@ namespace Blindside.Cinematic
         {
             skipping = true;
             holdUntil = slowHsUntil = slowKillUntil = 0f;
+            stageStopUntil = stageSlowUntil = 0f;
             frozen = false;
             closeupActive = false;
             // A skip mid-transition leaves the stage as it is (shown or not) until the exit drops it; only the fade goes.
@@ -591,6 +603,9 @@ namespace Blindside.Cinematic
                 float now = Time.unscaledTime;
                 if (now < slowHsUntil) s = Mathf.Min(s, savedTimeScale * P.headshotSlowmoScale);
                 if (now < slowKillUntil) s = Mathf.Min(s, savedTimeScale * P.deathSlowmoScale);
+                // the stage's fall: a hit stop, then slow motion (BattleStage.FallTime)
+                if (now < stageSlowUntil) s = Mathf.Min(s, savedTimeScale * stageSlowScale);
+                if (now < stageStopUntil) s = 0f;
             }
             if (frozen) s = 0f;
             Time.timeScale = s;

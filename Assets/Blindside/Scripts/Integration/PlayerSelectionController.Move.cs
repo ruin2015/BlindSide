@@ -196,7 +196,7 @@ namespace Blindside.Integration
         /// </summary>
         IEnumerator ShowContact(ITurnUnit u, ITurnUnit e, Blindside.Combat.EncounterKind kind)
         {
-            Sfx.Alert();
+            if (!SoundBank.Play(Snd.Contact)) Sfx.Alert();   // the encounter's sting
             CalloutContact(u, e, kind);   // the squad radio: our operator in it says what happened
             bool pm = u.Team == side;
             string sub; int col;   // 1 blue · 2 yellow · 3 red

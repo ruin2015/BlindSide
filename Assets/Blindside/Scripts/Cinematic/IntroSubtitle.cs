@@ -58,7 +58,11 @@ namespace Blindside.Cinematic
             if (group.alpha != a) group.alpha = a;
             block.anchoredPosition = new Vector2(0f, BaseY - RiseFrom * (1f - UIEase.Tactical(t / FadeIn)));
             int shown = Mathf.Clamp(Mathf.FloorToInt(t * CharsPerSecond), 0, chars);
-            if (line.maxVisibleCharacters != shown) line.maxVisibleCharacters = shown;
+            if (line.maxVisibleCharacters != shown)
+            {
+                SoundBank.Blip(null, line.text, line.maxVisibleCharacters, shown);   // (HQ on the radio: a man's voice)
+                line.maxVisibleCharacters = shown;
+            }
 
             // the voice: loud while typing, then down to idle
             float speakEnd = chars / CharsPerSecond;

@@ -61,7 +61,16 @@ namespace Blindside.Cinematic
             if (director != null) director.played -= OnDirectorPlayed;
         }
 
-        void OnDirectorPlayed(PlayableDirector d) { HideStandIn(); BeginFadeIn(); }
+        void OnDirectorPlayed(PlayableDirector d)
+        {
+            HideStandIn(); BeginFadeIn();
+            // the insertion's sound: the helicopter (on until the deployment: MatchBootstrap) and the radio opening the operation
+            var rig = FindFirstObjectByType<IntroCameraRig>(FindObjectsInactive.Include);
+            Blindside.UI.SoundBank.Follow(Blindside.UI.Snd.HeliLoop, rig != null ? rig.heliTarget : null, SimpleIntro.HeliNear);
+            Blindside.UI.SoundBank.Loop(Blindside.UI.Snd.HeliLoop, true, 1f, 2f);
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.RadioStatic, .45f);
+            Blindside.UI.Music.PlayThen(Blindside.UI.Music.IntroTrack, Blindside.UI.Music.IntroTail);   // (its held end on through the deployment)
+        }
 
         /// <summary>Fades the black overlay out to reveal the scene — call whenever the intro (re)starts.</summary>
         public void BeginFadeIn()

@@ -105,6 +105,45 @@ namespace Blindside.UI
             SetHpText(c, hp);
             if (isLeft) barL = (float)hp / c.max; else barR = (float)hp / c.max;
             if (drop && Application.isPlaying) c.bar.SetTarget((float)hp / c.max); else c.bar.SetImmediate((float)hp / c.max);
+            if (drop && Application.isPlaying && !UIMotionSettings.reduceMotion) { if (isLeft) shakeL = 0f; else shakeR = 0f; }   // the side hit jolts
+        }
+
+        // ---- the side taking damage jolts (ShakeTime, ShakeAmp px, dying out); the battle stage's entrance flickers in ----
+        public const float ShakeTime = .32f, ShakeAmp = 11f, FlickerTime = .2f;
+        float shakeL = -1f, shakeR = -1f, shiftNow;
+
+        /// <summary>The card's jolt `s` seconds into it (−1: none): a quick, dying shake (no random numbers).</summary>
+        static Vector2 Shake(float s)
+        {
+            if (s < 0f || s >= ShakeTime) return Vector2.zero;
+            float p = s / ShakeTime, d = (1f - p) * (1f - p) * ShakeAmp;
+            return new Vector2(Mathf.Sin(p * 58f) * d, Mathf.Cos(p * 43f) * d * .45f);
+        }
+
+        /// <summary>The entrance's flicker `t` seconds in: a signal catching — on, a dropout, on, a weaker dropout, then steady.</summary>
+        static float Flicker(float t)
+        {
+            if (t >= FlickerTime) return 1f;
+            if (t < .045f) return .85f;
+            if (t < .075f) return .1f;
+            if (t < .115f) return 1f;
+            if (t < .14f) return .35f;
+            if (t < .165f) return 1f;
+            if (t < .18f) return .6f;
+            return 1f;
+        }
+
+        /// <summary>Render Previews: one side's card `s` seconds into its jolt.</summary>
+        public void PoseShake(bool isLeft, float s)
+        {
+            if (isLeft) shakeL = s; else shakeR = s;
+            PlaceCards();
+        }
+
+        void PlaceCards()
+        {
+            left.root.anchoredPosition = new Vector2(Margin - shiftNow, Bottom) + Shake(shakeL);
+            right.root.anchoredPosition = new Vector2(-Margin + shiftNow, Bottom) + Shake(shakeR);
         }
 
         static void SetHpText(Card c, int hp)
@@ -146,6 +185,7 @@ namespace Blindside.UI
         public void HideNow()
         {
             shown = false; running = false; outAt = -1f;
+            shakeL = shakeR = -1f;
             if (staged) { left.bar.ShowRatio(barL); right.bar.ShowRatio(barR); }
             staged = false;
             left.root.localScale = right.root.localScale = Vector3.one;
@@ -171,7 +211,7 @@ namespace Blindside.UI
             if (staged)
             {
                 k = reduce ? 1f : UIEase.Tactical(Mathf.Clamp01(t / EnterUnfold));
-                a = (reduce ? 1f : Mathf.Clamp01(t / EnterFade)) * (1f - o);
+                a = (reduce ? 1f : Mathf.Clamp01(t / EnterFade) * Flicker(t)) * (1f - o);   // (flickering in, like a signal catching)
                 shift = EnterShift * (1f - k);
                 width = Mathf.LerpUnclamped(EnterFrom, 1f, k);
                 if (t <= EnterBarFrom + EnterBarTime + .05f)
@@ -189,15 +229,19 @@ namespace Blindside.UI
             if (group.alpha != a) group.alpha = a;
             var sc = new Vector3(width, 1f, 1f);      // (unfolding from the outer edge: the cards' pivots are their outer corners)
             if (left.root.localScale != sc) left.root.localScale = right.root.localScale = sc;
-            left.root.anchoredPosition = new Vector2(Margin - shift, Bottom);
-            right.root.anchoredPosition = new Vector2(-Margin + shift, Bottom);
+            shiftNow = shift;
+            PlaceCards();
             middle.anchoredPosition = new Vector2(0f, -96f + 20f * (1f - k));
         }
 
         void Update()
         {
-            if (!running) return;
-            clock += Time.unscaledDeltaTime;
+            float dt = Time.unscaledDeltaTime;
+            bool shaking = shakeL >= 0f || shakeR >= 0f;
+            if (shakeL >= 0f) { shakeL += dt; if (shakeL >= ShakeTime) shakeL = -1f; }
+            if (shakeR >= 0f) { shakeR += dt; if (shakeR >= ShakeTime) shakeR = -1f; }
+            if (!running) { if (shaking) PlaceCards(); return; }
+            clock += dt;
             Evaluate(clock);
             if (outAt >= 0f && clock >= outAt + OutTime) { running = false; gameObject.SetActive(false); }
             else if (outAt < 0f && clock >= (staged ? EnterTime : InTime)) running = false;

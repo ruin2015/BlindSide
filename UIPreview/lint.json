@@ -6,18 +6,18 @@
     "unmatched": [
         "BattleCallout ×2",
         "Brighten ×6",
-        "CardPerspective ×6",
-        "Chip ×156",
+        "CardPerspective ×10",
+        "Chip ×157",
         "ClickRelay ×5",
         "CommandRowButton ×100",
         "CornerBrackets ×31",
         "CutCornerGraphic ×203",
-        "DuelHpBar ×6",
-        "DuelShape ×57",
+        "DuelHpBar ×10",
+        "DuelShape ×95",
         "EngagePreview ×5",
         "EscHoldSkip ×1",
         "ExpGainPopup ×2",
-        "HazardStripe ×158",
+        "HazardStripe ×160",
         "HubArmoryScreen ×7",
         "HubCoopScreen ×2",
         "HubHover ×72",
@@ -44,12 +44,13 @@
         "KitChoice ×5",
         "KitCommandMenu ×17",
         "KitCoopRankUp ×2",
+        "KitDefeatScreen ×2",
         "KitDialogue ×5",
-        "KitDuelPanel ×3",
+        "KitDuelPanel ×5",
         "KitGradient ×12",
         "KitGrowthPanel ×1",
         "KitLogHistory ×1",
-        "KitMenuLogo ×6",
+        "KitMenuLogo ×7",
         "KitOptionsPanel ×5",
         "KitPointer ×59",
         "KitRoster ×39",
@@ -58,27 +59,28 @@
         "KitSlider ×6",
         "KitStepper ×1",
         "KitSupportBadge ×1",
-        "KitSweep ×102",
+        "KitSweep ×106",
         "KitSwitch ×4",
-        "KitTextButton ×65",
+        "KitTextButton ×71",
         "KitTint ×309",
         "KitTitleLeft ×6",
-        "KitTurnBanner ×3",
-        "LintIgnoreClip ×1058",
-        "LintIgnoreOverlap ×559",
-        "MainMenuScreen ×6",
+        "KitTitleNoise ×3",
+        "KitTurnBanner ×5",
+        "LintIgnoreClip ×1085",
+        "LintIgnoreOverlap ×600",
+        "MainMenuScreen ×8",
         "OperationResultScreen ×5",
         "PauseMenu ×6",
-        "PerspectiveText ×60",
-        "PerspectiveVertex ×66",
+        "PerspectiveText ×100",
+        "PerspectiveVertex ×110",
         "PointerEnter ×4",
         "ResultScreen ×3",
         "SegmentedBar ×345",
-        "SlantedGraphic ×3612",
+        "SlantedGraphic ×3620",
         "SlantedMask ×291",
         "StageClick ×2",
         "TacticalOperatorFile ×23",
-        "TacticalPanel ×173",
+        "TacticalPanel ×177",
         "TacticalRosterCard ×195",
         "TitleSelectScreen ×6",
         "TutorialDroneCard ×2",
@@ -87,7 +89,7 @@
         "TutorialGuide ×4",
         "TutorialObjective ×2",
         "TutorialOperatorCard ×1",
-        "TutorialRadio ×18",
+        "TutorialRadio ×19",
         "TutorialSiren ×1",
         "TutorialSkipButton ×2",
         "TutorialWallCard ×2",
@@ -131,6 +133,18 @@
         {
             "state": "menu_nosave",
             "label": "メインメニュー — セーブなし",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_noise_snow",
+            "label": "メインメニュー — 初回ノイズ 砂嵐 (t=0.25s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "menu_noise_reveal",
+            "label": "メインメニュー — 初回ノイズ 映り始め (t=0.9s)",
             "count": 0,
             "issues": []
         },
@@ -411,6 +425,24 @@
             "issues": []
         },
         {
+            "state": "duel_panel_enter",
+            "label": "交戦 — 情報カード 登場 (戦闘シーンのフェードイン, 途中)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "duel_panel_flicker",
+            "label": "交戦 — 情報カード 登場のちらつき (t=0.13s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "duel_panel_hit_shake",
+            "label": "交戦 — 被弾側カードの揺れ (敵, 0.05s)",
+            "count": 0,
+            "issues": []
+        },
+        {
             "state": "turn_banner_deploy",
             "label": "配置開始 — DEPLOYMENT (ターン切替と同じ帯)",
             "count": 0,
@@ -681,6 +713,18 @@
             "issues": []
         },
         {
+            "state": "defeat_in",
+            "label": "敗北 — バナー登場中 (t=0.4s)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "defeat",
+            "label": "敗北 — 再挑戦 / タイトルへ (t=2.0s)",
+            "count": 0,
+            "issues": []
+        },
+        {
             "state": "hud_log_full",
             "label": "HUD — ログ3行 (案内バーの右・2行折返し含む)",
             "count": 0,
@@ -887,6 +931,12 @@
         {
             "state": "tutorial_radio_hq",
             "label": "チュートリアル 無線機 (HQ)",
+            "count": 0,
+            "issues": []
+        },
+        {
+            "state": "battle_radio_compact",
+            "label": "戦闘中の無線 — 簡略表示 (左・中央)",
             "count": 0,
             "issues": []
         },

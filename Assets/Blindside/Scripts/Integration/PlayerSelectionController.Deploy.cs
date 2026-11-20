@@ -259,6 +259,9 @@ namespace Blindside.Integration
         /// frame), then the figure appears at its top and climbs down it hand under hand (UnitView.SetRoping), facing the building
         /// centre with the rope just in front of its hands → dust ring, shake, thud → rope up. `fast` halves every duration (the
         /// automatic drops of [作戦開始]).</summary>
+        /// <summary>A scripted arrival down a rope (the first operation's IGNIS): the deployment's rappel onto (x, y), at its usual pace.</summary>
+        public IEnumerator TutorialRappel(SimUnit u, float x, float y) => Rappel(u, x, y, false);
+
         IEnumerator Rappel(SimUnit u, float x, float y, bool fast)
         {
             float k = fast ? .5f : 1f;
@@ -307,6 +310,7 @@ namespace Blindside.Integration
             u.MoveTo(x, y);
             var uv = u.View as UnitView;
             if (uv != null) uv.SetRoping(true);
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.Rappel, .7f);   // the rope running through the descender as it slides down
             UnitsChanged?.Invoke();
 
             float dur = (haveHeli ? (fast ? .8f : 1.6f) : DropInSeconds * k), t = 0f;

@@ -32,6 +32,7 @@ namespace Blindside.Cinematic
         {
             view.texture = holo;
             root.gameObject.SetActive(true);
+            SoundBank.Play(Snd.Hologram, .8f);   // (the view turning holographic as the wipe comes in)
             clock = 0f; running = true;
             Evaluate(0f);
         }

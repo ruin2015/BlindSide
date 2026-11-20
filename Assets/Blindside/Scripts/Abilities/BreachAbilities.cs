@@ -113,9 +113,10 @@ namespace Blindside.Abilities
 
         public override AbilitySpec GetSpec(IAbilityUnit u, AbilityContext ctx) => new AbilitySpec(
             AbilityTargetKind.Panel, range: 6f,
-            hint: "除去する壁を選択してください", sub: "射程6m · 投擲経路の障害物に遮られる場合あり",
+            hint: "除去する壁を選択してください", sub: "射程6m · 通電中の壁は不可 · 投擲経路の障害物に遮られる場合あり",
+            // (a wall carrying current — VOLT's shock field — is off limits, as for IGNIS's charge)
             validPanel: p => (ctx.Map.TileAt(p.cells[0].x, p.cells[0].y) == TileType.Wall || Holed(p, ctx))
-                && AbilitySystem.ThrowClear(u, p, ctx));
+                && !p.electrified && AbilitySystem.ThrowClear(u, p, ctx));
 
         // a wall becomes a hole; a hole it made before opens up completely
         protected override TileType ResultFor(WallPanel p, AbilityContext ctx) => Holed(p, ctx) ? TileType.Rubble : TileType.Hole;

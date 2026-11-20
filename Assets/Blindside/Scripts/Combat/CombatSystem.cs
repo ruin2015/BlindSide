@@ -62,10 +62,12 @@ namespace Blindside.Combat
         /// <summary>The volley's first headshot that lands (hit, not blocked) — known from its first round on, so the presentation
         /// can open on it (the close-up before the shot); −1: none.</summary>
         public readonly int CritAt;
-        public ShotEvent(ICombatUnit attacker, ICombatUnit target, int index, int shots, bool hit, bool headshot, bool shieldBlocked, int damage, int critAt = -1)
+        /// <summary>This round brings the target down (its HP at 0 with it): the presentation drops the body as it lands.</summary>
+        public readonly bool Kills;
+        public ShotEvent(ICombatUnit attacker, ICombatUnit target, int index, int shots, bool hit, bool headshot, bool shieldBlocked, int damage, int critAt = -1, bool kills = false)
         {
             Attacker = attacker; Target = target; Index = index; Shots = shots;
-            Hit = hit; Headshot = headshot; ShieldBlocked = shieldBlocked; Damage = damage; CritAt = critAt;
+            Hit = hit; Headshot = headshot; ShieldBlocked = shieldBlocked; Damage = damage; CritAt = critAt; Kills = kills;
         }
     }
 
@@ -250,6 +252,25 @@ namespace Blindside.Combat
             return TraceLine(Map, a.X, a.Y, t.X, t.Y);
         }
 
+        /// <summary>`attacker`'s numbers against `target` as its (non-preemptive) volley would show them right now — hit chance, damage a
+        /// round, rounds, headshot chance — for the duel cards before that side has fired. No rolls, nothing changed; false when it
+        /// couldn't fire (no gun, out of range, blocked, its shield up).</summary>
+        public bool VolleyNumbers(ICombatUnit attacker, ICombatUnit target, out int chance, out int dmg, out int shots, out int hsChance)
+        {
+            chance = dmg = shots = hsChance = 0;
+            if (Map == null || attacker == null || target == null || attacker.Weapon == null || target.IsHostage) return false;
+            if (attacker.ShieldUp && !CoopRules.CanFireShielded(attacker)) return false;
+            var path = TraceLine(attacker, target);
+            if (!CanShoot(attacker, target, path)) return false;
+            chance = HitChance(attacker, target, path, false);
+            hsChance = ShieldBlocks(target, attacker) ? 0 : HeadshotChance(attacker, target, path, false);
+            shots = CombatModifiers.ShotsOf(attacker);
+            dmg = Mathf.RoundToInt(CombatModifiers.BaseDamage(attacker, Distance(attacker, target)));
+            if (attacker is ICombatModifiers am && am.DamageScale != 1f) dmg = Mathf.RoundToInt(dmg * am.DamageScale);
+            if (CoopRules.IsExposed(target)) { hsChance = Mathf.Min(hsChance >= 100 ? 100 : 95, hsChance * 2); dmg *= 2; }
+            return true;
+        }
+
         /// <summary>Port of canShoot(a,t): unobstructed and within weapon range + 4.</summary>
         public static bool CanShoot(ICombatUnit attacker, ICombatUnit target, ShotPath path)
             => !path.Blocked && Distance(attacker, target) <= attacker.Weapon.range + 4f;
@@ -272,6 +293,14 @@ namespace Blindside.Combat
         /// <summary>A kill from outside the gun path (a thrown grenade): every OnKill listener reacts as to a shot kill.</summary>
         public void ReportKill(ICombatUnit target, ICombatUnit killer) => OnKill?.Invoke(target, killer);
         public event System.Action<ShotEvent> OnShot;                                 // every shot: who→whom, hit, headshot, damage
+        /// <summary>Presentation: the seconds between a volley's rounds for this shooter when its gun's sound sets them (a burst
+        /// recorded in one file: BattleSounds), else ≤ 0 for the usual spacing. Only the waits change — never a roll.</summary>
+        public static System.Func<ICombatUnit, float> RoundGap;
+        static float Gap(ICombatUnit a, float usual)
+        {
+            float g = RoundGap != null ? RoundGap(a) : -1f;
+            return g > 0f ? g : usual;
+        }
         public event System.Action<ICombatUnit, ICombatUnit> OnSupportFire;           // an ally joins in with 支援射撃: who, target
 
         /// <summary>
@@ -379,18 +408,18 @@ namespace Blindside.Combat
                 if (target.HP <= 0) { down = true; if (!Held(target)) target.View?.PlayDeath(); }   // animation only (kill() itself follows the volley)
                 if (hit && blocked) target.View?.PlayDodge(true);   // the shield takes it (animation only); a miss just flies wide
                 OnShotFired?.Invoke(attacker, target, hit, crit);
-                OnShot?.Invoke(new ShotEvent(attacker, target, i, shots, hit, crit, hit && blocked, dealt, critAt));
+                OnShot?.Invoke(new ShotEvent(attacker, target, i, shots, hit, crit, hit && blocked, dealt, critAt, dealt > 0 && target.HP <= 0));
                 if (pres != null)
                 {
                     // if(crit){ ...; combatUpdate(t); combatCrit(hs); await headshotFx(a,t,d); } — headshotFx's
                     // badge/flash hang off OnDamage(crit); its `await hitStop(150)` is this one.
                     if (crit) { pres.UpdateHp(target); pres.Crit(headshots); yield return HitStopFor(150f); }
                     pres.UpdateHp(target);
-                    yield return Sleep(shots > 4 ? 0.09f : 0.15f);   // combatUpdate(t); await sleep(w.shots>4?90:150)
+                    yield return Sleep(Gap(attacker, shots > 4 ? 0.09f : 0.15f));   // combatUpdate(t); await sleep(w.shots>4?90:150)
                     continue;
                 }
                 if (crit) yield return HitStopFor(150f);
-                yield return Sleep(0.1f); // space out a burst's shots so tracers read individually
+                yield return Sleep(Gap(attacker, 0.1f)); // space out a burst's shots so tracers read individually
             }
 
             // log(`${a.kr} → ${t.kr}: ${blocked?'シールドに阻まれた':`${hits}/${w.shots} 命中, ${total} ダメージ`}${hs?` (ヘッドショット ×${hs})`:''}${o.preempt?' (先制)':''}`, a.team===G.side?'a':'f')
@@ -471,7 +500,7 @@ namespace Blindside.Combat
                 OnDamage?.Invoke(t, d, crit);
             }
             OnShotFired?.Invoke(a, t, hit, crit);
-            OnShot?.Invoke(new ShotEvent(a, t, 0, 1, hit, crit, hit && blocked, dealt, crit && hit && !blocked ? 0 : -1));
+            OnShot?.Invoke(new ShotEvent(a, t, 0, 1, hit, crit, hit && blocked, dealt, crit && hit && !blocked ? 0 : -1, dealt > 0 && t.HP <= 0));
             HudLog.Add($"{Kr(a)}: 支援射撃 → {Kr(t)} {(hit && !blocked ? dealt + " ダメージ" + (crit ? " (ヘッドショット)" : "") : "外れ")}", HudLog.TeamType(a.Team));
             yield return Sleep(.35f);
             if (t.HP <= 0)

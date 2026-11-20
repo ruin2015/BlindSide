@@ -103,7 +103,7 @@ namespace Blindside.Integration
             u.Facing = Mathf.Atan2(g.Y - u.Y, g.X - u.X);
             var from = u.View != null ? u.View.TorsoPoint : GridSpace.GridToWorld(u.X, u.Y, .5f);
             CombatFx.Tracer(from, u.Facing, GridSpace.GridToWorld(g.X, g.Y, g.IsDrone ? .4f : g.IsField ? .25f : .9f), true, u.View != null ? u.View.MuzzlePoint : (Vector3?)null);
-            SfxNoise.Shot();
+            Blindside.UI.BattleSounds.Gun(u);   // the shooter's own gun (a camera, a drone, a field)
             yield return new WaitForSeconds(.16f);
             g.Kill();
             if (g.IsField) RemoveField(g.Field);

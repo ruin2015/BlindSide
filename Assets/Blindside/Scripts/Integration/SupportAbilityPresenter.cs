@@ -58,7 +58,7 @@ namespace Blindside.Integration
         void OnShieldUp(IAbilityUnit u)
         {
             WorldPopup.Show(u.X, u.Y, "SHIELD", ShieldBlue);
-            SfxNoise.Ui();
+            if (!SoundBank.Play(Snd.ShieldUp)) SfxNoise.Ui();   // (the shield swung up and locked)
             HudLog.Add($"{Kr(u)}: シールド展開", HudLog.TeamType(u.Team));
         }
 

@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-20 12:19
+Screen 1440x810 · 0 issues · generated 2026-11-20 23:28
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -20,6 +20,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | title_build | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_save | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_nosave | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_noise_snow | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| menu_noise_reveal | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_logo_heavy | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | menu_hover | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -66,6 +68,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | turn_banner_player | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | turn_banner_enemy_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | duel_panel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| duel_panel_enter | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| duel_panel_flicker | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| duel_panel_hit_shake | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | turn_banner_deploy | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory_op | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -111,6 +116,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_win | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_lose | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | result_mid | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| defeat_in | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| defeat | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_log_full | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hud_log_history | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | dialog_move | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -146,6 +153,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | tutorial_drone | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_siren | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_radio_hq | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| battle_radio_compact | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_demo_click | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_operator_card | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | tutorial_objective | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -172,22 +180,22 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 98종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 100종)
 
 - BattleCallout ×2
 - Brighten ×6
-- CardPerspective ×6
-- Chip ×156
+- CardPerspective ×10
+- Chip ×157
 - ClickRelay ×5
 - CommandRowButton ×100
 - CornerBrackets ×31
 - CutCornerGraphic ×203
-- DuelHpBar ×6
-- DuelShape ×57
+- DuelHpBar ×10
+- DuelShape ×95
 - EngagePreview ×5
 - EscHoldSkip ×1
 - ExpGainPopup ×2
-- HazardStripe ×158
+- HazardStripe ×160
 - HubArmoryScreen ×7
 - HubCoopScreen ×2
 - HubHover ×72
@@ -214,12 +222,13 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitChoice ×5
 - KitCommandMenu ×17
 - KitCoopRankUp ×2
+- KitDefeatScreen ×2
 - KitDialogue ×5
-- KitDuelPanel ×3
+- KitDuelPanel ×5
 - KitGradient ×12
 - KitGrowthPanel ×1
 - KitLogHistory ×1
-- KitMenuLogo ×6
+- KitMenuLogo ×7
 - KitOptionsPanel ×5
 - KitPointer ×59
 - KitRoster ×39
@@ -228,27 +237,28 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitSlider ×6
 - KitStepper ×1
 - KitSupportBadge ×1
-- KitSweep ×102
+- KitSweep ×106
 - KitSwitch ×4
-- KitTextButton ×65
+- KitTextButton ×71
 - KitTint ×309
 - KitTitleLeft ×6
-- KitTurnBanner ×3
-- LintIgnoreClip ×1058
-- LintIgnoreOverlap ×559
-- MainMenuScreen ×6
+- KitTitleNoise ×3
+- KitTurnBanner ×5
+- LintIgnoreClip ×1085
+- LintIgnoreOverlap ×600
+- MainMenuScreen ×8
 - OperationResultScreen ×5
 - PauseMenu ×6
-- PerspectiveText ×60
-- PerspectiveVertex ×66
+- PerspectiveText ×100
+- PerspectiveVertex ×110
 - PointerEnter ×4
 - ResultScreen ×3
 - SegmentedBar ×345
-- SlantedGraphic ×3612
+- SlantedGraphic ×3620
 - SlantedMask ×291
 - StageClick ×2
 - TacticalOperatorFile ×23
-- TacticalPanel ×173
+- TacticalPanel ×177
 - TacticalRosterCard ×195
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
@@ -257,7 +267,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialGuide ×4
 - TutorialObjective ×2
 - TutorialOperatorCard ×1
-- TutorialRadio ×18
+- TutorialRadio ×19
 - TutorialSiren ×1
 - TutorialSkipButton ×2
 - TutorialWallCard ×2
@@ -282,6 +292,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | title_build | 1440x810 | タイトル — ビルド (マップエディタなし) |
 | menu_save | 1440x810 | メインメニュー — セーブあり |
 | menu_nosave | 1440x810 | メインメニュー — セーブなし |
+| menu_noise_snow | 1440x810 | メインメニュー — 初回ノイズ 砂嵐 (t=0.25s) |
+| menu_noise_reveal | 1440x810 | メインメニュー — 初回ノイズ 映り始め (t=0.9s) |
 | menu_logo_heavy | 1440x810 | メインメニュー — 初回ロゴ グリッチ (t=0.4s) |
 | menu_glitch | 1440x810 | メインメニュー — ロゴ グリッチ (常時) |
 | menu_hover | 1440x810 | メインメニュー — ニューゲームにカーソル |
@@ -328,6 +340,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | turn_banner_player | 1440x810 | ターン切替 — PLAYER PHASE (Turn 2) |
 | turn_banner_enemy_glitch | 1440x810 | ターン切替 — ENEMY PHASE (グリッチ中) |
 | duel_panel | 1440x810 | 交戦 — 情報カード (味方 FLARE / 敵 ARGUS) |
+| duel_panel_enter | 1440x810 | 交戦 — 情報カード 登場 (戦闘シーンのフェードイン, 途中) |
+| duel_panel_flicker | 1440x810 | 交戦 — 情報カード 登場のちらつき (t=0.13s) |
+| duel_panel_hit_shake | 1440x810 | 交戦 — 被弾側カードの揺れ (敵, 0.05s) |
 | turn_banner_deploy | 1440x810 | 配置開始 — DEPLOYMENT (ターン切替と同じ帯) |
 | hub_armory | 1440x810 | 本部 — ロードアウト (隊員・装備) |
 | hub_armory_op | 1440x810 | 本部 — ロードアウト (隊員を選んだ後) |
@@ -373,6 +388,8 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | result_win | 1440x810 | 結果画面 — 勝利 |
 | result_lose | 1440x810 | 結果画面 — 敗北 |
 | result_mid | 1440x810 | 結果画面 — 登場中 (t=0.3s) |
+| defeat_in | 1440x810 | 敗北 — バナー登場中 (t=0.4s) |
+| defeat | 1440x810 | 敗北 — 再挑戦 / タイトルへ (t=2.0s) |
 | hud_log_full | 1440x810 | HUD — ログ3行 (案内バーの右・2行折返し含む) |
 | hud_log_history | 1440x810 | HUD — 戦闘ログ全体 (Tab) |
 | dialog_move | 1440x810 | 移動確認ダイアログ |
@@ -408,6 +425,7 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | tutorial_drone | 1440x810 | チュートリアル ドローンカード |
 | tutorial_siren | 1440x810 | チュートリアル 緊急入電 (サイレン) |
 | tutorial_radio_hq | 1440x810 | チュートリアル 無線機 (HQ) |
+| battle_radio_compact | 1440x810 | 戦闘中の無線 — 簡略表示 (左・中央) |
 | tutorial_demo_click | 1440x810 | チュートリアル 手本のクリック表示 |
 | tutorial_operator_card | 1440x810 | 配置ブリーフィング 隊員カード (イグニス) |
 | tutorial_objective | 1440x810 | チュートリアル 現在の目標 (移動) |

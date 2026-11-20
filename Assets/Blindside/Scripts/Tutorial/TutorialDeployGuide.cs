@@ -403,7 +403,7 @@ namespace Blindside.Tutorial
         // the radio sits bottom left: over the unit panel while that is up (as the tutorial's and the squad's radio do)
         void LateUpdate()
         {
-            if (radio != null && mb != null && mb.selection != null) radio.Lift = mb.selection.UnitPanelUp ? 236f : 0f;
+            if (radio != null && mb != null && mb.selection != null) radio.Lift = mb.selection.TutorialRadioLift;
         }
 
         bool AnyLocked()

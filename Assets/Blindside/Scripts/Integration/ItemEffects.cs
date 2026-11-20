@@ -32,6 +32,7 @@ namespace Blindside.Integration
         public static void Revived(SimUnit u)
         {
             Spend(DefibKey);
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.Revive, .85f);
             WorldPopup.Show(u.X, u.Y, "REVIVED", ReviveGreen);
             CombatFx.Ring(GridSpace.GridToWorld(u.X, u.Y), ReviveGreen, .7f, 1.6f);
             HudLog.Add($"{u.Kr}: 除細動器が作動 — 体力{DefibPercent}%で復帰", HudLogType.Ally);

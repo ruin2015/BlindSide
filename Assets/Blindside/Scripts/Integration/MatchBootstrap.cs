@@ -406,6 +406,7 @@ namespace Blindside.Integration
             if (uiBridge != null && uiBridge.endTurnButton != null) uiBridge.endTurnButton.gameObject.SetActive(false);
             BattlefieldCamera.InputLocked = false;
             if (resultScreen != null) resultScreen.Hide();
+            if (defeatScreen != null) defeatScreen.Hide();
             if (operationResult != null) operationResult.Hide();
             Record?.Unbind();
 
@@ -493,6 +494,7 @@ namespace Blindside.Integration
             MapFloorSync.Apply(mapData);   // the floor planes follow the map's size
             var vision = new VisionSystem(map);
             var combat = new CombatSystem(map);
+            Blindside.UI.BattleSounds.Bind(combat, playerTeam);   // (the guns, hits and falls: SoundBank, silent until the files exist)
 
             var weaponAr = LoadWeapon("Weapon_AR");
             var weaponPst = LoadWeapon("Weapon_PST");
@@ -813,6 +815,13 @@ namespace Blindside.Integration
             mapGadgets.Bind(tutorialMode ? null : mapData, map, vision, abilityCtx, turns, marks, ai, gadgetPresenter, playerTeam);
             visibility.MapGadgets = mapGadgets;
             if (selection.Movement != null) selection.Movement.OnStep += mapGadgets.Step;
+            Blindside.UI.BattleSounds.BindSteps(selection.Movement, playerTeam);   // (the player's footsteps)
+            // the intro's helicopter goes quiet as the deployment starts (it is not over the map then: HeliDeployRig)
+            turns.OnPhaseBegin += phase =>
+            {
+                if (phase != MatchPhase.Deploy) return;
+                Blindside.UI.SoundBank.Loop(Blindside.UI.Snd.HeliLoop, false, 0f, 1.5f);   // (the insertion's music holds on: the battle's track takes over)
+            };
             reconPresenter?.Unbind();
             reconPresenter = new ReconAbilityPresenter(abilities, abilityCtx, turns, marks, playerTeam);
             // GHOST's sensor, on for a turn once switched on: the enemies in his cone sensed again and again through walls

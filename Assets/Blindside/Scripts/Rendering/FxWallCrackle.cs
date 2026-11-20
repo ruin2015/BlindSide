@@ -12,11 +12,11 @@ namespace Blindside.Rendering
         static readonly Color ArcCol = new Color(.55f, .82f, 1f, 1f);
         public const float MinGap = .18f, MaxGap = .9f, DoubleChance = .35f;
 
-        ParticleSystem sparks;
-        LineRenderer arc;
+        ParticleSystem sparks, topSparks;
+        LineRenderer arc, topArc;
         Light blink;
         System.Random rng;
-        readonly Vector3[] pts = new Vector3[9];
+        readonly Vector3[] pts = new Vector3[9], topPts = new Vector3[6];
         Vector3 half;                   // the wall block's half size above the floor (local)
         float clock, burstAt = -10f, nextBurst;
         bool on;
@@ -46,7 +46,7 @@ namespace Blindside.Rendering
             on = value;
             enabled = value;
             if (value) nextBurst = clock + (float)rng.NextDouble() * MaxGap;
-            else { arc.enabled = false; blink.enabled = false; }
+            else { arc.enabled = false; topArc.enabled = false; blink.enabled = false; }
         }
 
         void Update()
@@ -85,6 +85,22 @@ namespace Blindside.Rendering
             sparks.transform.localRotation = Quaternion.LookRotation(alongX ? new Vector3(0f, .35f, side) : new Vector3(side, .35f, 0f));
             sparks.Emit(6 + rng.Next(10));
             blink.transform.localPosition = mid;
+
+            // and along the top (what the top-down camera sees most of): a short jagged arc over the edge, sparks thrown up off it
+            float tSpan = (alongX ? half.x : half.z) * Lerp(.25f, .6f), tc = (alongX ? half.x : half.z) * Lerp(-.45f, .45f);
+            float top = half.y + .03f;
+            for (int i = 0; i < topPts.Length; i++)
+            {
+                float k = i / (topPts.Length - 1f);
+                float along = tc - tSpan + 2f * tSpan * k;
+                bool inner = i > 0 && i < topPts.Length - 1;
+                float y = top + (inner ? Lerp(0f, .1f) : 0f), across = inner ? Lerp(-.06f, .06f) : 0f;
+                topPts[i] = alongX ? new Vector3(along, y, across) : new Vector3(across, y, along);
+            }
+            topArc.SetPositions(topPts);
+            topSparks.transform.localPosition = topPts[topPts.Length / 2];
+            topSparks.transform.localRotation = Quaternion.LookRotation(Vector3.up);
+            topSparks.Emit(5 + rng.Next(8));
         }
 
         float Lerp(float a, float b) => a + (b - a) * (float)rng.NextDouble();
@@ -95,11 +111,13 @@ namespace Blindside.Rendering
             float k = Mathf.Clamp01(1f - time / Duration);
             bool live = on && k > 0f;
             if (arc.enabled != live) arc.enabled = live;
+            if (topArc.enabled != live) topArc.enabled = live;
             if (blink.enabled != live) blink.enabled = live;
             if (!live) return;
             // a flicker inside the flash: thick / thin on alternate frames of its life
             float flick = ((int)(time * 60f) & 1) == 0 ? 1f : .55f;
             arc.widthMultiplier = .045f * (.35f + .65f * k) * flick;
+            topArc.widthMultiplier = .04f * (.35f + .65f * k) * (flick > .9f ? .55f : 1f);   // (out of step with the side's)
             blink.intensity = 3.5f * k * flick;
         }
 
@@ -112,20 +130,34 @@ namespace Blindside.Rendering
             var sh = sparks.shape; sh.angle = 38f;
             var pm = sparks.main; pm.maxParticles = 48;
 
-            var lgo = new GameObject("Arc");
-            lgo.transform.SetParent(transform, false);
-            arc = lgo.AddComponent<LineRenderer>();
-            arc.useWorldSpace = false;
-            arc.positionCount = pts.Length;
-            arc.sharedMaterial = FxKit.Additive;
-            arc.startColor = arc.endColor = ArcCol;
-            arc.numCapVertices = 2;
-            arc.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            arc.receiveShadows = false;
-            arc.enabled = false;
+            topSparks = FxBlast.Make(gameObject, "TopSparks", FxKit.Glow, ParticleSystemRenderMode.Stretch,
+                life: new Vector2(.2f, .45f), size: new Vector2(.02f, .04f), speed: new Vector2(1.4f, 3.4f),
+                from: new Color(.9f, .97f, 1f, 1f), to: new Color(.35f, .7f, 1f, 0f), grow: .5f,
+                shape: ParticleSystemShapeType.Cone, radius: .03f, gravity: 1.6f);
+            var tsh = topSparks.shape; tsh.angle = 50f;
+            var tpm = topSparks.main; tpm.maxParticles = 48;
+
+            arc = MakeArc("Arc", pts.Length);
+            topArc = MakeArc("TopArc", topPts.Length);
 
             blink = FxKit.PointLight(transform, new Color(.5f, .78f, 1f));
             blink.range = 2.2f;
+        }
+
+        LineRenderer MakeArc(string name, int count)
+        {
+            var lgo = new GameObject(name);
+            lgo.transform.SetParent(transform, false);
+            var lr = lgo.AddComponent<LineRenderer>();
+            lr.useWorldSpace = false;
+            lr.positionCount = count;
+            lr.sharedMaterial = FxKit.Additive;
+            lr.startColor = lr.endColor = ArcCol;
+            lr.numCapVertices = 2;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            lr.enabled = false;
+            return lr;
         }
     }
 }

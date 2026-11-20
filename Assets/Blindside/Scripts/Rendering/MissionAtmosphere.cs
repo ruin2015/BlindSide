@@ -30,6 +30,8 @@ namespace Blindside.Rendering
 
         static readonly Color MoonColor = new Color(.55f, .65f, .9f);
         const float MoonIntensity = .45f;
+        /// <summary>The rain's sound (amb_rain, levelled with the other sounds): well under the guns and the voices.</summary>
+        const float RainVol = .35f, RainFadeIn = 2f, RainFadeOut = 1f;
         static readonly Color NightAmbient = new Color(.16f, .19f, .27f), NightFog = new Color(.04f, .055f, .085f);
         const float NightFogDensity = .006f;
         const float RainSpeed = 24f, RainArea = 46f, RainDepth = 40f;
@@ -81,6 +83,8 @@ namespace Blindside.Rendering
         void Set(bool n, bool r, bool k)
         {
             if ((n || k) && !saved) Save();
+            // the rain's sound: a bed under everything while it rains (faded in / out)
+            if (r != rain || r) Blindside.UI.SoundBank.Loop(Blindside.UI.Snd.AmbRain, r, RainVol, r ? RainFadeIn : RainFadeOut);
             night = n; rain = r; dusk = k;
             if (n) Night(); else if (k) Dusk(); else Restore();
             if (r) EnsureRain();
@@ -512,6 +516,7 @@ namespace Blindside.Rendering
 
         void OnDestroy()
         {
+            if (rain && !quitting) Blindside.UI.SoundBank.Loop(Blindside.UI.Snd.AmbRain, false, RainVol, RainFadeOut);   // (the scene left: the rain with it)
             DryAll();
             Restore();
             UndressCamera();

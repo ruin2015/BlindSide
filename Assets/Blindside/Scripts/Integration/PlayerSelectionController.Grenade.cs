@@ -325,7 +325,7 @@ namespace Blindside.Integration
                 {
                     // the other side hears it as a breach (the operator's own breach event would log its ability's line)
                     marks?.Add(Blindside.Vision.MarkBoard.Other(thrower.Team), at.x, at.y, Blindside.Vision.MarkKind.Breach);
-                    SfxNoise.Boom();
+                    if (!SoundBank.Play(Snd.WallBreak)) SfxNoise.Boom();   // (the blast's own sound came with the explosion)
                     Log("爆風で壁が半壊した", "a");
                 }
             }

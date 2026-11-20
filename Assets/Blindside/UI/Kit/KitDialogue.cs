@@ -103,6 +103,7 @@ namespace Blindside.UI
         void Fill(string key, string line, string[] options)
         {
             Advanced = false; Choice = -1;
+            speaker = key;
             // no speaker: narration (no name plate, no one standing, the line a little dimmer); a voice unseen (???): the plate, no art
             bool named = !string.IsNullOrEmpty(key);
             if (plate.gameObject.activeSelf != named) plate.gameObject.SetActive(named);
@@ -128,6 +129,8 @@ namespace Blindside.UI
             }
             if (!typing && !running) ShowChoices();
         }
+
+        string speaker;   // the operator talking (its typing blip's voice); null: narration
 
         void ShowChoices() { for (int i = 0; i < choiceCount; i++) if (!choiceRects[i].gameObject.activeSelf) choiceRects[i].gameObject.SetActive(true); }
 
@@ -159,6 +162,7 @@ namespace Blindside.UI
                 typeClock += dt;
                 int shown = UIMotionSettings.reduceMotion ? chars : Mathf.FloorToInt(typeClock * CharsPerSecond);
                 if (press) shown = chars;
+                if (!press) SoundBank.Blip(speaker, lineText.text, lineText.maxVisibleCharacters, shown);   // (a click to show it all: no patter)
                 if (lineText.maxVisibleCharacters != shown) lineText.maxVisibleCharacters = shown;
                 if (shown < chars) return;
                 typing = false;

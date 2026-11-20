@@ -21,6 +21,7 @@ namespace Blindside.Integration
         /// <summary>G.stats — kills per team this match: [0] attack, [1] defense (non-hostage victims; gas counts for the defense).</summary>
         readonly int[] kills = new int[2];
         ResultScreen resultScreen;
+        KitDefeatScreen defeatScreen;
         OperationResultScreen operationResult;
         Blindside.Abilities.AbilityContext matchCtx;
 
@@ -94,6 +95,16 @@ namespace Blindside.Integration
                 yield break;
             }
 
+            // a loss: the turn change's banner held as DEFEAT, and only [再挑戦] / [タイトルへ] (a test play: [エディタへ])
+            if (!win)
+            {
+                Music.Stop();
+                if (defeatScreen == null) defeatScreen = GetComponent<KitDefeatScreen>();
+                if (defeatScreen == null) defeatScreen = gameObject.AddComponent<KitDefeatScreen>();
+                defeatScreen.Show(Retry, ReturnToTitle, PlaySession.IsTest ? (System.Action)ReturnToEditor : null);   // (ClearMatch hides it)
+                yield break;
+            }
+
             if (resultScreen == null) resultScreen = GetComponent<ResultScreen>();
             if (resultScreen == null) resultScreen = gameObject.AddComponent<ResultScreen>();
             resultScreen.Show(win, reason, turns.Round, KillsBy(side), losses, Retry, ReturnToTitle, PlaySession.IsTest ? (System.Action)ReturnToEditor : null);
@@ -126,6 +137,10 @@ namespace Blindside.Integration
         public bool PlayerWonRealMatch(MatchResult result) =>
             playerTeam.HasValue && !tutorialMode && !PlaySession.IsTest
             && (result == MatchResult.AttackWins) == (playerTeam.Value == Blindside.Data.OperatorTeam.Attack);
+
+        /// <summary>The player's side lost (any match with a player): the defeat screen replaces the phase banner's VICTORY line.</summary>
+        public bool PlayerLostMatch(MatchResult result) =>
+            playerTeam.HasValue && (result == MatchResult.AttackWins) != (playerTeam.Value == Blindside.Data.OperatorTeam.Attack);
 
         /// <summary>The game menu's エディタへ (a test play): the match is dropped and the map editor resumes.</summary>
         public void AbandonToEditor() => ReturnToEditor();

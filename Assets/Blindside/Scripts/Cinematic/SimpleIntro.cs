@@ -24,6 +24,8 @@ namespace Blindside.Cinematic
         const float FadeInEnd = .8f, TitleAt = .5f, TitleOutAt = 3.1f, HeliAt = 3.2f, HeliEnd = 6.2f, CamEnd = 6.2f, FadeOutAt = 6.4f;
         const float HighH = 78f;                     // the camera's height at the start of the shot (StartH = the game's own)
         const float HeliHoverZ = 6f, HeliStartZ = 17f;
+        /// <summary>Metres from the camera within which the helicopter is at full volume (SoundBank.Follow; the house intro uses it too).</summary>
+        public const float HeliNear = 30f;
 
         public bool Playing { get; private set; }
         bool skip;
@@ -81,6 +83,7 @@ namespace Blindside.Cinematic
                 titleRt.sizeDelta = new Vector2(oldSize.x, Mathf.Max(oldSize.y, 150f));
             }
             if (titleGroup != null) titleGroup.alpha = 0f;
+            Music.PlayThen(Music.IntroTrack, Music.IntroTail);   // the insertion's music (its held end on through the deployment)
 
             // the helicopter comes in along the same bearing HeliDeployRig.Begin assumes, so the hand-over doesn't turn it.
             float pAt = 4200f / 11500f, e0 = pAt * pAt * (3f - 2f * pAt), bearing = 1f + e0 * .7f;
@@ -91,7 +94,7 @@ namespace Blindside.Cinematic
             Vector3 glitchPos = glitch != null ? glitch.transform.localPosition : default, glitchScale = glitch != null ? glitch.transform.localScale : default;
             Quaternion glitchRot = glitch != null ? glitch.transform.localRotation : default;
             Coroutine titleRoutine = null;
-            float t = 0f; bool titleIn = false, titleOut = false;
+            float t = 0f; bool titleIn = false, titleOut = false, radioOn = false, heliOn = false;
             var skipHint = EscHoldSkip.Begin(Skip);   // hold ESC (the one skip everywhere)
             while (t < FadeOutAt && !skip)
             {
@@ -101,6 +104,8 @@ namespace Blindside.Cinematic
                 if (letterbox != null) letterbox.openAmount = Smooth(t / .7f);
                 if (cam != null) cam.h = Mathf.Lerp(HighH, BattlefieldCamera.StartH, Smooth(t / CamEnd));
 
+                if (!radioOn && t >= TitleAt) { radioOn = true; SoundBank.Play(Snd.RadioStatic, .45f); }   // (the radio crackles in with the title)
+                if (!heliOn && t >= HeliAt) { heliOn = true; SoundBank.Follow(Snd.HeliLoop, heli, HeliNear); SoundBank.Loop(Snd.HeliLoop, true, 1f, 2.2f); }   // (louder as it nears the camera)
                 if (!titleIn && t >= TitleAt && glitch != null) { titleIn = true; titleRoutine = StartCoroutine(glitch.PlayIn(.9f)); }
                 if (titleIn && !titleOut && t >= TitleOutAt && glitch != null) { titleOut = true; if (titleRoutine != null) StopCoroutine(titleRoutine); titleRoutine = StartCoroutine(glitch.PlayOut(.7f)); }
 

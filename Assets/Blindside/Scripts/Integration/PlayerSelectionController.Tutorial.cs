@@ -31,6 +31,9 @@ namespace Blindside.Integration
         public bool InFireMode => mode == Mode.Fire;
         /// <summary>The unit detail panel (bottom left) is up.</summary>
         public bool UnitPanelUp => kitPanel != null ? kitPanel.Visible : panelRoot != null && panelRoot.gameObject.activeSelf;
+        /// <summary>How far the tutorial's radio (bottom left, 20 up) rises out of the way: over the unit panel while that is up, else over
+        /// the hint bar (bottom centre: on a narrow screen it reaches under the radio) while that is up.</summary>
+        public float TutorialRadioLift => UnitPanelUp ? 236f : hintView != null && hintView.Visible ? KitHintBar.Height + 16f : 0f;
 
         /// <summary>Where a demonstration's "hand" is (grid): the drawn path's tip / the aim's end; null outside a demonstration.</summary>
         public Vector2? DemoCursorGrid { get; private set; }

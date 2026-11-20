@@ -54,6 +54,7 @@ namespace Blindside.Integration
             }
             var p = map.Panels[c.panel];
             DropCharge(u);
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.BreachBeep);   // IGNIS presses the detonator
             HideMenu(); HideHint();
             busy = true;
             mode = Mode.Busy; uiUnit = u;
@@ -74,6 +75,7 @@ namespace Blindside.Integration
             u.Facing = Mathf.Atan2(p.centerY - u.Y, p.centerX - u.X);
             u.View?.PlayAbility(ThermiteKey);
             abilities.RaiseBreachSwing(u, p);
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.BreachPlace);   // the charge clicked onto the wall
             float t = 0f;
             while (t < ThermiteAttachTime) { t += Time.unscaledDeltaTime; yield return null; }
             DropCharge(u);
@@ -121,6 +123,9 @@ namespace Blindside.Integration
         }
 
         /// <summary>The charge on the wall's face toward `u`: a dark slab with an orange band and a blinking red lamp.</summary>
+        /// <summary>How far in from the wall top's edge on IGNIS's side the charge's centre sits (half its depth and a little).</summary>
+        const float ChargeIn = .3f;
+
         GameObject BuildCharge(WallPanel p, SimUnit u, out Renderer lamp)
         {
             if (chargeBodyMat == null)
@@ -136,13 +141,19 @@ namespace Blindside.Integration
             bool alongX = p.cells.Count > 1 ? p.cells[0].y == p.cells[p.cells.Count - 1].y : Mathf.Abs(u.X - p.centerX) < Mathf.Abs(u.Y - p.centerY);
             Vector2 n = alongX ? new Vector2(0f, Mathf.Sign(u.Y - p.centerY)) : new Vector2(Mathf.Sign(u.X - p.centerX), 0f);
             if (n.sqrMagnitude < .5f) n = new Vector2(0f, 1f);
-            var face = GridSpace.GridToWorld(p.centerX + n.x * .2f, p.centerY + n.y * .2f, .95f);
-            var outward = GridSpace.GridToWorld(n.x, n.y) - GridSpace.GridToWorld(0f, 0f);
+            // on the wall's top, face up, toward IGNIS's side, the lamp toward the far side: the top-down camera sees its face, band and
+            // lamp (flat on the wall's side it was only an edge from above)
+            var outward = (GridSpace.GridToWorld(n.x, n.y) - GridSpace.GridToWorld(0f, 0f)).normalized;
+            Bounds wb = WallBoundsAt(p.cells[0]);
+            for (int i = 1; i < p.cells.Count; i++) wb.Encapsulate(WallBoundsAt(p.cells[i]));
+            var centre = GridSpace.GridToWorld(p.centerX, p.centerY, 0f);
+            float half = Mathf.Abs(Vector3.Dot(wb.extents, outward));
+            var face = new Vector3(centre.x, wb.max.y + .005f, centre.z) + outward * Mathf.Max(0f, half - ChargeIn);
 
             var root = new GameObject("ThermiteCharge_" + p.id);
             root.transform.SetParent(transform, false);
             root.transform.position = face;
-            root.transform.rotation = Quaternion.LookRotation(outward, Vector3.up);
+            root.transform.rotation = Quaternion.LookRotation(Vector3.up, -outward);
             Part(root.transform, chargeBodyMat, new Vector3(0f, 0f, .03f), new Vector3(.62f, .5f, .06f));
             Part(root.transform, chargeLampMat, new Vector3(0f, -.12f, .065f), new Vector3(.56f, .05f, .012f)).GetComponent<Renderer>().sharedMaterial = OrangeBand();
             lamp = Part(root.transform, chargeLampMat, new Vector3(.2f, .16f, .07f), new Vector3(.07f, .07f, .03f)).GetComponent<Renderer>();

@@ -45,6 +45,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = "title_build", label = "タイトル — ビルド (マップエディタなし)", build = BuildTitleAsBuild },
             new State { name = UIPreviewMainMenu.Save, label = "メインメニュー — セーブあり", build = UIPreviewMainMenu.BuildSave },
             new State { name = UIPreviewMainMenu.NoSave, label = "メインメニュー — セーブなし", build = UIPreviewMainMenu.BuildNoSave },
+            new State { name = UIPreviewMainMenu.NoiseSnow, label = "メインメニュー — 初回ノイズ 砂嵐 (t=0.25s)", build = UIPreviewMainMenu.BuildNoiseSnow },
+            new State { name = UIPreviewMainMenu.NoiseReveal, label = "メインメニュー — 初回ノイズ 映り始め (t=0.9s)", build = UIPreviewMainMenu.BuildNoiseReveal },
             new State { name = UIPreviewMainMenu.LogoHeavy, label = "メインメニュー — 初回ロゴ グリッチ (t=0.4s)", build = UIPreviewMainMenu.BuildLogoHeavy },
             new State { name = UIPreviewMainMenu.Glitch, label = "メインメニュー — ロゴ グリッチ (常時)", build = UIPreviewMainMenu.BuildGlitch },
             new State { name = UIPreviewMainMenu.Hover, label = "メインメニュー — ニューゲームにカーソル", build = UIPreviewMainMenu.BuildHover },
@@ -92,6 +94,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.TurnEnemyGlitch, label = "ターン切替 — ENEMY PHASE (グリッチ中)", build = UIPreviewHub.BuildTurnEnemyGlitch },
             new State { name = UIPreviewHub.Duel, label = "交戦 — 情報カード (味方 FLARE / 敵 ARGUS)", build = UIPreviewHub.BuildDuel },
             new State { name = UIPreviewHub.DuelEnter, label = "交戦 — 情報カード 登場 (戦闘シーンのフェードイン, 途中)", build = UIPreviewHub.BuildDuelEnter },
+            new State { name = UIPreviewHub.DuelFlicker, label = "交戦 — 情報カード 登場のちらつき (t=0.13s)", build = UIPreviewHub.BuildDuelFlicker },
+            new State { name = UIPreviewHub.DuelShake, label = "交戦 — 被弾側カードの揺れ (敵, 0.05s)", build = UIPreviewHub.BuildDuelShake },
             new State { name = UIPreviewHub.TurnDeploy, label = "配置開始 — DEPLOYMENT (ターン切替と同じ帯)", build = UIPreviewHub.BuildTurnDeploy },
             new State { name = UIPreviewHub.Armory, label = "本部 — ロードアウト (隊員・装備)", build = UIPreviewHub.BuildArmory },
             new State { name = UIPreviewHub.ArmoryOp, label = "本部 — ロードアウト (隊員を選んだ後)", build = UIPreviewHub.BuildArmoryOp },
@@ -137,6 +141,8 @@ namespace Blindside.UITools.EditorTools
             new State { name = "result_win", label = "結果画面 — 勝利", build = s => BuildResult(s, true, 5f) },
             new State { name = "result_lose", label = "結果画面 — 敗北", build = s => BuildResult(s, false, 5f) },
             new State { name = "result_mid", label = "結果画面 — 登場中 (t=0.3s)", build = s => BuildResult(s, false, .3f) },
+            new State { name = "defeat_in", label = "敗北 — バナー登場中 (t=0.4s)", build = s => BuildDefeat(s, .4f) },
+            new State { name = "defeat", label = "敗北 — 再挑戦 / タイトルへ (t=2.0s)", build = s => BuildDefeat(s, 2f) },
             new State { name = "hud_log_full", label = "HUD — ログ3行 (案内バーの右・2行折返し含む)", build = s => BuildHud(s, HudState.LogFull) },
             new State { name = "hud_log_history", label = "HUD — 戦闘ログ全体 (Tab)", build = s => BuildHud(s, HudState.LogHistory) },
             new State { name = "dialog_move", label = "移動確認ダイアログ", build = s => BuildHud(s, HudState.MoveDialog) },
@@ -171,6 +177,7 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewTutorial.Drone, label = "チュートリアル ドローンカード", build = s => UIPreviewTutorial.BuildDrone(s, 1.5f) },
             new State { name = UIPreviewTutorial.Siren, label = "チュートリアル 緊急入電 (サイレン)", build = UIPreviewTutorial.BuildSiren },
             new State { name = UIPreviewTutorial.RadioHq, label = "チュートリアル 無線機 (HQ)", build = UIPreviewTutorial.BuildRadioHq },
+            new State { name = UIPreviewTutorial.BattleRadio, label = "戦闘中の無線 — 簡略表示 (左・中央)", build = UIPreviewTutorial.BuildBattleRadio },
             new State { name = UIPreviewTutorial.DemoClick, label = "チュートリアル 手本のクリック表示", build = UIPreviewTutorial.BuildDemoClick },
             new State { name = UIPreviewTutorial.OperatorCard, label = "配置ブリーフィング 隊員カード (イグニス)", build = UIPreviewTutorial.BuildOperatorCard },
             new State { name = UIPreviewTutorial.Objective, label = "チュートリアル 現在の目標 (移動)", build = s => UIPreviewTutorial.BuildObjective(s, false) },
@@ -228,6 +235,16 @@ namespace Blindside.UITools.EditorTools
             rs.Show(win, win ? "人質を救出地点(EXFIL B)へ護送しました" : "攻撃チームの全隊員が制圧されました", 7, 5, win ? 1 : 5, null, null);
             rs.Evaluate(t);
         }
+        /// <summary>The defeat (KitDefeatScreen) on a stage canvas, as the match shows it, posed `t` seconds in.</summary>
+        internal static void BuildDefeat(Stage s, float t)
+        {
+            var canvas = s.NewCanvas("DefeatScreen_Canvas", UITheme.CanvasKind.Menu, 100);
+            var d = canvas.gameObject.AddComponent<KitDefeatScreen>();
+            d.externalCanvas = canvas;
+            d.Show(null, null);
+            d.Evaluate(t);
+        }
+
         internal static Color BackdropColor => Backdrop;
 
         public static string FileName(State st) => $"{st.name}_{W}x{H}.png";

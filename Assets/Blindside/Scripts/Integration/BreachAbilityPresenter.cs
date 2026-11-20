@@ -55,7 +55,7 @@ namespace Blindside.Integration
                     break;
                 case "launcher":
                     FxArc.Spawn(u.X, u.Y, p.centerX, p.centerY, Orange, .6f);
-                    SfxNoise.Shot();
+                    if (!SoundBank.Play(Snd.Launcher)) SfxNoise.Shot();   // (FLARE's launcher: its own sound when there is one)
                     break;
                 case "thermite":
                     CombatFx.Ring(at, Orange, .3f, .8f);
@@ -69,7 +69,10 @@ namespace Blindside.Integration
             // particles: dust and chips of the wall; the launcher and the thermite also blow it (flash, sparks, a little fire)
             bool blast = u.AbilityKey == "launcher" || u.AbilityKey == "thermite";
             foreach (var c in p.cells) FxBlast.WallBreak(GridSpace.GridToWorld(c.x, c.y, .9f), FxWall, blast);
-            SfxNoise.Boom();
+            // the wall giving way (a reinforced one: steel; a plain one: wood and plaster), and the charge's blast with it
+            if (!SoundBank.Play(Snd.WallBreak)) SfxNoise.Boom();
+            if (wasReinforced) SoundBank.Play(Snd.WallBreakReinforced, .4f);   // (the steel's ring, kept under the break)
+            if (blast) SoundBank.Play(Snd.Explosion, .9f);
             marks?.Add(MarkBoard.Other(u.Team), p.centerX, p.centerY, MarkKind.Breach);
 
             string wall = wasReinforced ? "強化壁" : "壁";

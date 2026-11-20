@@ -148,6 +148,28 @@ namespace Blindside.UITools.EditorTools
             b.PoseAt("CRUSHER", "CRUSHER", "クラッシャー", TutorialRadio.CrusherColor, KitSupportBadge.InTime + .2f);
         }
 
+        public const string BattleRadio = "battle_radio_compact";
+
+        /// <summary>A squad call over the battle stage: the radio's short form left of centre, the two duel cards along the bottom.</summary>
+        public static void BuildBattleRadio(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("BattleRadio_Stage", UITheme.CanvasKind.Hud, 0);
+            var p = KitDuelPanel.Build(canvas.transform);
+            var flare = Blindside.Data.BuildAssetRegistry.Operator("FLARE"); var argus = Blindside.Data.BuildAssetRegistry.Operator("ARGUS");
+            var wf = Blindside.Data.Loadout.Of(flare, true); var wa = Blindside.Data.Loadout.Of(argus, false);
+            p.SetSide(true, "FLARE", flare.color, true, 82, 100, GunIcons.Label(wf.weaponName, wf.key), GunIcons.For(wf.key), "50×1", "85%", "12%");
+            p.SetSide(false, "ARGUS", UIPalette.Foe, false, 64, 100, GunIcons.Label(wa.weaponName, wa.key), GunIcons.For(wa.key), "18×3", "62%", "8%");
+            p.SetTag("ENGAGE · 交戦");
+            p.Show();
+            p.Evaluate(KitDuelPanel.InTime);
+            var r = TutorialRadio.Build(canvas.transform, canvas);
+            r.enabled = false;
+            r.SetOperator("FLARE", "FLARE", "フレア", UIPalette.Hex("#F8594F"));
+            r.PoseCompact(Blindside.Integration.PlayerSelectionController.CinematicLift);
+            r.Say(string.Format(Blindside.Integration.PlayerSelectionController.CEngage, "テロリスト"), false);
+            r.Evaluate(3f);
+        }
+
         public const string ForecastTour = "tutorial_forecast_tour";
 
         /// <summary>The walk round the attack forecast, on the HP step.</summary>

@@ -50,6 +50,8 @@ namespace Blindside.Hub
 
         /// <summary>Ground speed now (m/s); the owner sets it every frame.</summary>
         public float Speed { get; set; }
+        /// <summary>A foot landing on the floor, on the stride the figure is drawn with (true: in the run): its footstep goes here.</summary>
+        public event System.Action<bool> Footfall;
 
         PlayableGraph graph;
         AnimationMixerPlayable mixer;
@@ -267,7 +269,11 @@ namespace Blindside.Hub
             if (moving > 1e-3f)
             {
                 float rate = (weight[1] * rateW + weight[2] * rateR) / moving;
+                float before = phase;
                 phase = Mathf.Repeat(phase + rate * Time.deltaTime, 1f);
+                // a foot comes down at the stride's start (the right) and half a stride on (the left, its mirror)
+                bool down = (before < .5f && phase >= .5f) || phase < before;
+                if (down && moving > .5f) Footfall?.Invoke(weight[2] > weight[1]);
             }
             else phase = 0f;   // standing: the next step starts on the clips' first footfall
             SetStride(walkP, walkM, walkLen, phase);

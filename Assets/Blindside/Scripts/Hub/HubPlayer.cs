@@ -67,6 +67,17 @@ namespace Blindside.Hub
             Vector3 v = (dir.sqrMagnitude > 1e-4f ? dir.normalized * speed : Vector3.zero) + Vector3.up * fall;
             cc.Move(v * Time.deltaTime);
             if (figure != null) figure.Speed = speed;
+            grounded = cc.isGrounded;
+        }
+
+        // footsteps: on the figure's own footfalls (HubFigure.Footfall), so each lands with a foot; a run's steps a little louder
+        bool grounded = true;
+        void OnEnable() { if (figure != null) figure.Footfall += Step; }
+        void OnDisable() { if (figure != null) figure.Footfall -= Step; }
+        void Step(bool running)
+        {
+            if (!grounded) return;
+            Blindside.UI.SoundBank.Play(Blindside.UI.Snd.FootstepHub, running ? .55f : .42f);
         }
     }
 }

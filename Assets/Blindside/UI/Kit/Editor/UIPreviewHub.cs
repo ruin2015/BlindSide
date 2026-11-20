@@ -287,6 +287,25 @@ namespace Blindside.UI.EditorTools
             p.Evaluate(KitDuelPanel.EnterUnfold * .5f);
         }
 
+        public const string DuelFlicker = "duel_panel_flicker", DuelShake = "duel_panel_hit_shake";
+
+        /// <summary>The battle stage's entrance in its flicker: the second, dimmer dropout (t=0.13s).</summary>
+        public static void BuildDuelFlicker(UIPreview.Stage s)
+        {
+            var p = DuelFilled(s);
+            p.Enter();
+            p.Evaluate(.13f);
+        }
+
+        /// <summary>The enemy's card jolting as it takes damage (0.05s into the shake).</summary>
+        public static void BuildDuelShake(UIPreview.Stage s)
+        {
+            var p = DuelFilled(s);
+            p.Show();
+            p.Evaluate(KitDuelPanel.InTime);
+            p.PoseShake(false, .05f);
+        }
+
         public static void BuildDuel(UIPreview.Stage s)
         {
             var p = DuelFilled(s);
