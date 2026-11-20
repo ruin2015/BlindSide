@@ -24,7 +24,10 @@ namespace Blindside.Integration
         [Header("PART C/D widgets (auto-built at runtime if left empty)")]
         public UIHeadshotBadge headshotBadge;
         public UICombatPanel combatPanel;   // #combat cut-in
-        public UIPhaseBanner phaseBanner;
+        public UIPhaseBanner phaseBanner;   // deployment / preparation / victory
+        [Tooltip("The turn changes use KitTurnBanner (Turn N · PLAYER / ENEMY PHASE). Off: the phase banner as before.")]
+        public bool useTurnBanner = true;
+        public KitTurnBanner turnBanner;
         public UIContactAlert contactAlert;
         public UIPulse endTurnPulse;
         public Button endTurnButton;
@@ -57,6 +60,7 @@ namespace Blindside.Integration
 
             // the widgets themselves are HudWidgets' (Blindside.UI), shared with the editor previews
             if (phaseBanner == null) phaseBanner = HudWidgets.BuildPhaseBanner(runtimeCanvas.transform);
+            if (turnBanner == null && useTurnBanner) turnBanner = KitTurnBanner.Build(runtimeCanvas.transform);   // the turn changes
             if (contactAlert == null) contactAlert = HudWidgets.BuildContactAlert(runtimeCanvas.transform);
             if (headshotBadge == null) headshotBadge = HudWidgets.BuildHeadshotBadge(runtimeCanvas.transform, runtimeCanvas);
             if (endTurnPulse == null)
@@ -71,6 +75,12 @@ namespace Blindside.Integration
             {
                 combatPanel = UICombatPanel.Build(runtimeCanvas.transform);
                 combatPanel.transform.SetSiblingIndex(headshotBadge != null ? headshotBadge.transform.GetSiblingIndex() : 0);
+            }
+            // the duel readout (KitDuelPanel) in its place: under the headshot badge too
+            if (duel == null && useDuelPanel)
+            {
+                duel = KitDuelPanel.Build(runtimeCanvas.transform);
+                duel.transform.SetSiblingIndex(headshotBadge != null ? headshotBadge.transform.GetSiblingIndex() : 0);
             }
         }
 
@@ -88,10 +98,57 @@ namespace Blindside.Integration
         /// <summary>Every volley as it opens: shooter, target, whether it is a preemptive one (the squad radio listens).</summary>
         public static System.Action<ICombatUnit, ICombatUnit, bool> VolleyShown;
 
+        // ---- the duel readout (KitDuelPanel): the player's side on the left, the other on the right, kept up for the whole
+        // engagement (a shot and its return fire); each side's numbers fill in when it fires ----
+        [Tooltip("Engagements show KitDuelPanel (weapon, name, HP, ATK×shots, HIT, HS for each side). Off: the #combat cut-in as before.")]
+        public bool useDuelPanel = true;
+        KitDuelPanel duel;
+        ICombatUnit duelL, duelR;
+
+        // an ally in its operator's own colour, an enemy red, the hostage amber
+        static Color SideColor(ICombatUnit u, OperatorTeam side) =>
+            u.IsHostage ? HostCol : u.Team != side ? UIPalette.Foe : u is SimUnit su && su.Op != null ? su.Op.color : UIPalette.Blue;
+
+        void DuelSide(bool isLeft, ICombatUnit u, string atk, string hit, string hs)
+        {
+            var w = u.Weapon;
+            duel.SetSide(isLeft, KeyOf(u), SideColor(u, side), u.Team == side, u.HP, MaxHpOf(u),
+                         w != null ? GunIcons.Label(w.weaponName, w.key) : "", w != null ? GunIcons.For(w.key) : null, atk, hit, hs);
+        }
+
+        void ShowDuel(ICombatUnit a, ICombatUnit t, int chance, int dmg, int shots, bool preempt, int walls, bool blocked, int hsChance)
+        {
+            bool aLeft = a.Team == side || t.Team != side;     // the player's side on the left (AI against AI: the shooter)
+            var L = aLeft ? a : t; var R = aLeft ? t : a;
+            string atk = $"{dmg}×{shots}", hit = $"{chance}%", hs = blocked ? "0%" : $"{hsChance}%";
+            if (!duel.Visible || L != duelL || R != duelR)
+            {
+                duelL = L; duelR = R;
+                DuelSide(true, L, aLeft ? atk : null, aLeft ? hit : null, aLeft ? hs : null);
+                DuelSide(false, R, aLeft ? null : atk, aLeft ? null : hit, aLeft ? null : hs);
+            }
+            else duel.SetStats(aLeft, atk, hit, hs);   // the return fire: its side's numbers
+            string tag = preempt ? "PREEMPTIVE · 先制攻撃 ×1.4" : "ENGAGE · 交戦";
+            if (walls > 0) tag += " · 壁越し";
+            if (blocked) tag += " · シールド";
+            duel.SetTag(tag);
+            // a staged engagement: the cards wait for the battle stage (they come in with its fade, StageUi); on the map: at once
+            if (Blindside.Cinematic.BattleDirector.StageOnScreen) duel.Enter();
+            else if (!Blindside.Cinematic.BattleDirector.StageActive) duel.Show();
+        }
+
+        void DuelHp(ICombatUnit t, int hp)
+        {
+            if (duel == null || (duelL == null && duelR == null)) return;   // (also while the cards wait for the stage)
+            if (t == duelL) duel.SetHp(true, hp);
+            else if (t == duelR) duel.SetHp(false, hp);
+        }
+
         public void Show(ICombatUnit a, ICombatUnit t, int chance, int dmg, int shots, bool preempt, int walls, bool blocked, int hsChance)
         {
             VolleyShown?.Invoke(a, t, preempt);
             shownTarget = t; shownHp = t.HP;
+            if (duel != null) { ShowDuel(a, t, chance, dmg, shots, preempt, walls, blocked, hsChance); return; }
             if (combatPanel == null) return;
             Color ca = a.Team == side ? UIPalette.Blue : UIPalette.Foe;
             Color ct = t.IsHostage ? HostCol : t.Team == side ? UIPalette.Blue : UIPalette.Foe;
@@ -110,6 +167,7 @@ namespace Blindside.Integration
             // on the battle stage the bar drops when the round lands there (BattleDirector.StageHit), not when it is rolled
             if (Blindside.Cinematic.BattleDirector.StageHoldsHp) return;
             shownHp = t.HP;
+            if (duel != null) { DuelHp(t, t.HP); return; }
             if (combatPanel != null) combatPanel.UpdateTarget(t.HP, MaxHpOf(t));
         }
 
@@ -117,11 +175,29 @@ namespace Blindside.Integration
         {
             if (t == null || t != shownTarget) return;
             shownHp = Mathf.Max(t.HP, shownHp - damage);   // (never below where the rolls left it: a revive, a floor)
+            if (duel != null) { DuelHp(t, shownHp); return; }
             if (combatPanel != null) combatPanel.UpdateTarget(shownHp, MaxHpOf(t));
         }
-        public void Crit(int headshots) { if (combatPanel != null) combatPanel.Crit(); }
-        public void Result(int hits, int shots, int total, bool blocked, int headshots) { if (combatPanel != null) combatPanel.Result(hits, shots, total, blocked, headshots); }
-        public void Hide() { if (combatPanel != null) combatPanel.Hide(); }
+        public void Crit(int headshots) { if (duel == null && combatPanel != null) combatPanel.Crit(); }
+        public void Result(int hits, int shots, int total, bool blocked, int headshots)
+        {
+            if (duel != null)
+            {
+                duel.SetResult(blocked ? "シールドに阻まれた" : $"{hits}/{shots} 命中 · {total} ダメージ" + (headshots > 0 ? $" · ヘッドショット ×{headshots}" : ""));
+                return;
+            }
+            if (combatPanel != null) combatPanel.Result(hits, shots, total, blocked, headshots);
+        }
+        public void Hide()
+        {
+            if (duel != null)
+            {
+                // on the battle stage the cards stay through the shot and its return fire; they go when the stage closes (StageUi)
+                if (Blindside.Cinematic.BattleDirector.StageOnScreen && duel.Visible) return;
+                duel.Hide(); duelL = duelR = null; return;
+            }
+            if (combatPanel != null) combatPanel.Hide();
+        }
 
         /// <summary>showContact's banner: `colorKind` 1 = blue (.m1), 2 = yellow (.m2), 3 = red (no class); 1.1s.</summary>
         public System.Collections.IEnumerator PlayContact(int colorKind, string sub)
@@ -164,9 +240,18 @@ namespace Blindside.Integration
                 // Source: proj(t.rx,1.05,t.ry) — just over the head; the view's overhead label anchor. The reticle locks on the head.
                 headshotBadge.Play(LabelOf(target), worldCamera, amount, enemyScored, HeadOf(target));
             };
-            // on the battle stage only the HP bars of the #combat panel stay
-            // on the battle stage only the HP bars of the #combat panel stay
-            Blindside.Cinematic.BattleDirector.StageUi = on => { if (combatPanel != null) combatPanel.SetHpOnly(on); };
+            // on the battle stage only the HP bars of the #combat panel stay.
+            // The duel cards: held until the stage is up, then in with its fade from black (Enter); gone when it closes under black.
+            Blindside.Cinematic.BattleDirector.StageUi = on =>
+            {
+                if (duel != null)
+                {
+                    if (!on) { duel.HideNow(); duelL = duelR = null; }
+                    else if (duelL != null || duelR != null) duel.Enter();
+                    return;
+                }
+                if (combatPanel != null) combatPanel.SetHpOnly(on);
+            };
             Blindside.Cinematic.BattleDirector.StageHit = StageHit;
             Blindside.Cinematic.BattleDirector.HeadshotUi = (target, label, head, amount) =>
             {
@@ -185,11 +270,23 @@ namespace Blindside.Integration
                 switch (phase)
                 {
                     case MatchPhase.Deploy:
+                        // the player's deployment: the turn banner's look (BEFORE BREACH · DEPLOYMENT, yellow) — same 1.9s
+                        if (playerTeam == OperatorTeam.Attack && turnBanner != null)
+                        {
+                            turnBanner.Play(KitTurnBanner.DeployLabel, KitTurnBanner.DeployTitle, UIPalette.Accent);
+                            break;
+                        }
                         // showBanner('deploy'): #ffc81e, "DEPLOYMENT", kr line, sub 'BEFORE BREACH'.
                         if (playerTeam == OperatorTeam.Attack) phaseBanner.Play("DEPLOYMENT", "攻撃チーム配置 — 建物の外の好きな位置に隊員を配置", "BEFORE BREACH", UIPalette.Accent);
                         else phaseBanner.Play("DEPLOY", "配置フェーズ", "攻撃チームの侵入地点を選択してください", UIPalette.Blue);
                         break;
                     case MatchPhase.Prep:
+                        // the defense player's preparation: the turn banner's look too (BEFORE BREACH · PREPARATION, yellow)
+                        if (playerTeam == OperatorTeam.Defense && turnBanner != null)
+                        {
+                            turnBanner.Play(KitTurnBanner.DeployLabel, KitTurnBanner.PrepTitle, UIPalette.Accent);
+                            break;
+                        }
                         // showBanner('prep'): #ffc81e, "PREPARATION", kr line, sub 'BEFORE BREACH'.
                         if (playerTeam == OperatorTeam.Defense) phaseBanner.Play("PREPARATION", "防衛準備フェーズ — 壁の強化・装置の設置・配置", "BEFORE BREACH", UIPalette.Accent);
                         else phaseBanner.Play("PREPARE", "準備フェーズ", "防衛チームの要塞化を進めてください", UIPalette.Accent);
@@ -198,6 +295,12 @@ namespace Blindside.Integration
                     case MatchPhase.Attack:
                     case MatchPhase.Defense:
                         bool mine = TurnManager.ActingTeam(phase) == side;
+                        // the turn change (KitTurnBanner): Turn N · PLAYER PHASE (blue) / ENEMY PHASE (red), glitching in and out
+                        if (turnBanner != null)
+                        {
+                            turnBanner.Play(turns.Round, mine ? KitTurnBanner.PlayerTitle : KitTurnBanner.EnemyTitle, mine ? UIPalette.Blue : UIPalette.Foe);
+                            break;
+                        }
                         string kr = (mine ? "味方フェーズ" : "敵フェーズ") + " — ラウンド " + turns.Round + " / " + TurnManager.MaxRound;
                         if (phase == MatchPhase.Attack) phaseBanner.Play("ATTACKER PHASE", kr, "部隊を展開してください", mine ? UIPalette.Blue : UIPalette.Foe);
                         else phaseBanner.Play("DEFENDER PHASE", kr, "区域を死守してください", mine ? UIPalette.Blue : UIPalette.Foe);

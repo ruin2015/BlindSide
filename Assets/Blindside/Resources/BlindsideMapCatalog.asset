@@ -68,9 +68,12 @@ MonoBehaviour:
     rain: 1
     dusk: 0
     challenges: []
-    squad: []
+    squad:
+    - CRUSHER
+    - IGNIS
+    - FLARE
     noAbilities: 0
-    squadSize: 3
+    squadSize: 0
     briefOpening: 
     hostageStandoff: 0
   - id: map_06433e50

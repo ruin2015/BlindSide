@@ -39,6 +39,11 @@ MonoBehaviour:
   titleFallbacks:
   - {fileID: 11400000, guid: 2315fa5742b834c4dab14182b53628d0, type: 2}
   minTextSize: 11
+  cardFontItalic: {fileID: 11400000, guid: d1fde8d3e6378614599b85e5f51786c2, type: 2}
+  cardFontBold: {fileID: 11400000, guid: 48b4a79e61927a2478112c8da456a158, type: 2}
+  cardFontMedium: {fileID: 11400000, guid: c3bf644c4c9e2984da73171100dc3211, type: 2}
+  bannerFont: {fileID: 11400000, guid: b52dd8d55af4f0d4891a793e158bcb45, type: 2}
+  duelFont: {fileID: 11400000, guid: 543fb2aec2d9a024b9b36415e615aa4c, type: 2}
   menuReference: {x: 1440, y: 810}
   hudReference: {x: 1800, y: 1013}
   canvasMatch: 0.5
@@ -89,3 +94,19 @@ MonoBehaviour:
     hitShake: 0.42
     hpGhostDelay: 0.45
     hpGhost: 0.8
+  screenFx:
+    scanlines: 1
+    scanlineAlpha: 0.03
+    scanlineSpacing: 3
+    band: 1
+    bandAlpha: 0.07
+    bandHeight: 140
+    bandPeriod: 8
+    noise: 1
+    noiseAlpha: 0.02
+    noiseFps: 12
+    burst: 1
+    burstAlpha: 0.1
+    burstMinInterval: 8
+    burstMaxInterval: 14
+    burstTime: 0.12

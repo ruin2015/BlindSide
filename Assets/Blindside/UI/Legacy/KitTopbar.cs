@@ -212,7 +212,7 @@ namespace Blindside.UI
         /// <summary>Builds the bar's parts on this object (once; the prefab holds only the root).</summary>
         public void Build()
         {
-            if (logo != null) { HideLogo(); return; }
+            if (logo != null) { HideLogo(); HideObjective(); return; }
             var theme = UITheme.Current;
             var root = (RectTransform)transform;
             root.anchorMin = new Vector2(0f, 1f); root.anchorMax = new Vector2(1f, 1f); root.pivot = new Vector2(.5f, 1f);
@@ -290,7 +290,12 @@ namespace Blindside.UI
 
             baseY[0] = logo.anchoredPosition.y; baseY[1] = phase.anchoredPosition.y; baseY[2] = objective.anchoredPosition.y;
             HideLogo();
+            HideObjective();
         }
+
+        // the battle screen no longer shows the objective panel (the win condition and the survivor pips) either — kept built and fed by
+        // SetObjective, switched off: set it active again to bring it back
+        void HideObjective() { if (objective != null && objective.gameObject.activeSelf) objective.gameObject.SetActive(false); }
 
         // the battle screen no longer shows the BLINDSIDE plate (kept built, switched off: set active again to bring it back)
         void HideLogo() { if (logo.gameObject.activeSelf) logo.gameObject.SetActive(false); }

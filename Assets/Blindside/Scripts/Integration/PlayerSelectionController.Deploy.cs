@@ -31,9 +31,39 @@ namespace Blindside.Integration
         const float RopeEndHeight = 4.4f + HeliDeployRig.ExtraHeight;
         // the slide takes longer from the raised helicopter (half the extra height's share; source .95 s from 4.4)
         const float SlideScale = .5f + .5f * RopeEndHeight / 4.4f;
-        // without the helicopter over the map (HeliDeployRig.ShowDuringDeploy off) the figure drops in from just above
-        // the frame's ground — the last stretch of the rope — and lands
-        const float DropInHeight = 2.6f, DropInSeconds = .32f;
+        // without the helicopter over the map (HeliDeployRig.ShowDuringDeploy off) a rope still comes down from out of the frame
+        // first, then the figure climbs down it (UnitView.SetRoping: the climb played backwards) from DropInHeight and lands
+        const float DropInHeight = 4.5f, DropInSeconds = 1.1f;
+        // the rope hangs in front of the figure's hands (along its facing); its top is out of the frame
+        const float RopeAhead = .3f, RopeTopZ = 18f, RopeDropSeconds = .35f, RopeUpSeconds = .3f, RopeWidth = .05f;
+        static readonly Color RopeColor = new Color32(0x2a, 0x26, 0x22, 0xff);
+        LineRenderer dropRope;
+
+        /// <summary>The drop's own rope (no helicopter shown): from RopeTopZ down to `tipZ` over grid (x, y); hidden below 0.</summary>
+        void SetDropRope(float x, float y, float tipZ)
+        {
+            if (dropRope == null)
+            {
+                var go = new GameObject("DropRope");
+                go.transform.SetParent(transform, false);
+                dropRope = go.AddComponent<LineRenderer>();
+                dropRope.useWorldSpace = true;
+                dropRope.positionCount = 2;
+                dropRope.widthMultiplier = RopeWidth;
+                dropRope.numCapVertices = 2;
+                dropRope.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                dropRope.receiveShadows = false;
+                var m = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color")) { name = "DropRope" };
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", RopeColor);
+                if (m.HasProperty("_Color")) m.SetColor("_Color", RopeColor);
+                dropRope.sharedMaterial = m;
+            }
+            bool on = tipZ < RopeTopZ - .01f;
+            if (dropRope.enabled != on) dropRope.enabled = on;
+            if (!on) return;
+            dropRope.SetPosition(0, GridSpace.GridToWorld(x, y, RopeTopZ));
+            dropRope.SetPosition(1, GridSpace.GridToWorld(x, y, Mathf.Max(0f, tipZ)));
+        }
 
         HeliDeployRig heli;
 
@@ -159,11 +189,17 @@ namespace Blindside.Integration
             }
             else if (cam != null) cam.PanTo(u.X, u.Y, 300f);
 
+            // the rope in front of the figure (no helicopter: down out of the frame, quickly)
+            float rx = u.X + Mathf.Cos(u.Facing) * RopeAhead, ry = u.Y + Mathf.Sin(u.Facing) * RopeAhead;
+            if (!haveHeli) SetDropRope(rx, ry, 0f);
+
             // up the rope (no sight while off the ground), then aboard again
             u.Placed = false; u.Airborne = true;
+            var uv = u.View as UnitView;
+            if (uv != null) uv.SetRoping(true);
             UnitsChanged?.Invoke();
             float z1 = haveHeli ? RopeEndHeight : DropInHeight;
-            float dur = haveHeli ? .8f * SlideScale : DropInSeconds, t = 0f;
+            float dur = haveHeli ? .8f * SlideScale : .45f, t = 0f;
             while (t < dur)
             {
                 t += Time.unscaledDeltaTime;
@@ -172,7 +208,9 @@ namespace Blindside.Integration
                 yield return null;
             }
             u.RZ = 0f; u.Airborne = false;
+            if (uv != null) uv.SetRoping(false);
             if (haveHeli) yield return heli.RopeTo(0f, .28f);
+            else SetDropRope(rx, ry, RopeTopZ);
             Log($"{KrOf(u)}: 降下を取り消しました", "");
             if (undropUnit == u) undropUnit = null;
             busy = false;
@@ -217,48 +255,70 @@ namespace Blindside.Integration
         // ================================================================
         //  rappel(u,x,y,fast)
         // ================================================================
-        /// <summary>Helicopter over the spot → rope down → the figure appears on the rope end and slides down →
-        /// dust ring, shake, thud → rope up. `fast` halves every duration (the automatic drops of [作戦開始]).</summary>
+        /// <summary>The rope comes down first (from the helicopter over the spot, or — the helicopter not shown — from out of the
+        /// frame), then the figure appears at its top and climbs down it hand under hand (UnitView.SetRoping), facing the building
+        /// centre with the rope just in front of its hands → dust ring, shake, thud → rope up. `fast` halves every duration (the
+        /// automatic drops of [作戦開始]).</summary>
         IEnumerator Rappel(SimUnit u, float x, float y, bool fast)
         {
             float k = fast ? .5f : 1f;
             var cam = BattlefieldCamera.Instance;
             bool haveHeli = heli != null && heli.IsReady && heli.Visible;
+            var face = MapLibrary.Current.FacingTarget;
+            float facing = Mathf.Atan2(face.y - y, face.x - x);
+            // the rope: just in front of where the figure lands
+            float rx = x + Mathf.Cos(facing) * RopeAhead, ry = y + Mathf.Sin(facing) * RopeAhead;
             if (haveHeli)
             {
-                float d = Mathf.Sqrt((x - heli.X) * (x - heli.X) + (y - heli.Y) * (y - heli.Y));
+                float d = Mathf.Sqrt((rx - heli.X) * (rx - heli.X) + (ry - heli.Y) * (ry - heli.Y));
                 float T = Mathf.Min(1300f, 350f + d * 110f) * k;   // ms
                 if (d > .05f)
                 {
-                    heli.Hd = Mathf.Atan2(y - heli.Y, x - heli.X);
+                    heli.Hd = Mathf.Atan2(ry - heli.Y, rx - heli.X);
                     if (cam != null) cam.PanTo(x, y, T);
                     heli.Tilt = -.1f;
-                    yield return heli.Fly(x, y, heli.RestZ, T / 1000f);
+                    yield return heli.Fly(rx, ry, heli.RestZ, T / 1000f);
                     heli.Tilt = 0f;
                 }
                 Sfx.Ui();
                 yield return heli.RopeTo(HeliDeployRig.RopeFull, fast ? .16f : .32f);
             }
-            else if (cam != null) cam.PanTo(x, y, 400f * k);
+            else
+            {
+                if (cam != null) cam.PanTo(x, y, 400f * k);
+                // the rope comes down out of the frame and reaches the ground before anyone is on it
+                Sfx.Ui();
+                float rt = 0f, rdur = RopeDropSeconds * k;
+                while (rt < rdur)
+                {
+                    rt += Time.unscaledDeltaTime;
+                    float q = Mathf.Clamp01(rt / rdur);
+                    SetDropRope(rx, ry, Mathf.Lerp(RopeTopZ, 0f, 1f - (1f - q) * (1f - q)));
+                    yield return null;
+                }
+                SetDropRope(rx, ry, 0f);
+            }
 
-            // The figure shows up on the rope's end, facing the building centre; it has no sight until it lands.
+            // The figure shows up at the top of the rope, facing the building centre, and climbs down; no sight until it lands.
             u.Placed = false; u.Airborne = true;
             float z0 = haveHeli ? RopeEndHeight : DropInHeight;
             u.RZ = z0;
-            var face = MapLibrary.Current.FacingTarget;
-            u.Facing = Mathf.Atan2(face.y - y, face.x - x);
+            u.Facing = facing;
             u.MoveTo(x, y);
+            var uv = u.View as UnitView;
+            if (uv != null) uv.SetRoping(true);
             UnitsChanged?.Invoke();
 
-            float dur = haveHeli ? (fast ? .42f : .95f) * SlideScale : DropInSeconds * k, t = 0f;
+            float dur = (haveHeli ? (fast ? .8f : 1.6f) : DropInSeconds * k), t = 0f;
             while (t < dur)
             {
                 t += Time.unscaledDeltaTime;
                 float p = Mathf.Clamp01(t / dur);
-                u.RZ = haveHeli ? Mathf.Lerp(z0, 0f, p) : z0 * (1f - p * p);   // the rope: constant speed; the drop: falling
+                u.RZ = Mathf.Lerp(z0, 0f, p < .85f ? p / .85f * .92f : .92f + (p - .85f) / .15f * .08f);   // steady, braking at the foot
                 yield return null;
             }
             u.RZ = 0f; u.Airborne = false;
+            if (uv != null) uv.SetRoping(false);
             u.Placed = true;   // sight (vision polygon + fog) starts here
             CombatFx.Ring(GridSpace.GridToWorld(x, y, .08f), new Color32(0xd6, 0xc9, 0xa8, 0xff), .5f, .9f);
             Sfx.Step();
@@ -266,6 +326,19 @@ namespace Blindside.Integration
             UnitsChanged?.Invoke();
 
             if (haveHeli) yield return heli.RopeTo(0f, fast ? .14f : .28f);
+            else
+            {
+                // and goes back up out of the frame
+                float rt = 0f, rdur = RopeUpSeconds * k;
+                while (rt < rdur)
+                {
+                    rt += Time.unscaledDeltaTime;
+                    float q = Mathf.Clamp01(rt / rdur);
+                    SetDropRope(rx, ry, Mathf.Lerp(0f, RopeTopZ, q * q));
+                    yield return null;
+                }
+                SetDropRope(rx, ry, RopeTopZ);
+            }
         }
 
         // ================================================================

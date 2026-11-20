@@ -59,10 +59,13 @@ namespace Blindside.Combat
         public readonly ICombatUnit Attacker, Target;
         public readonly int Index, Shots, Damage;
         public readonly bool Hit, Headshot, ShieldBlocked;
-        public ShotEvent(ICombatUnit attacker, ICombatUnit target, int index, int shots, bool hit, bool headshot, bool shieldBlocked, int damage)
+        /// <summary>The volley's first headshot that lands (hit, not blocked) — known from its first round on, so the presentation
+        /// can open on it (the close-up before the shot); −1: none.</summary>
+        public readonly int CritAt;
+        public ShotEvent(ICombatUnit attacker, ICombatUnit target, int index, int shots, bool hit, bool headshot, bool shieldBlocked, int damage, int critAt = -1)
         {
             Attacker = attacker; Target = target; Index = index; Shots = shots;
-            Hit = hit; Headshot = headshot; ShieldBlocked = shieldBlocked; Damage = damage;
+            Hit = hit; Headshot = headshot; ShieldBlocked = shieldBlocked; Damage = damage; CritAt = critAt;
         }
     }
 
@@ -322,6 +325,22 @@ namespace Blindside.Combat
             }
 
             int hits = 0, total = 0, headshots = 0;
+            // The volley's rolls, drawn up front in exactly the order they always were (each round: its hit, then — a hit that
+            // isn't blocked — its headshot), so the GameRng stream and every result stay the same; the presentation learns the
+            // first landing headshot (CritAt) with the first round. (Nothing between the rounds draws from GameRng.)
+            var rollHit = new bool[shots]; var rollCrit = new bool[shots];
+            int critAt = -1;
+            if (target.Alive)
+                for (int i = 0; i < shots; i++)
+                {
+                    // (a sure hit — an encounter's first strike — still draws its roll: the forecast and the stream stay in step)
+                    rollHit[i] = Blindside.Core.GameRng.Range(0f, 100f) < (i == 0 ? firstChance : chance) || sureHit;
+                    if (rollHit[i] && !blocked)
+                    {
+                        rollCrit[i] = Blindside.Core.GameRng.Range(0f, 100f) < hsChance;
+                        if (rollCrit[i] && critAt < 0) critAt = i;
+                    }
+                }
             // The target falls the moment its HP reaches 0. The rest of the volley is still resolved — the same GameRng draws
             // and counts as before, so a seeded match plays out identically — but no longer shown (no shot, no hit, no event).
             bool down = false;
@@ -329,8 +348,7 @@ namespace Blindside.Combat
             {
                 if (!target.Alive) break;
                 if (!down) attacker.View?.PlayFire();   // animation only
-                // (a sure hit — an encounter's first strike — still draws its roll: the forecast and the stream stay in step)
-                bool hit = Blindside.Core.GameRng.Range(0f, 100f) < (i == 0 ? firstChance : chance) || sureHit;
+                bool hit = rollHit[i];
                 bool crit = false;
                 int dealt = 0;
                 if (hit)
@@ -341,7 +359,7 @@ namespace Blindside.Combat
                     }
                     else
                     {
-                        crit = Blindside.Core.GameRng.Range(0f, 100f) < hsChance;
+                        crit = rollCrit[i];
                         int d = crit ? dmg * 2 : dmg;
                         if (takenScale != 1f) d = Mathf.Max(1, Mathf.RoundToInt(d * takenScale));
                         if (SureKill(attacker)) d = Mathf.Max(d, target.HP);
@@ -361,7 +379,7 @@ namespace Blindside.Combat
                 if (target.HP <= 0) { down = true; if (!Held(target)) target.View?.PlayDeath(); }   // animation only (kill() itself follows the volley)
                 if (hit && blocked) target.View?.PlayDodge(true);   // the shield takes it (animation only); a miss just flies wide
                 OnShotFired?.Invoke(attacker, target, hit, crit);
-                OnShot?.Invoke(new ShotEvent(attacker, target, i, shots, hit, crit, hit && blocked, dealt));
+                OnShot?.Invoke(new ShotEvent(attacker, target, i, shots, hit, crit, hit && blocked, dealt, critAt));
                 if (pres != null)
                 {
                     // if(crit){ ...; combatUpdate(t); combatCrit(hs); await headshotFx(a,t,d); } — headshotFx's
@@ -453,7 +471,7 @@ namespace Blindside.Combat
                 OnDamage?.Invoke(t, d, crit);
             }
             OnShotFired?.Invoke(a, t, hit, crit);
-            OnShot?.Invoke(new ShotEvent(a, t, 0, 1, hit, crit, hit && blocked, dealt));
+            OnShot?.Invoke(new ShotEvent(a, t, 0, 1, hit, crit, hit && blocked, dealt, crit && hit && !blocked ? 0 : -1));
             HudLog.Add($"{Kr(a)}: 支援射撃 → {Kr(t)} {(hit && !blocked ? dealt + " ダメージ" + (crit ? " (ヘッドショット)" : "") : "外れ")}", HudLog.TeamType(a.Team));
             yield return Sleep(.35f);
             if (t.HP <= 0)

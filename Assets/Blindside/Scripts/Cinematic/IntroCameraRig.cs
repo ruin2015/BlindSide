@@ -183,9 +183,11 @@ namespace Blindside.Cinematic
         // ---- the fast-rope: the first RappelCount operators of the attack squad slide down the rope onto the roof, one
         // after another (RappelStart, RappelGap apart, RappelSlide each), then step aside on the roof ----
         const int RappelCount = 2;
-        const float RappelStart = 19.4f, RappelGap = .75f, RappelSlide = .9f, RappelStepAside = .45f;
+        // the first one starts once the rope is all the way down (RopeEnd), climbing down it hand under hand (UnitView.SetRoping)
+        const float RappelStart = RopeEnd + .15f, RappelGap = .75f, RappelSlide = 1.1f, RappelStepAside = .4f, RappelRopeGap = .3f;
         readonly System.Collections.Generic.List<UnitView> rappellers = new System.Collections.Generic.List<UnitView>();
         readonly System.Collections.Generic.List<bool> rappelLanded = new System.Collections.Generic.List<bool>();
+        readonly System.Collections.Generic.List<bool> rappelOnRope = new System.Collections.Generic.List<bool>();
         /// <summary>The rappellers' touchdowns play their own dust rings on the roof (IntroSequence's landing signal stands down).</summary>
         public static bool OwnsLandingFx;
 
@@ -216,7 +218,7 @@ namespace Blindside.Cinematic
                 uv.SetOverheadVisible(false);
                 uv.SetSelected(false);
                 go.SetActive(false);
-                rappellers.Add(uv); rappelLanded.Add(false);
+                rappellers.Add(uv); rappelLanded.Add(false); rappelOnRope.Add(false);
             }
             OwnsLandingFx = rappellers.Count > 0;
         }
@@ -224,7 +226,7 @@ namespace Blindside.Cinematic
         void ClearRappellers()
         {
             foreach (var r in rappellers) if (r != null) Destroy(r.gameObject);
-            rappellers.Clear(); rappelLanded.Clear();
+            rappellers.Clear(); rappelLanded.Clear(); rappelOnRope.Clear();
             OwnsLandingFx = false;
         }
 
@@ -241,20 +243,26 @@ namespace Blindside.Cinematic
                 if (uv == null) continue;
                 float start = RappelStart + i * RappelGap;
                 if (t < start) { if (uv.gameObject.activeSelf) uv.gameObject.SetActive(false); continue; }
-                if (!uv.gameObject.activeSelf) uv.gameObject.SetActive(true);
+                bool appearing = !uv.gameObject.activeSelf;
+                if (appearing) uv.gameObject.SetActive(true);
                 float p = Mathf.Clamp01((t - start) / RappelSlide);
                 float top = hp.z - .8f - 1.6f;
-                float h = Mathf.Lerp(top, arriveRoofY, p * p * (3f - 2f * p));
-                // beside the rope, then a step aside along the ridge (alternate sides)
+                // steady down the rope, braking just before the roof
+                float h = Mathf.Lerp(top, arriveRoofY, p < .85f ? p / .85f * .92f : .92f + (p - .85f) / .15f * .08f);
+                // facing the rope with it just in front of the hands, then a step aside along the ridge (alternate sides)
                 float side = (i % 2 == 0 ? -1f : 1f);
                 float aside = Smooth(start + RappelSlide, start + RappelSlide + RappelStepAside, t);
-                var at = GridSpace.GridToWorld(hp.x, hp.y) + right * (side * (.35f + 1.6f * aside));
+                var at = GridSpace.GridToWorld(hp.x, hp.y) + right * (side * (RappelRopeGap + 1.6f * aside));
                 uv.SetHeight(h);
                 uv.SetPosition(at.x, -at.z);
-                uv.SetFacing(hp.hd + Mathf.PI);   // facing back along the approach, toward the low camera's side
+                // on the rope: turned to it (grid angle of −side along x); once down: facing back along the approach
+                float toRope = side > 0f ? Mathf.PI : 0f;
+                uv.SetFacing(p < 1f ? toRope : hp.hd + Mathf.PI);
+                if (p < 1f && (appearing || !rappelOnRope[i])) { rappelOnRope[i] = true; uv.SetRoping(true); }
                 if (p >= 1f && !rappelLanded[i])
                 {
                     rappelLanded[i] = true;
+                    rappelOnRope[i] = false; uv.SetRoping(false);
                     CombatFx.Ring(new Vector3(at.x, arriveRoofY + .05f, at.z), new Color32(0xd6, 0xc9, 0xa8, 0xff), .5f, .9f);
                 }
             }

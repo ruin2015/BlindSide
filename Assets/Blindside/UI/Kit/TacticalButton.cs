@@ -23,6 +23,7 @@ namespace Blindside.UI
         public RectTransform body;
         public TacticalPanel panel;
         public TMP_Text keyText, labelText, subText, valueText;
+        public TMP_Text iconText;                   // the action's glyph behind the texts (SetIcon); null without one
         public Image valueBg;                       // the value's chip (.s background); null without a value
         public KitSweep sweep;
         public CanvasGroup group;
@@ -135,6 +136,7 @@ namespace Blindside.UI
             if (valueText != null) valueText.color = txt;
             if (subText != null) subText.color = sub;
             if (keyText != null) keyText.color = key;
+            if (iconText != null) { Color ic = txt; ic.a = IconAlpha; iconText.color = ic; }
             if (valueBg != null)
             {
                 // rgba(0,0,0,.09) → rgba(255,255,255,.25) on the hover fill, as opaque sRGB (alpha decoration is blended in sRGB)
@@ -171,6 +173,34 @@ namespace Blindside.UI
             if (l.GetPreferredValues(l.text).x <= avail) return;
             l.overflowMode = TextOverflowModes.Ellipsis;
             UIUtil.GetOrAdd<LintIgnoreClip>(l.gameObject).reason = "a name too long even at 11px / −0.02em ends in an ellipsis rather than run under the value chip";
+        }
+
+        // ---- icon -------------------------------------------------------------------------------------------------------------
+        public const float IconSize = 46f, IconFont = 54f, IconAlpha = .16f;
+
+        /// <summary>A large faint glyph of the action (a BSTactical icon, display role) behind the texts, at the right end — left of
+        /// the value chip when there is one. It takes the label's colour at alpha .16, so it follows hover and disabled.
+        /// `flip` turns it 180° (戻る's arrow). Build time only.</summary>
+        public void SetIcon(string glyph, bool flip = false)
+        {
+            if (body == null || string.IsNullOrEmpty(glyph)) return;
+            if (iconText == null)
+            {
+                iconText = HudKit.AddText(body, glyph, IconFont, Ink, true, TextAlignmentOptions.Center, "Icon", UITheme.TextRole.Display);
+                iconText.raycastTarget = false;
+                iconText.transform.SetSiblingIndex(0);                      // behind the number, the label and the chip
+                UIUtil.GetOrAdd<LintIgnoreOverlap>(iconText.gameObject).bounds = true;  // a watermark: the label may run over it, the glyph may pass the row's edge
+            }
+            else iconText.text = glyph;
+            var size = ((RectTransform)transform).sizeDelta;
+            float right = valueBg != null ? ((RectTransform)valueBg.transform).anchoredPosition.x - 2f : size.x - 12f;
+            const float w = IconSize;
+            var rt = iconText.rectTransform;
+            UILayout.Place(rt, right - w, 0f, w, size.y);
+            rt.pivot = new Vector2(.5f, .5f);                                  // turn about the middle, not the top-left corner
+            rt.anchoredPosition = new Vector2(right - w * .5f, -size.y * .5f);
+            rt.localEulerAngles = flip ? new Vector3(0f, 0f, 180f) : Vector3.zero;
+            Evaluate(Duration);
         }
 
         // ---- build ------------------------------------------------------------------------------------------------------------

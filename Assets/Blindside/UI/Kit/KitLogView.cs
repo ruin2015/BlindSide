@@ -217,10 +217,11 @@ namespace Blindside.UI
 
             var th = UITheme.Current;
             e.markImage.color = type == HudLogType.Ally ? th.blue : type == HudLogType.Foe ? th.foe : type == HudLogType.Warn ? th.acc : th.dim;
-            float skew = e.height * Mathf.Tan(MarkSkew * Mathf.Deg2Rad);
-            e.mark.anchoredPosition = new Vector2(MarkX - skew * .5f, 0f);
-            e.mark.sizeDelta = new Vector2(MarkW + skew, 0f);
-            e.markShape.Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, skew);
+            // the marker leans exactly as the line's background does (the same Slant over the same height) and sits on its left edge,
+            // so the two edges run together (it used to lean 20° on its own and crossed the background's edge)
+            e.mark.anchoredPosition = Vector2.zero;
+            e.mark.sizeDelta = new Vector2(MarkW + Slant, 0f);
+            e.markShape.Set(SlantedGraphic.Size.Custom, SlantedGraphic.Direction.Right, Slant);
             e.inner.anchoredPosition = Vector2.zero;
         }
 

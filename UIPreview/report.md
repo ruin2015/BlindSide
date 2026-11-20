@@ -1,6 +1,6 @@
 # UI Lint report (v2)
 
-Screen 1440x810 · 0 issues · generated 2026-11-18 02:09
+Screen 1440x810 · 0 issues · generated 2026-11-20 12:19
 
 Severity (for ordering only): clipped = px over (text ×1.5, masked parent ×2) · offscreen = px × 1.5 · overlap = % of the smaller rect · aspect = diff% × 2 · fontsize = (11 − size) × 10 · size = diff% × 2 · layout = 10 (Control Child Size) / diff% × 2 / 5 (ContentSizeFitter).
 
@@ -62,6 +62,11 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | coop_rankup_flip | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | deploy_holo_hint | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | deploy_holo_on | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| esc_hold_skip | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| turn_banner_player | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| turn_banner_enemy_glitch | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| duel_panel | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| turn_banner_deploy | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory_op | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | hub_armory_gun | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -167,17 +172,22 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | 상태 | 종류 | 요소명 | 위치 | 측정값 | 기대값 | 심각도 |
 |---|---|---|---|---|---|---|
 
-## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 88종)
+## 미매칭 목록 (LintSpec 표에 없는 Blindside 컴포넌트, 98종)
 
 - BattleCallout ×2
 - Brighten ×6
-- Chip ×625
+- CardPerspective ×6
+- Chip ×156
 - ClickRelay ×5
+- CommandRowButton ×100
 - CornerBrackets ×31
-- CutCornerGraphic ×272
+- CutCornerGraphic ×203
+- DuelHpBar ×6
+- DuelShape ×57
 - EngagePreview ×5
+- EscHoldSkip ×1
 - ExpGainPopup ×2
-- HazardStripe ×207
+- HazardStripe ×158
 - HubArmoryScreen ×7
 - HubCoopScreen ×2
 - HubHover ×72
@@ -205,36 +215,41 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - KitCommandMenu ×17
 - KitCoopRankUp ×2
 - KitDialogue ×5
+- KitDuelPanel ×3
 - KitGradient ×12
 - KitGrowthPanel ×1
 - KitLogHistory ×1
 - KitMenuLogo ×6
-- KitMissionBar ×39
 - KitOptionsPanel ×5
 - KitPointer ×59
 - KitRoster ×39
 - KitSaveIndicator ×1
-- KitShadow ×144
+- KitShadow ×92
 - KitSlider ×6
 - KitStepper ×1
 - KitSupportBadge ×1
-- KitSweep ×202
+- KitSweep ×102
 - KitSwitch ×4
 - KitTextButton ×65
-- KitTint ×332
+- KitTint ×309
 - KitTitleLeft ×6
-- LintIgnoreClip ×919
-- LintIgnoreOverlap ×342
+- KitTurnBanner ×3
+- LintIgnoreClip ×1058
+- LintIgnoreOverlap ×559
 - MainMenuScreen ×6
 - OperationResultScreen ×5
 - PauseMenu ×6
+- PerspectiveText ×60
+- PerspectiveVertex ×66
 - PointerEnter ×4
 - ResultScreen ×3
-- SegmentedBar ×322
-- SlantedGraphic ×2969
-- SlantedMask ×317
+- SegmentedBar ×345
+- SlantedGraphic ×3612
+- SlantedMask ×291
 - StageClick ×2
-- TacticalPanel ×793
+- TacticalOperatorFile ×23
+- TacticalPanel ×173
+- TacticalRosterCard ×195
 - TitleSelectScreen ×6
 - TutorialDroneCard ×2
 - TutorialForecastTour ×1
@@ -248,9 +263,9 @@ Operator names and card numbers are normalised to OP / N before grouping.
 - TutorialWallCard ×2
 - TutorialWallPopup ×1
 - UIContactAlert ×39
-- UIGlitchImage ×350
-- UIGlitchName ×62
-- UIGlitchText ×152
+- UIGlitchImage ×324
+- UIGlitchName ×13
+- UIGlitchText ×103
 - UIHeadshotBadge ×39
 - UIPerspective ×5
 - UIPerspectiveVertex ×245
@@ -309,6 +324,11 @@ Operator names and card numbers are normalised to OP / N before grouping.
 | coop_rankup_flip | 1440x810 | コープ — RANK UP (数字が変わる瞬間) |
 | deploy_holo_hint | 1440x810 | 配置 — TAB 敵の推定位置 (ヒント) |
 | deploy_holo_on | 1440x810 | 配置 — 戦術ホログラム表示中 (ヘッダー) |
+| esc_hold_skip | 1440x810 | スキップ — ESC 長押し (50%) |
+| turn_banner_player | 1440x810 | ターン切替 — PLAYER PHASE (Turn 2) |
+| turn_banner_enemy_glitch | 1440x810 | ターン切替 — ENEMY PHASE (グリッチ中) |
+| duel_panel | 1440x810 | 交戦 — 情報カード (味方 FLARE / 敵 ARGUS) |
+| turn_banner_deploy | 1440x810 | 配置開始 — DEPLOYMENT (ターン切替と同じ帯) |
 | hub_armory | 1440x810 | 本部 — ロードアウト (隊員・装備) |
 | hub_armory_op | 1440x810 | 本部 — ロードアウト (隊員を選んだ後) |
 | hub_armory_gun | 1440x810 | 本部 — ロードアウト (銃) |

@@ -12,6 +12,7 @@ namespace Blindside.UI
     public struct CommandModel
     {
         public string id, kr, en, ic, sub;
+        public string icon;     // CommandIcons key (the kit menu's picture); null: picked from id / en
         public bool ok;
     }
 

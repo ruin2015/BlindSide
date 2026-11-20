@@ -169,7 +169,7 @@ namespace Blindside.Integration
             GameplayUIBridge.VolleyShown += OnVolleyCallout;
             BindMovement(bridge);
             EnsureBuilt();
-            EnsureDebugButton();   // 自動クリア (editor / development builds) — .DebugClear.cs
+            EnsureDebugButton();   // who an ESC tap belongs to; the debug skip itself is SyncDebugSkip — .DebugClear.cs
             Deselect();
             // the deployment's tactical hologram (Tab held: the enemy's estimated positions) — the attack side only
             var holo = GetComponent<DeployHologram>() ?? gameObject.AddComponent<DeployHologram>();
@@ -554,12 +554,13 @@ namespace Blindside.Integration
                 L.Add(new Command { id = "swap", kr = "持ち替え", en = "SWAP", ic = "⌖", ok = !u.Acted, sub = u.Weapon2.weaponName });
             if (!prep) L.Add(new Command { id = "fire", kr = "攻撃", en = "FIRE", ic = "✛", ok = !u.Acted && !shieldStops, sub = shieldStops ? "シールド中" : "" });
             string ab = u.AbilityKey, abName = u.Op != null ? u.Op.abilityName : ab;
+            bool armed = HasPlantedCharge(u);   // IGNIS: the charge is on the wall — the ability now sets it off (.Thermite.cs)
             if (!MatchBootstrap.NoAbilities)
             L.Add(new Command
             {
-                id = "skill", kr = abName, en = "ABILITY", ic = "✦",
+                id = "skill", kr = armed ? "起爆" : abName, en = armed ? "DETONATE" : "ABILITY", ic = "✦",
                 ok = u.Charges > 0 && (prep || !u.AbilityUsed) && !(ab == "shield" && u.Shield) && !(ab == "ghost" && u.Ghost),
-                sub = u.Charges >= 99 ? "∞" : u.Charges + "回",
+                sub = armed ? "設置済み" : u.Charges >= 99 ? "∞" : u.Charges + "回",
             });
             if (u.Team == OperatorTeam.Attack && !HasDrone(u)) { }   // (past the first main quest a drone is equipment from the shop)
             else if (u.Team == OperatorTeam.Attack)
@@ -767,9 +768,17 @@ namespace Blindside.Integration
         // to artCardPrefab (no KitArtCard on it) it is used as before.
         KitArtCard kitArt;
         UIOperatorArtCard artCard;
+        // The tactical HUD (the user's design): the operator file (TacticalOperatorFile) instead of the art card, no unit panel
+        // (HudController's roster cards, the operator file and END TURN are the battle's whole standing HUD). Off: the kit card and
+        // panel as before.
+        [Tooltip("The tactical HUD: TacticalOperatorFile instead of the art card, and no bottom-left unit panel.")]
+        public bool tacticalHud = true;
+        TacticalOperatorFile opFile;
+        SimUnit opFileUnit;
 
         void BuildArtCard(Transform parent)
         {
+            if (tacticalHud) { opFile = TacticalOperatorFile.Create(parent, "OpFile"); return; }
             var prefab = LoadPrefab(artCardPrefab, "HUD_OperatorArtCard");
             if (prefab == null) { Debug.LogWarning("[PlayerSelection] HUD_OperatorArtCard prefab not found."); return; }
             var go = Instantiate(prefab, parent, false);
@@ -787,9 +796,17 @@ namespace Blindside.Integration
         void ShowOpArt(SimUnit u)
         {
             if (u == null || u.Team != side || u.Op == null) { HideOpArt(); return; }
-            if (artCard == null && kitArt == null) return;
             var op = u.Op;
             string tag = $"OPERATOR FILE // OP-{u.Uid:000} // {(u.Team == OperatorTeam.Attack ? "ASSAULT" : "DEFENSE")}";
+            if (opFile != null)
+            {
+                opFileUnit = u;
+                var w = u.Weapon;
+                opFile.Show(op.key, OperatorArt.Body(op.key), op.DisplayName, LevelOf(op.key), u.HP, u.MaxHP,
+                    w != null ? GunIcons.Label(w.weaponName, w.key) : "", w != null ? GunIcons.For(w.key) : null, tag, op.color);
+                return;
+            }
+            if (artCard == null && kitArt == null) return;
             // The upper-body illustration (OperatorArt.Body); a key without art keeps the placeholder fill.
             // UIOperatorArtCard.Show / KitArtCard.Show skip the replay when the same key is visible.
             if (kitArt != null) kitArt.Show(OperatorArt.Body(op.key), op.DisplayName, $"{op.kr} · {op.role}", op.abilityName, tag, op.color);
@@ -798,8 +815,28 @@ namespace Blindside.Integration
 
         void HideOpArt()
         {
+            if (opFile != null) { opFile.Hide(); opFileUnit = null; }
             if (kitArt != null) kitArt.Hide();
             if (artCard != null) artCard.Hide();
+        }
+
+        /// <summary>Every frame: the operator file follows its unit's HP and gun (no-ops when unchanged).</summary>
+        void SyncOpFile()
+        {
+            if (opFile == null || opFileUnit == null || !opFile.Visible) return;
+            var u = opFileUnit;
+            opFile.SetHp(u.HP, u.MaxHP);
+            var w = u.Weapon;
+            if (w != null) opFile.SetWeapon(GunIcons.Label(w.weaponName, w.key), GunIcons.For(w.key));
+        }
+
+        /// <summary>The operator's level from the save as it is (never adds an entry); 1 without one.</summary>
+        static int LevelOf(string key)
+        {
+            var s = Blindside.Save.SaveSystem.Current;
+            if (s == null || s.operators == null) return 1;
+            foreach (var o in s.operators) if (o != null && o.key == key) return Mathf.Max(1, o.level);
+            return 1;
         }
 
         // ================================================================
@@ -837,6 +874,7 @@ namespace Blindside.Integration
         {
             if ((kitPanel == null && panelView == null) || u == null) return;
             panelUnit = u;
+            if (tacticalHud) return;   // (the tactical HUD has no unit panel: the operator file carries the unit)
             if (kitPanel != null) kitPanel.Show(PanelModel(u), noAnim);
             else panelView.Show(PanelModel(u), noAnim);
         }
@@ -909,7 +947,7 @@ namespace Blindside.Integration
             menuFresh = false;
             menuUid = u.Uid;
             var models = new List<CommandModel>(L.Count);
-            foreach (var c in L) models.Add(new CommandModel { id = c.id, kr = c.kr, en = c.en, ic = c.ic, sub = c.sub, ok = c.ok });
+            foreach (var c in L) models.Add(new CommandModel { id = c.id, kr = c.kr, en = c.en, ic = c.ic, sub = c.sub, ok = c.ok, icon = CommandIcons.KeyFor(c.id, u.AbilityKey, c.en) });
             string header = $"{(u.Op != null ? u.Op.DisplayName : u.Id)} // {(gadgetMenu ? "GADGET" : "COMMAND")}";
             if (kitMenu != null) kitMenu.Render(header, u.Op != null ? u.Op.color : Blu, models, fresh, id => DoCommand(u, id));
             else menuView.Render(header, models, fresh, id => DoCommand(u, id));
@@ -937,8 +975,9 @@ namespace Blindside.Integration
             var s = cam.WorldToScreenPoint(GridSpace.GridToWorld(uiUnit.X, uiUnit.Y, 0.5f));
             float sx = s.x / sf, sy = (Screen.height - s.y) / sf;
             float vw = Screen.width / sf, vh = Screen.height / sf;
-            float w = menuRoot.rect.width, h = menuRoot.rect.height;
-            float left = Clamp(sx + 60f, 230f, vw - w - 12f);
+            // the drawn size (the kit menu is scaled, KitCommandMenu.Scale); kept clear of the roster on the left
+            float w = menuRoot.rect.width * menuRoot.localScale.x, h = menuRoot.rect.height * menuRoot.localScale.y;
+            float left = Clamp(sx + 60f, 300f, vw - w - 12f);
             float top = Clamp(sy - h / 2f, 90f, vh - h - 90f);
             menuRoot.anchoredPosition = new Vector2(left, -top);
         }

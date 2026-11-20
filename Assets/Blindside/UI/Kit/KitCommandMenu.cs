@@ -1,13 +1,14 @@
 // The HUD's command menu (#cmd, ui_spec "명령 메뉴"): a header chip ("KEY // COMMAND": ink, 12px display, a 4px band in the operator's
-// colour on the left) over a column of TacticalButtons (226×40, gap 3). The menu knows no game types: Render takes CommandModels
-// (id, Japanese name, English line, value, enabled) and calls onClick(id) — PlayerSelectionController fills it from Commands(u) and
-// keeps DoCommand, the 1–6 keys, the position and Hide exactly as before. Hover / press / disabled are the TacticalButton's own
-// (EventSystem pointer events), so UpdateHover is a no-op kept for the old call site.
-//   Root        top-left anchored (pivot 0,1), 250 wide, 21 + n × 43 high
+// colour on the left) over a column of CommandRowButtons (the user's design: 236×40, gap 3 — white with an ink number box and the
+// action's icon; on hover ink, the number box and a foot line in the operator's colour). The menu knows no game types: Render takes
+// CommandModels (id, Japanese name, English line, value, enabled, icon key) and calls onClick(id) — PlayerSelectionController fills it
+// from Commands(u) and keeps DoCommand, the 1–6 keys, the position and Hide exactly as before. Hover / press / disabled are the
+// button's own (EventSystem pointer events), so UpdateHover is a no-op kept for the old call site.
+//   Root        top-left anchored (pivot 0,1), 260 wide, 21 + n × 43 high
 //     Ch        the header chip: DecoBg ink, DecoBand 4, Text 12 display (spacing .1em)
 //     Row_<id>  slot at the row's place (never moves)
 //       Enter   the entrance pose: x −26 → 0 and alpha 0 → 1 over .32s, row i starting i × 40ms (cmdIn)
-//         Cmd_<id>   TacticalButton
+//         Cmd_<id>   CommandRowButton (CommandIcons for its picture)
 // The entrance is ITimedEffect.Evaluate(t) on one menu clock; Update only advances it with Time.unscaledDeltaTime and stops at the
 // end. No allocation per frame (rows and groups are cached at Render).
 using System.Collections.Generic;
@@ -20,14 +21,15 @@ namespace Blindside.UI
     [AddComponentMenu("Blindside/UI/Kit Command Menu")]
     public class KitCommandMenu : MonoBehaviour, ITimedEffect
     {
-        public const float Width = 250f, HeaderH = 21f, RowW = 226f, RowH = 40f, Gap = 3f;
+        public const float Width = 260f, HeaderH = 21f, RowW = CommandRowButton.W, RowH = CommandRowButton.H, Gap = 3f;
+        Color accent = Color.white;
         public const float EnterTime = .32f, EnterStep = .04f, EnterShift = 26f;
 
         class Row
         {
             public RectTransform enter;
             public CanvasGroup group;
-            public TacticalButton button;
+            public CommandRowButton button;
         }
         readonly List<Row> rows = new List<Row>();
         float clock;
@@ -36,8 +38,8 @@ namespace Blindside.UI
         public RectTransform Root => (RectTransform)transform;
         public bool Visible => gameObject.activeSelf;
         public int RowCount => rows.Count;
-        public IReadOnlyList<TacticalButton> Buttons => buttonList;
-        readonly List<TacticalButton> buttonList = new List<TacticalButton>();
+        public IReadOnlyList<CommandRowButton> Buttons => buttonList;
+        readonly List<CommandRowButton> buttonList = new List<CommandRowButton>();
 
         /// <summary>Anchors the root top-left (the controller positions it); the prefab holds only the root, like HUD_UnitPanel.</summary>
         public void Build()
@@ -46,8 +48,12 @@ namespace Blindside.UI
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);
             rt.sizeDelta = new Vector2(Width, HeaderH);
+            rt.localScale = new Vector3(Scale, Scale, 1f);                    // drawn 1.5× (about its top-left corner)
             gameObject.SetActive(false);
         }
+
+        /// <summary>The whole menu drawn this much bigger than its design (PlayerSelectionController places it by its drawn size).</summary>
+        public const float Scale = 1.5f;
 
         /// <summary>Instantiates the kit menu prefab under `parent`, built and hidden.</summary>
         public static KitCommandMenu Build(Transform parent, GameObject prefab)
@@ -71,6 +77,7 @@ namespace Blindside.UI
             // active before building: TMP measures itself in GetPreferredValues only on an active hierarchy
             if (!root.gameObject.activeSelf) root.gameObject.SetActive(true);
 
+            this.accent = accent;
             BuildHeader(header, accent);
             for (int i = 0; i < list.Count; i++) BuildRow(list[i], i, onClick);
             root.sizeDelta = new Vector2(Width, HeaderH + list.Count * (RowH + Gap));
@@ -102,16 +109,17 @@ namespace Blindside.UI
         void BuildRow(CommandModel c, int index, System.Action<string> onClick)
         {
             var slot = HudKit.NewRect("Row_" + c.id, Root);
-            UILayout.Place(slot, 0f, HeaderH + Gap + index * (RowH + Gap), RowW + TacticalButton.HoverShift, RowH);
+            UILayout.Place(slot, 0f, HeaderH + Gap + index * (RowH + Gap), RowW + CommandRowButton.HoverShift, RowH);
             var enter = HudKit.NewRect("Enter", slot);
-            UILayout.Place(enter, 0f, 0f, RowW + TacticalButton.HoverShift, RowH);
+            UILayout.Place(enter, 0f, 0f, RowW + CommandRowButton.HoverShift, RowH);
             var group = enter.gameObject.AddComponent<CanvasGroup>();
 
-            // the value on the right: the distance ("7.0m"), the charges ("3回", "∞"), "展開" … ; empty → no chip
-            var b = TacticalButton.Create(enter, "Cmd_" + c.id, (index + 1).ToString(), c.kr, c.en, c.sub, null, UITheme.TextRole.Body);
+            // the value after the English line: the distance ("7.0m"), the charges ("3回", "∞"), "展開" …; the icon from its key
+            var sprite = CommandIcons.For(c.icon ?? CommandIcons.KeyFor(c.id, null, c.en));
+            var b = CommandRowButton.Create(enter, "Cmd_" + c.id, (index + 1).ToString(), c.kr, c.en, c.sub, sprite, accent);
             UILayout.Place((RectTransform)b.transform, 0f, 0f, RowW, RowH);
             b.interactable = c.ok;
-            if (!c.ok) b.Go(TacticalButton.Visual.Disabled, true);
+            if (!c.ok) b.Go(CommandRowButton.Visual.Disabled, true);
             string id = c.id;
             b.onClick.AddListener(() => onClick?.Invoke(id));
 

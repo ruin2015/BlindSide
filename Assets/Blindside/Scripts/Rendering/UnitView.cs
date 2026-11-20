@@ -434,6 +434,25 @@ namespace Blindside.Rendering
         public void PlayDodge(bool blocked) { if (unitAnimator != null && !dying) unitAnimator.PlayDodge(blocked); }
         /// <summary>The unit uses its ability (`key` = OperatorData.abilityKey).</summary>
         public void PlayAbility(string key) { if (unitAnimator != null) unitAnimator.PlayAbility(key); }
+
+        // ---- the rope: Resources/Anim/RopeClimb (Mixamo "Climbing A Rope", humanoid), played backwards by UnitAnimator ----
+        static AnimationClip ropeClip;
+        static bool ropeLoaded;
+        public static AnimationClip RopeClip
+        {
+            get
+            {
+                if (!ropeLoaded) { ropeLoaded = true; var all = Resources.LoadAll<AnimationClip>("Anim/RopeClimb"); ropeClip = all.Length > 0 ? all[0] : null; }
+                return ropeClip;
+            }
+        }
+
+        /// <summary>On a rope (the drop, the intro's fast-rope): the climb, both hands on the rope — the gun is put away meanwhile.</summary>
+        public void SetRoping(bool on)
+        {
+            if (unitAnimator != null) unitAnimator.SetRoping(RopeClip, on);
+            if (gunInstance != null && gunInstance.activeSelf == on) gunInstance.SetActive(!on);
+        }
         /// <summary>In combat (seen / shooting / shot at): the upper body stays in the aim pose.</summary>
         public void SetCombatReady(bool on) { if (unitAnimator != null) unitAnimator.CombatReady = on; }
 

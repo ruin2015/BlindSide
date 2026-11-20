@@ -190,6 +190,9 @@ namespace Blindside.Cinematic
         /// <summary>A battle stage is built for the running engagement (its falls are shown there; the map figures are laid down after).</summary>
         public static bool StageActive => stageOwner != null && stageOwner.stage != null;
 
+        /// <summary>The battle stage is on screen (from the start of its fade in from black until it closes).</summary>
+        public static bool StageOnScreen => stageOwner != null && stageOwner.StageShown;
+
         /// <summary>A round landed on the battle stage: the unit hit and the damage it took (set by GameplayUIBridge).</summary>
         public static Action<ICombatUnit, int> StageHit;
 
@@ -457,6 +460,7 @@ namespace Blindside.Cinematic
             var k = kind;
             kind = Kind.None;
             frozen = false;
+            if (skipHint != null) { if (!skipHint.Fired) skipHint.End(); skipHint = null; }
             Safe(() => Time.timeScale = savedTimeScale);
             if (k != Kind.Instant)
             {
@@ -541,7 +545,9 @@ namespace Blindside.Cinematic
                 End();
                 return;
             }
-            if (kind != Kind.Instant && !skipping && Time.frameCount > beginFrame && SkipPressed()) Skip();
+            // the skip is the held ESC (EscHoldSkip), offered for the whole engagement
+            if (kind != Kind.Instant && !skipping && skipHint == null && Time.frameCount > beginFrame && Application.isPlaying)
+                skipHint = Blindside.UI.EscHoldSkip.Begin(Skip, 0f);
             ApplyTimeScale();
             TickWeight();
             if (stage != null && stagePhase != StagePhase.None && !skipping) Safe(TickStage);
@@ -559,13 +565,7 @@ namespace Blindside.Cinematic
             }
         }
 
-        static bool SkipPressed()
-        {
-            var kb = Keyboard.current;
-            if (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)) return true;
-            var m = Mouse.current;
-            return m != null && (m.leftButton.wasPressedThisFrame || m.rightButton.wasPressedThisFrame);
-        }
+        Blindside.UI.EscHoldSkip skipHint;
 
         void Skip()
         {
@@ -1183,13 +1183,17 @@ namespace Blindside.Cinematic
             RefreshOptionButton();
         }
 
+        /// <summary>The tactical HUD (the user's design): the 戦闘演出 chip is not shown over the battle.</summary>
+        public static bool TacticalHud = true;
+
         /// <summary>The 戦闘演出 chip off until the next player match binds it again (a cleared match, an intro playing).</summary>
         public void HideOption() { if (optionRoot != null) optionRoot.gameObject.SetActive(false); }
 
         void RefreshOptionButton()
         {
             if (optionRoot == null) return;
-            optionRoot.gameObject.SetActive(playerTeam.HasValue);
+            // the tactical HUD keeps only the roster, the operator file and END TURN: the chip stays off (the mode is in the options)
+            optionRoot.gameObject.SetActive(playerTeam.HasValue && !TacticalHud);
             optionChip.SetText($"戦闘演出 · <color=#FFC81E><b>{ModeLabel(Mode)}</b></color>");
             optionRoot.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, OptionH);
         }

@@ -163,7 +163,12 @@ namespace Blindside.Cinematic
         const float AimBeat = .26f, FewInterval = .17f, BurstInterval = .075f, AfterBurst = .22f;
         const float ImpactSeconds = .42f, BurstImpactSeconds = .14f, HeadshotSeconds = .8f, DeathSeconds = 1.25f;
 
-        float ImpactTime(ShotEvent e) => e.Headshot ? (Cine(e) ? CritLead + HeadshotSeconds : ImpactSeconds) : e.Shots >= 4 ? BurstImpactSeconds : ImpactSeconds;
+        float ImpactTime(ShotEvent e) => e.Headshot ? (Cine(e) ? (volleyZoomed ? HeadshotSeconds : CritLead + HeadshotSeconds) : ImpactSeconds) : e.Shots >= 4 ? BurstImpactSeconds : ImpactSeconds;
+
+        // ---- a volley known (ShotEvent.CritAt) to land a headshot opens on the shooter's face in close-up — the zoom first, then
+        // the rounds (the critical one with its bigger flash), then the target and the head; nothing is fired twice ----
+        const float ZoomLead = .5f;
+        bool volleyZoomed;
 
         // ---- a critical round (either side's): the shooter's face in close-up first, then the round, then the head ----
         /// <summary>Whether a unit is the player's (set by the director; kept for presentation choices).</summary>
@@ -181,7 +186,7 @@ namespace Blindside.Cinematic
         /// <summary>Where a round lands: the volley's first critical one goes through the shooter's face close-up first.</summary>
         void Land(ShotEvent e)
         {
-            if (!Cine(e)) { Impact(e); return; }
+            if (!Cine(e) || volleyZoomed) { Impact(e); return; }   // (a zoomed volley fired its critical round already)
             var s = ActorOf(e.Attacker); var t = ActorOf(e.Target);
             if (s == null || t == null || s.Dead) { Impact(e); return; }
             Cut(Shot.Face, s);
@@ -217,14 +222,27 @@ namespace Blindside.Cinematic
                 if (volleyShooter != null && volleyShooter != s) volleyShooter.Advance(false);
                 volleyShooter = s; volleyTarget = t; targetUp = false;
                 pendingImpacts.Clear();
-                volleyCritIndex = -1;
+                volleyCritIndex = e.CritAt;                  // (known from the first round: the one the close-ups belong to)
                 Claim(e);
-                s.Advance(true);
-                Cut(Shot.Shooter, s);
                 int n = Mathf.Max(1, e.Shots);
                 float interval = n >= 4 ? BurstInterval : FewInterval;
-                for (int k = 0; k < n; k++) After(AimBeat + k * interval, () => MuzzleBurst(s, t));
-                float burst = AimBeat + (n - 1) * interval + AfterBurst;
+                volleyZoomed = volleyCritIndex >= 0 && volleyCritIndex < n;
+                float lead = 0f;
+                if (volleyZoomed)
+                {
+                    // the zoom first: the shooter's face in close-up, then its cut as it fires
+                    Cut(Shot.Face, s);
+                    lead = ZoomLead;
+                    After(lead, () => { if (volleyShooter == s) { s.Advance(true); Cut(Shot.Shooter, s); } });
+                }
+                else { s.Advance(true); Cut(Shot.Shooter, s); }
+                int crit = volleyZoomed ? volleyCritIndex : -1;
+                for (int k = 0; k < n; k++)
+                {
+                    bool isCrit = k == crit;
+                    After(lead + AimBeat + k * interval, () => { if (isCrit) CritRound(s, t); else MuzzleBurst(s, t); });
+                }
+                float burst = lead + AimBeat + (n - 1) * interval + AfterBurst;
                 pendingImpacts.Add(e);
                 After(burst, () => { if (volleyShooter == s) { Cut(Shot.Target, t); targetUp = true; FlushImpacts(); } });
                 busyUntil = now + burst + ImpactTime(e);
@@ -265,7 +283,7 @@ namespace Blindside.Cinematic
         float PlaySupport(ShotEvent e, BattleActor t)
         {
             float now = Time.unscaledTime, wait = Mathf.Max(0f, busyUntil - now);
-            volleyCritIndex = -1; Claim(e);   // (a 支援射撃 round is a volley of its own)
+            volleyCritIndex = -1; volleyZoomed = false; Claim(e);   // (a 支援射撃 round is a volley of its own: face → fire → target already)
             float lead = SupportFace + SupportAim + SupportFly;
             float total = wait + lead + (CritCut(e) ? HeadshotSeconds : ImpactSeconds);
             busyUntil = now + total;

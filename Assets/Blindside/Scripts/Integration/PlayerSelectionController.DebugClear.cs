@@ -1,18 +1,19 @@
 // Debug: 自動クリア — the current map won at once. Every living enemy of the player's side goes down through CombatSystem.ReportKill
 // (the same path as a shot kill: counted, K.I.A, then TurnManager.CheckWin ends the match as the player's win, so the result screen,
-// the rewards and the save run as after a real clear). Shown only in the editor and in development builds: a small button right of the
-// BLINDSIDE logo (top left of the HUD canvas), and Blindside > Debug > Auto Clear Map (Editor/DebugQuickStartMenu.cs). Ignored while
-// an action is playing out, during a dialog, or when the match is already over.
-using TMPro;
+// the rewards and the save run as after a real clear). Shown only in the editor and in development builds, as the game's one skip:
+// hold ESC (EscHoldSkip, its hint right above END TURN, 「DEBUG 長押しでスキップ」) — a short tap still opens the game menu (or cancels
+// what the selection has open). Also Blindside > Debug > Auto Clear Map (Editor/DebugQuickStartMenu.cs). Offered only while the player
+// can act (not during a battle cinematic, an action playing out or a dialog); gone once the match is over.
 using UnityEngine;
-using UnityEngine.UI;
 using Blindside.UI;
 
 namespace Blindside.Integration
 {
     public partial class PlayerSelectionController
     {
-        RectTransform debugClearButton;
+        public const string DebugSkipLabel = "DEBUG 長押しでスキップ";
+        EscHoldSkip debugSkip;
+        System.Action debugSkipAction;
 
         /// <summary>Wins the current match for the player now (debugging).</summary>
         public void DebugClearMap()
@@ -34,24 +35,27 @@ namespace Blindside.Integration
             turns?.CheckWin();
         }
 
-        /// <summary>The debug button (editor / development builds only), built once on the HUD canvas.</summary>
+        /// <summary>At bind: who a tap of ESC belongs to (the selection, when it has something to cancel) for every hold-ESC hint.</summary>
         void EnsureDebugButton()
         {
+            EscHoldSkip.TapTaken = () => this != null && PlayerCanAct() && HasSomethingToCancel;
+        }
+
+        /// <summary>Every frame: the debug skip offered while the player can act (editor / development builds only).</summary>
+        void SyncDebugSkip()
+        {
             if (!(Application.isEditor || Debug.isDebugBuild)) return;
-            if (debugClearButton != null || canvas == null) return;
-            var theme = UITheme.Current;
-            var b = HudKit.NewRect("DebugAutoClear", canvas.transform);
-            b.anchorMin = b.anchorMax = b.pivot = new Vector2(0f, 1f);
-            b.anchoredPosition = new Vector2(250f, -22f);   // (right of the BLINDSIDE logo: clear of the objective box and the operator card)
-            b.sizeDelta = new Vector2(150f, 30f);
-            var img = HudKit.AddImage(b, new Color(theme.foe.r, theme.foe.g, theme.foe.b, .9f), raycast: true);
-            var btn = b.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None; btn.targetGraphic = img;
-            btn.onClick.AddListener(() => { Sfx.Ui(); DebugClearMap(); });
-            b.gameObject.AddComponent<KitBrighten>().image = img;
-            var t = HudKit.AddText(b, "DEBUG  自動クリア", 13f, Color.white, true, TextAlignmentOptions.Center, "Text", UITheme.TextRole.Body);
-            t.textWrappingMode = TextWrappingModes.NoWrap;
-            HudKit.Stretch(t.rectTransform);
-            debugClearButton = b;
+            bool want = turns != null && !turns.Over && hasSide && !cinematicOn && PlayerCanAct();
+            if (want && debugSkip == null)
+                debugSkip = EscHoldSkip.Begin(debugSkipAction ?? (debugSkipAction = DebugClearMap), .3f,
+                                              20f + KitEndButton.H + 10f, true, DebugSkipLabel);   // right above END TURN
+            else if (!want && debugSkip != null) { if (!debugSkip.Fired) debugSkip.End(); debugSkip = null; }
+        }
+
+        void OnDisable()
+        {
+            if (debugSkip != null && !debugSkip.Fired) debugSkip.End();
+            debugSkip = null;
         }
     }
 }

@@ -1627,7 +1627,7 @@ Transform:
   m_GameObject: {fileID: 52290832}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 26.355108, y: 18.44857, z: 26.355139}
+  m_LocalPosition: {x: 36.2733, y: 20, z: 48.024723}
   m_LocalScale: {x: 1800, y: 1800, z: 1800}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -22206,6 +22206,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Blindside.Integration.HudController
   content: {fileID: 254711322}
   kitTopbar: {fileID: 702022427}
+  useMissionBar: 1
+  missionBar: {fileID: 0}
+  showMissionBar: 0
+  tacticalHud: 1
   topbar: {fileID: 0}
   objective: {fileID: 0}
   objectivePhaseLine: 0
@@ -39035,10 +39039,13 @@ MonoBehaviour:
   headshotBadge: {fileID: 0}
   combatPanel: {fileID: 0}
   phaseBanner: {fileID: 0}
+  useTurnBanner: 1
+  turnBanner: {fileID: 0}
   contactAlert: {fileID: 0}
   endTurnPulse: {fileID: 0}
   endTurnButton: {fileID: 0}
   worldCamera: {fileID: 330585545}
+  useDuelPanel: 1
 --- !u!4 &1425032843
 Transform:
   m_ObjectHideFlags: 0

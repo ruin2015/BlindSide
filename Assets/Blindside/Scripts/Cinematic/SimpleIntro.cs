@@ -1,6 +1,6 @@
 // The intro of a map without the house (MapData.useHouseIntro false). The house intro is a Timeline built around the default
 // map's house — its orbit camera, the House_Exterior shell, the helicopter path to its garage — so a map that has no house
-// gets this short one instead, about 7 seconds and skippable (any key or a click):
+// gets this short one instead, about 7 seconds and skippable (hold ESC — EscHoldSkip):
 //   letterbox in → a glitch title with the date and "OPERATION : {map name}" → the camera comes down from high above the
 //   middle of the map to the game's own height → the helicopter enters from off-screen, heads for the middle of the map and
 //   stops there (where the deploy phase picks it up: HeliDeployRig.Begin) → fade out, the match starts, fade in.
@@ -92,11 +92,10 @@ namespace Blindside.Cinematic
             Quaternion glitchRot = glitch != null ? glitch.transform.localRotation : default;
             Coroutine titleRoutine = null;
             float t = 0f; bool titleIn = false, titleOut = false;
-            float skipArmed = .3f;   // the click that pressed START must not count
+            var skipHint = EscHoldSkip.Begin(Skip);   // hold ESC (the one skip everywhere)
             while (t < FadeOutAt && !skip)
             {
                 t += Time.unscaledDeltaTime;
-                if (t > skipArmed && SkipPressed()) { skip = true; break; }
 
                 if (fade != null) fade.alpha = 1f - Smooth(t / FadeInEnd);
                 if (letterbox != null) letterbox.openAmount = Smooth(t / .7f);
@@ -116,6 +115,7 @@ namespace Blindside.Cinematic
                 }
                 yield return null;
             }
+            if (skipHint != null && !skipHint.Fired) skipHint.End();
 
             // out: to black (and the letterbox away), start the match behind it, then in again.
             float from = fade != null ? fade.alpha : 0f, ft = 0f, dur = skip ? .35f : (Total - FadeOutAt);
@@ -149,14 +149,6 @@ namespace Blindside.Cinematic
             if (fade != null) fade.alpha = 0f;
             Playing = false;
             Destroy(gameObject);
-        }
-
-        static bool SkipPressed()
-        {
-            var kb = Keyboard.current;
-            if (kb != null && kb.anyKey.wasPressedThisFrame && !kb.escapeKey.wasPressedThisFrame) return true;   // (ESC is the game menu's)
-            var mouse = Mouse.current;
-            return mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame);
         }
     }
 }

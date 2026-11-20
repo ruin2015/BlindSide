@@ -5,6 +5,7 @@
 //   cellMesh's electrified band (~108): a 1.06×.07×1.06 box at h*.55 over each electrified wall cell, 0x4fb3ff
 //     opacity .85, shown when G.side==='def'||p.elecSeen — and syncGadgets' flicker (~213):
 //     opacity=.35+.6*|sin(t/70+x)|.
+// Each electrified wall cell also crackles while its band shows (FxWallCrackle: arcs across the face, sparks, a blue blink).
 // p.elecSeen is set by WallDiscovery (an attacker's sight on the panel); e.discovered by VisibilityController / DroneOps.
 using System.Collections.Generic;
 using UnityEngine;
@@ -31,6 +32,8 @@ namespace Blindside.Integration
         readonly Dictionary<ElectricField, FieldGo> fieldGos = new Dictionary<ElectricField, FieldGo>();
         readonly List<ElectricField> gone = new List<ElectricField>();
         readonly Dictionary<Vector2Int, Renderer> bands = new Dictionary<Vector2Int, Renderer>();
+        // the crackle on each electrified wall cell (arcs across its face, sparks, a blink) — on while its band is
+        readonly Dictionary<Vector2Int, FxWallCrackle> crackles = new Dictionary<Vector2Int, FxWallCrackle>();
         MaterialPropertyBlock mpb;
 
         public void Bind(List<ElectricField> fields, MapGrid map)
@@ -44,7 +47,7 @@ namespace Blindside.Integration
             fields = null; map = null;
             if (root != null) Destroy(root.gameObject);
             root = null;
-            fieldGos.Clear(); bands.Clear();
+            fieldGos.Clear(); bands.Clear(); crackles.Clear();
         }
 
         static bool ShownToSide => HudLog.Side == OperatorTeam.Defense;   // G.side==='def' (discovery not ported)
@@ -89,12 +92,18 @@ namespace Blindside.Integration
                 if (!p.electrified || !(show || p.elecSeen)) continue;   // G.side==='def'||p.elecSeen
                 foreach (var c in p.cells) if (map.TileAt(c.x, c.y) == TileType.Wall) want.Add(c);
             }
-            foreach (var c in want) if (!bands.ContainsKey(c)) bands[c] = BuildBand(c);
+            foreach (var c in want)
+                if (!bands.ContainsKey(c))
+                {
+                    bands[c] = BuildBand(c);
+                    crackles[c] = FxWallCrackle.Attach(root, WallBounds(c), c.x * 7919 + c.y * 104729);
+                }
             if (mpb == null) mpb = new MaterialPropertyBlock();
             foreach (var kv in bands)
             {
                 bool on = want.Contains(kv.Key);
                 if (kv.Value.gameObject.activeSelf != on) kv.Value.gameObject.SetActive(on);
+                if (crackles.TryGetValue(kv.Key, out var fx) && fx != null) fx.SetOn(on);
                 if (!on) continue;
                 float a = .35f + .6f * Mathf.Abs(Mathf.Sin(t / 70f + kv.Key.x));
                 var col = new Color(Zap.r, Zap.g, Zap.b, a);

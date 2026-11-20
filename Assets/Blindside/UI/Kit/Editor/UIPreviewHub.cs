@@ -249,6 +249,75 @@ namespace Blindside.UI.EditorTools
             count.text = "敵の推定位置 · 反応 6";
         }
 
+        public const string TurnPlayer = "turn_banner_player", TurnEnemyGlitch = "turn_banner_enemy_glitch";
+
+        /// <summary>The turn change: Turn 2 · PLAYER PHASE settled (1.2s in), and ENEMY PHASE mid-glitch (.26s in).</summary>
+        public static void BuildTurnPlayer(UIPreview.Stage s) => TurnBanner(s, true, 1.2f);
+        public static void BuildTurnEnemyGlitch(UIPreview.Stage s) => TurnBanner(s, false, .26f);
+
+        public const string TurnDeploy = "turn_banner_deploy";
+
+        /// <summary>The deployment in the same banner: BEFORE BREACH · DEPLOYMENT (yellow), settled.</summary>
+        public static void BuildTurnDeploy(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("TurnBanner_Canvas", UITheme.CanvasKind.Hud, 0);
+            var b = KitTurnBanner.Build(canvas.transform);
+            b.Play(KitTurnBanner.DeployLabel, KitTurnBanner.DeployTitle, UIPalette.Accent);
+            b.Evaluate(1.2f);
+        }
+
+        static void TurnBanner(UIPreview.Stage s, bool player, float t)
+        {
+            var canvas = s.NewCanvas("TurnBanner_Canvas", UITheme.CanvasKind.Hud, 0);
+            var b = KitTurnBanner.Build(canvas.transform);
+            b.Play(2, player ? KitTurnBanner.PlayerTitle : KitTurnBanner.EnemyTitle, player ? UIPalette.Blue : UIPalette.Foe);
+            b.Evaluate(t);
+        }
+
+        public const string Duel = "duel_panel";
+
+        /// <summary>The engagement readout: FLARE (ally, left) shot back at by ARGUS (enemy, right) — both sides' numbers, the result.</summary>
+        public const string DuelEnter = "duel_panel_enter";
+
+        /// <summary>The battle stage's entrance (KitDuelPanel.Enter), halfway: the cards unfolding, the HP bars filling.</summary>
+        public static void BuildDuelEnter(UIPreview.Stage s)
+        {
+            var p = DuelFilled(s);
+            p.Enter();
+            p.Evaluate(KitDuelPanel.EnterUnfold * .5f);
+        }
+
+        public static void BuildDuel(UIPreview.Stage s)
+        {
+            var p = DuelFilled(s);
+            p.Show();
+            p.Evaluate(KitDuelPanel.InTime);
+        }
+
+        static KitDuelPanel DuelFilled(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("Duel_Canvas", UITheme.CanvasKind.Hud, 0);
+            var p = KitDuelPanel.Build(canvas.transform);
+            var flare = BuildAssetRegistry.Operator("FLARE"); var argus = BuildAssetRegistry.Operator("ARGUS");
+            var wf = Blindside.Data.Loadout.Of(flare, true); var wa = Blindside.Data.Loadout.Of(argus, false);
+            p.SetSide(true, "FLARE", flare.color, true, 82, 100, GunIcons.Label(wf.weaponName, wf.key), GunIcons.For(wf.key), "50×1", "85%", "12%");
+            p.SetSide(false, "ARGUS", UIPalette.Foe, false, 64, 100, GunIcons.Label(wa.weaponName, wa.key), GunIcons.For(wa.key), "18×3", "62%", "8%");
+            p.SetTag("ENGAGE · 交戦 · 壁越し");
+            p.SetResult("1/1 命中 · 50 ダメージ");
+            return p;
+        }
+
+        public const string EscSkip = "esc_hold_skip";
+
+        /// <summary>The one skip (EscHoldSkip): the hint bottom right, ESC held halfway.</summary>
+        public static void BuildEscSkip(UIPreview.Stage s)
+        {
+            var canvas = s.NewCanvas("EscHoldSkip_Canvas", UITheme.CanvasKind.Hud, EscHoldSkip.SortingOrder);
+            var k = EscHoldSkip.Build(canvas.transform);
+            k.group.alpha = 1f;
+            k.Evaluate(EscHoldSkip.HoldSeconds * .5f);
+        }
+
         public const string DialogueNarration = "dialogue_narration", DialogueUnknown = "dialogue_unknown", CoopRankUp = "coop_rankup",
                             CoopRankUpFlip = "coop_rankup_flip";
 

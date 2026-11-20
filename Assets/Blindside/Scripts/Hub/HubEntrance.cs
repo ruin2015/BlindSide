@@ -1,7 +1,7 @@
 // The squad coming home: when an operation hands over to the HQ (HubEntrance.Pending), the scene opens from black on FLARE walking in
 // from the south door up the lobby's line. The camera starts low in front of the figure and swings round behind it, ending where the
-// HQ's own camera (HubCamera) sits, and a band reads 「本部帰還」 with the calendar. The player has no control meanwhile; a click or a key
-// skips to the end. One unscaled clock (ITimedEffect.Evaluate(t)); nothing allocated per frame.
+// HQ's own camera (HubCamera) sits, and a band reads 「本部帰還」 with the calendar. The player has no control meanwhile; holding ESC
+// (EscHoldSkip) skips to the end. One unscaled clock (ITimedEffect.Evaluate(t)); nothing allocated per frame.
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -31,7 +31,8 @@ namespace Blindside.Hub
         Vector3 walkTo, walkFrom;
         Quaternion facing;
         float clock;
-        bool running;
+        bool running, skipped;
+        EscHoldSkip skipHint;
 
         RectTransform band;
         CanvasGroup bandGroup;
@@ -123,12 +124,12 @@ namespace Blindside.Hub
         {
             if (!running) return;
             clock += Time.unscaledDeltaTime;
-            var kb = Keyboard.current; var mouse = Mouse.current;
-            bool skip = clock > .3f && ((kb != null && kb.anyKey.wasPressedThisFrame) || (mouse != null && mouse.leftButton.wasPressedThisFrame));
-            if (skip) clock = Total;
+            if (skipHint == null && !skipped) skipHint = EscHoldSkip.Begin(() => { skipped = true; clock = Total; });   // hold ESC
             Evaluate(clock);
             if (clock < Total) return;
             running = false;
+            if (skipHint != null && !skipHint.Fired) skipHint.End();
+            skipHint = null;
             if (mover != null && mover.figure != null) mover.figure.Speed = 0f;
             if (cc != null) cc.enabled = true;
             if (mover != null) mover.enabled = true;

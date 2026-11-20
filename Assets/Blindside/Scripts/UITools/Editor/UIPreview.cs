@@ -87,6 +87,12 @@ namespace Blindside.UITools.EditorTools
             new State { name = UIPreviewHub.CoopRankUpFlip, label = "コープ — RANK UP (数字が変わる瞬間)", build = UIPreviewHub.BuildCoopRankUpFlip },
             new State { name = UIPreviewHub.DeployHoloHint, label = "配置 — TAB 敵の推定位置 (ヒント)", build = UIPreviewHub.BuildDeployHoloHint },
             new State { name = UIPreviewHub.DeployHoloOn, label = "配置 — 戦術ホログラム表示中 (ヘッダー)", build = UIPreviewHub.BuildDeployHoloOn },
+            new State { name = UIPreviewHub.EscSkip, label = "スキップ — ESC 長押し (50%)", build = UIPreviewHub.BuildEscSkip },
+            new State { name = UIPreviewHub.TurnPlayer, label = "ターン切替 — PLAYER PHASE (Turn 2)", build = UIPreviewHub.BuildTurnPlayer },
+            new State { name = UIPreviewHub.TurnEnemyGlitch, label = "ターン切替 — ENEMY PHASE (グリッチ中)", build = UIPreviewHub.BuildTurnEnemyGlitch },
+            new State { name = UIPreviewHub.Duel, label = "交戦 — 情報カード (味方 FLARE / 敵 ARGUS)", build = UIPreviewHub.BuildDuel },
+            new State { name = UIPreviewHub.DuelEnter, label = "交戦 — 情報カード 登場 (戦闘シーンのフェードイン, 途中)", build = UIPreviewHub.BuildDuelEnter },
+            new State { name = UIPreviewHub.TurnDeploy, label = "配置開始 — DEPLOYMENT (ターン切替と同じ帯)", build = UIPreviewHub.BuildTurnDeploy },
             new State { name = UIPreviewHub.Armory, label = "本部 — ロードアウト (隊員・装備)", build = UIPreviewHub.BuildArmory },
             new State { name = UIPreviewHub.ArmoryOp, label = "本部 — ロードアウト (隊員を選んだ後)", build = UIPreviewHub.BuildArmoryOp },
             new State { name = UIPreviewHub.ArmoryGun, label = "本部 — ロードアウト (銃)", build = UIPreviewHub.BuildArmoryGun },
@@ -591,10 +597,13 @@ namespace Blindside.UITools.EditorTools
                 var u = squad[i]; var op = u.op;
                 bool my = state != HudState.Hit;               // HudController: the move chip only in the squad's own phase
                 int before = state == HudState.Hit && i == 1 ? 82 : u.hp;
-                cards[i].SetData(OperatorArt.Face(op.key), op.key, op.kr, op.color, before, op.hp, $"移動 {M1(u.moveLeft)}m", icons[i]);
+                cards[i].SetData(OperatorArt.Face(op.key), op.key, op.color, before, op.hp);
+                var gunW = Blindside.Data.Loadout.Of(op, true);
+                cards[i].SetWeapon(gunW != null ? GunIcons.Label(gunW.weaponName, gunW.key) : "", gunW != null ? GunIcons.For(gunW.key) : null);
                 cards[i].SetState(u.hp, op.hp, my ? $"移動 {M1(u.moveLeft)}m" : "", u == selected && my, u.ended && my, false);
                 cards[i].Evaluate(state == HudState.Hit ? .35f : 1f);
             }
+            roster.Relayout();   // (in Play its LateUpdate does it: the selected card's room opened)
 
             // the hit lands in the defenders' phase (HudController: "防衛チームの番 · 敵", foe tone); every other state is the player's phase
             // the same calls HudController makes; the defense preparation: round 00, yellow marker, no attackers yet (5 dark pips)
@@ -638,6 +647,7 @@ namespace Blindside.UITools.EditorTools
                 }
             }
             mission.Evaluate(state == HudState.Hit ? .05f : 0f);   // (settled; the hit: just into the failure flash)
+            mission.gameObject.SetActive(false);                    // the battle screen no longer draws it (HudController.showMissionBar off)
 
             log.PreviewLine("作戦開始 — 攻撃チームが建物の外に降下", Blindside.UI.HudLogType.Ally);
             log.PreviewLine("クラッシャー: 壁を破壊 (2,9)", Blindside.UI.HudLogType.Ally);
@@ -689,21 +699,17 @@ namespace Blindside.UITools.EditorTools
             // ---- PlayerSelection_Canvas (art card, unit panel, hint, menu, dialog) ----
             var selCanvas = s.NewCanvas("PlayerSelection_Canvas", UITheme.CanvasKind.Hud, 5);
             // the same calls PlayerSelectionController makes: instantiate the prefab, Build, Show (posed at the end of the entrance)
-            var art = UnityEngine.Object.Instantiate(Prefab("HUD_OperatorArtCard"), selCanvas.transform, false).GetComponent<KitArtCard>();
-            art.name = "OpArt";
-            art.Build();
+            // the tactical HUD (PlayerSelectionController.tacticalHud): the operator file, no unit panel, no log
+            var file = TacticalOperatorFile.Create(selCanvas.transform, "OpFile");
             if (selected != null && state != HudState.Hit)
             {
                 var op = selected.op;
-                art.Show(OperatorArt.Body(op.key), op.key, $"{op.kr} · {op.role}", op.abilityName, $"OPERATOR FILE // OP-{selected.uid:000} // ASSAULT", op.color);
-                art.Evaluate(art.Duration);
+                var gw = Blindside.Data.Loadout.Of(op, true);
+                file.Show(op.key, OperatorArt.Body(op.key), op.key, 5, selected.hp, op.hp, gw != null ? GunIcons.Label(gw.weaponName, gw.key) : "",
+                    gw != null ? GunIcons.For(gw.key) : null, $"OPERATOR FILE // OP-{selected.uid:000} // ASSAULT", op.color);
+                file.Evaluate(file.Duration);
             }
-
-            // the same calls PlayerSelectionController makes: instantiate the prefab, Build, Show (posed at the end of the entrance)
-            var panel = UnityEngine.Object.Instantiate(Prefab("HUD_UnitPanel"), selCanvas.transform, false).GetComponent<KitUnitPanel>();
-            panel.name = "UnitPanel";
-            panel.Build();
-            if (paneled != null) panel.Show(PanelModel(paneled, state == HudState.LongDesc), false);
+            log.gameObject.SetActive(false);
 
             var moveHud = HudKit.NewRect("MoveHud", selCanvas.transform);
             HudKit.Stretch(moveHud);
@@ -730,6 +736,8 @@ namespace Blindside.UITools.EditorTools
             {
                 menu.Render($"{selected.op.key} // COMMAND", selected.op.color, Commands(selected, state == HudState.CmdDisabled), false, null);
                 menu.Root.anchoredPosition = new Vector2(340f, -150f);     // the mockup's #cmd{left:340px;top:150px}; in the game it follows the unit
+                // the long-ability state also shows a row under the pointer (移動 hovered: ink, the operator's colour)
+                if (state == HudState.CmdLong && menu.Buttons.Count > 0) menu.Buttons[0].PoseState(CommandRowButton.Visual.Hover, 1f);
             }
             if (state == HudState.MoveDialog)
             {
@@ -771,7 +779,7 @@ namespace Blindside.UITools.EditorTools
                 new CommandModel { id = "move", kr = "移動", en = "MOVE", ic = "➜", ok = u.moveLeft > .3f, sub = M1(u.moveLeft) + "m" },
                 new CommandModel { id = "face", kr = "視界変更", en = "VIEW", ic = "◐", ok = true, sub = "" },
                 new CommandModel { id = "fire", kr = "攻撃", en = "FIRE", ic = "✛", ok = !spent },
-                new CommandModel { id = "skill", kr = op.abilityName, en = "ABILITY", ic = "✦", ok = charges > 0, sub = charges >= 99 ? "∞" : charges + "回" },
+                new CommandModel { id = "skill", kr = op.abilityName, en = "ABILITY", ic = "✦", ok = charges > 0, sub = charges >= 99 ? "∞" : charges + "回", icon = CommandIcons.AbilityIcon(op.abilityKey) },
                 new CommandModel { id = "gadgets", kr = "ガジェット", en = "GADGET", ic = "✹", ok = true, sub = "3種" },
                 new CommandModel { id = "wait", kr = "待機", en = "END", ic = "■", ok = true },
             };

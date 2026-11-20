@@ -38,6 +38,7 @@ namespace Blindside.Integration
         public void BindAbilities(AbilitySystem abilities, AbilityContext ctx)
         {
             this.abilities = abilities; abilityCtx = ctx;
+            ClearCharges();   // (.Thermite.cs)
         }
 
         static bool IsBreachAbility(string key) => key == "hammer" || key == "launcher" || key == "thermite";
@@ -53,6 +54,7 @@ namespace Blindside.Integration
             if (!IsBreachAbility(u.AbilityKey) && !IsSupportAbility(u.AbilityKey)) return false;
             breachItemMode = false;
             abilityCtx.PrepPhase = turns.Phase == MatchPhase.Prep;
+            if (TryDetonate(u)) return true;   // IGNIS: a charge planted — this press sets it off (.Thermite.cs)
             var sp = abilities.GetSpec(u, abilityCtx);
             HideMenu();
             mode = Mode.Ability; uiUnit = u; panelUnit = u;
@@ -94,6 +96,7 @@ namespace Blindside.Integration
             busy = true; HideHint();
             mode = Mode.Busy;   // G.ui={mode:'busy',unit:u}
             if (breachItemMode) { StartCoroutine(BreachItemRoutine(u, map.Panels[pid])); return true; }   // 粘着爆薬 (.Items.cs)
+            if (u.AbilityKey == ThermiteKey) { StartCoroutine(AttachRoutine(u, map.Panels[pid])); return true; }   // plant only (.Thermite.cs)
             StartCoroutine(AbilityRoutine(u, AbilityTarget.FromPanel(map.Panels[pid])));
             return true;
         }
@@ -123,6 +126,9 @@ namespace Blindside.Integration
         void SyncAbilityHelpers()
         {
             SyncSupportAbilityHelpers();
+            SyncCharges();   // IGNIS's planted charges (.Thermite.cs)
+            SyncOpFile();    // the operator file's HP / gun
+            SyncDebugSkip(); // the debug hold-ESC skip over END TURN (.DebugClear.cs)
             SyncAbilityStatus();
             SyncCamPanel();
             bool reinforce = mode == Mode.Reinforce && uiUnit != null && validPanels.Count > 0;   // (.Reinforce.cs) same shells, no range ring

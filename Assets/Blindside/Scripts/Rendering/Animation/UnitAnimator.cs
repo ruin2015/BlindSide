@@ -182,6 +182,38 @@ namespace Blindside.Rendering
             return true;
         }
 
+        // ---- the rope (the deployment's drop, the intro's fast-rope): the climb clip on the whole body, played backwards — hand
+        // under hand, going down — looping until the feet touch; then it fades out like any action ----
+        AnimationClip ropeClip;
+        bool roping;
+        float ropeTime;
+        /// <summary>How fast the climb plays backwards while sliding down (×).</summary>
+        public const float RopeRate = 1.3f;
+
+        public bool Roping => roping;
+
+        /// <summary>On the rope (`clip`: the climb) or off it again.</summary>
+        public void SetRoping(AnimationClip clip, bool on)
+        {
+            if (!graph.IsValid()) return;
+            if (on)
+            {
+                if (clip == null || dead) return;
+                roping = true; ropeClip = clip;
+                Replace(ref fullAction, clip, layers, 2, 0f);   // speed 0: Update sets its time (backwards)
+                ropeTime = clip.length;
+                fullAction.SetTime(ropeTime);
+                fullHold = true; fullEnd = float.MaxValue;
+                fullW = 1f;                                       // (it appears on the rope already holding it)
+                ApplyWeights();
+            }
+            else if (roping)
+            {
+                roping = false;
+                fullHold = false; fullEnd = Time.time;           // fades out
+            }
+        }
+
         /// <summary>Seconds until the running dodge reaches its peak (the body furthest out of the line of fire); −1 when no
         /// dodge is running or it is already past the peak.</summary>
         public float DodgePeakIn
@@ -241,6 +273,12 @@ namespace Blindside.Rendering
             // undo last frame's twist before the animation runs: a spine bone no clip animates would otherwise keep turning
             if (spinePre != null) for (int i = 0; i < spine.Count; i++) if (spine[i] != null) spine[i].localRotation = spinePre[i];
             float dt = Time.deltaTime, now = Time.time;
+            if (roping && fullAction.IsValid() && ropeClip != null)
+            {
+                ropeTime -= dt * RopeRate;
+                if (ropeTime < 0f) ropeTime += ropeClip.length;
+                fullAction.SetTime(ropeTime);
+            }
             var pos = body != null ? body.position : transform.position;
             if (hasLast && dt > 0f)
             {

@@ -43,6 +43,17 @@ namespace Blindside.Cinematic
         {
             director = GetComponent<PlayableDirector>();
             if (director != null) director.played += OnDirectorPlayed;
+            HideStandIn();
+        }
+
+        /// <summary>The Timeline's stand-in figure (UnitDrop: a white dummy on the rope) is never drawn — the intro's rappellers
+        /// (IntroCameraRig) are the operators' own models, and the dummy otherwise hangs in the air over the battle. Its transform
+        /// stays (the drop point, the Timeline's bindings).</summary>
+        void HideStandIn()
+        {
+            var drop = transform.Find("UnitDrop");
+            if (drop == null) return;
+            foreach (var r in drop.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
         }
 
         void OnDestroy()
@@ -50,7 +61,7 @@ namespace Blindside.Cinematic
             if (director != null) director.played -= OnDirectorPlayed;
         }
 
-        void OnDirectorPlayed(PlayableDirector d) => BeginFadeIn();
+        void OnDirectorPlayed(PlayableDirector d) { HideStandIn(); BeginFadeIn(); }
 
         /// <summary>Fades the black overlay out to reveal the scene — call whenever the intro (re)starts.</summary>
         public void BeginFadeIn()

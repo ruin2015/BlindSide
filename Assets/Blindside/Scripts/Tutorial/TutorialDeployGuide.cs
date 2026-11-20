@@ -82,6 +82,7 @@ namespace Blindside.Tutorial
             g.mb = mb;
             g.lessons = teach;
             g.StopAllCoroutines();
+            g.EnemyCones(false);   // (a retry: the last match's free fight is over)
             if (talk && mb.ActiveTurns != null) mb.ActiveTurns.BeforeFirstRound = g.OpeningTalk;
             if (brief) g.StartCoroutine(g.Run());
         }
@@ -296,6 +297,7 @@ namespace Blindside.Tutorial
             // ---- the squad is the player's ----
             TutorialGate.Guided = false;
             TutorialGate.Allow();
+            EnemyCones(true);   // the free fight: every enemy's view drawn, until the operation is over
             if (!turns.Over)
             {
                 TutorialGate.HoldInput = true;
@@ -306,13 +308,27 @@ namespace Blindside.Tutorial
 
             // ---- the first enemy seen: one line on shooting ----
             while (!turns.Over && !(turns.Phase == Blindside.Turns.MatchPhase.Attack && AnyEnemyShown())) yield return null;
-            if (turns.Over) { Finish(); yield break; }
+            if (turns.Over) { Finish(); EnemyCones(false); yield break; }
             yield return Wait(.3f);
             TutorialGate.HoldInput = true;
             yield return Say(LSpot);
             radio.Close();
             yield return Wait(.3f);
             Finish();
+            while (!turns.Over) yield return null;
+            EnemyCones(false);
+        }
+
+        static readonly System.Func<SimUnit, bool> IsEnemy = u => u.Team != OperatorTeam.Attack;
+
+        /// <summary>The free fight of the first operation: the enemies' view cones drawn whether they are seen or not (VisionPolyController.ForceShow).</summary>
+        void EnemyCones(bool on)
+        {
+            var vp = mb != null ? mb.visionPolys : null;
+            if (vp == null) return;
+            if (on ? vp.ForceShow == IsEnemy : vp.ForceShow != IsEnemy) return;
+            vp.ForceShow = on ? IsEnemy : null;
+            vp.Refresh();
         }
 
         static bool InAttack(Blindside.Turns.TurnManager t) => t != null && !t.Over && t.Phase == Blindside.Turns.MatchPhase.Attack;
@@ -414,7 +430,7 @@ namespace Blindside.Tutorial
             radio = null; guide = null;
         }
 
-        void OnDestroy() { if (TutorialGate.HoldInput) TutorialGate.HoldInput = false; TutorialGate.Guided = false; }
+        void OnDestroy() { if (TutorialGate.HoldInput) TutorialGate.HoldInput = false; TutorialGate.Guided = false; EnemyCones(false); }
 
         IEnumerator Say(string line)
         {

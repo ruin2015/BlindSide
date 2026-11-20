@@ -109,6 +109,9 @@ namespace Blindside.Abilities
         public IReadOnlyList<IAbilityUnit> Units;   // all units, both teams, incl. hostage-side escort checks elsewhere
         public bool PrepPhase;                      // G.phase==='prep': ability use doesn't cost the unit's turn
         public AbilitySystem System;                // set by AbilitySystem before dispatch, for raising events
+        /// <summary>The player's IGNIS setting off a charge planted earlier (PlayerSelectionController.Thermite): the unit doesn't
+        /// turn to the panel or play its ability clip. The AI never sets it.</summary>
+        public bool Remote;
     }
 
     /// <summary>One ability's targeting spec + effect. Implementations live in BreachAbilities/SupportAbilities/GadgetAbilities.</summary>
@@ -236,7 +239,7 @@ namespace Blindside.Abilities
         public IEnumerator Use(IAbilityUnit u, AbilityTarget target, AbilityContext ctx)
         {
             ctx.System = this;
-            u.View?.PlayAbility(u.AbilityKey);   // animation only
+            if (!ctx.Remote) u.View?.PlayAbility(u.AbilityKey);   // animation only (a remote detonation: none)
             yield return registry[u.AbilityKey].Use(u, target, ctx);
             SpendCharge(u, ctx);
             OnUsed?.Invoke(u, target);

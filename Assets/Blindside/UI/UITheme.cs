@@ -63,6 +63,12 @@ namespace Blindside.UI
         public List<TMP_FontAsset> titleFallbacks = new List<TMP_FontAsset>();   // NotoJP-Dynamic SDF
         [Tooltip("Smallest text size allowed anywhere (px in canvas units).")]
         public float minTextSize = 11f;
+        [Header("Fonts — the battle's operator cards (roster + operator file): Chakra Petch, OFL")]
+        public TMP_FontAsset cardFontItalic;    // Chakra Petch Bold Italic SDF — names, HP, weapon on the roster cards
+        public TMP_FontAsset cardFontBold;      // Chakra Petch Bold SDF — LV / HP / weapon on the operator file
+        public TMP_FontAsset cardFontMedium;    // Chakra Petch Medium SDF — the operator file's letter-spaced name
+        public TMP_FontAsset bannerFont;        // Russo One SDF + a worn face (OFL) — the turn banner's rough title (KitTurnBanner)
+        public TMP_FontAsset duelFont;          // NotoSansJP Card SDF (Noto Sans JP Black, Latin only, italic 22) — the engagement cards (KitDuelPanel)
 
         public TMP_FontAsset Font(TextRole role)
         {

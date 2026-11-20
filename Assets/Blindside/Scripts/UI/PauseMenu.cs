@@ -37,6 +37,10 @@ namespace Blindside.UI
         public static PauseMenu Instance { get; private set; }
         public static bool IsOpen => Instance != null && Instance.root != null && Instance.root.gameObject.activeSelf;
 
+        /// <summary>Opens the menu as a plain ESC would (when it can): EscHoldSkip owns ESC while a skip is offered and hands a
+        /// short tap on here.</summary>
+        public static void RequestOpen() { if (Instance != null && !IsOpen) Instance.pending = true; }
+
         public RectTransform root;
         public Image dim;
         public KitTextButton resume, save, load, settings, title, quit;

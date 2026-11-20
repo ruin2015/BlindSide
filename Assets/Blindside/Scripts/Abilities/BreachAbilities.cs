@@ -26,7 +26,7 @@ namespace Blindside.Abilities
         public IEnumerator Use(IAbilityUnit u, AbilityTarget target, AbilityContext ctx)
         {
             var p = target.Panel;
-            u.Facing = Mathf.Atan2(p.centerY - u.Y, p.centerX - u.X);
+            if (!ctx.Remote) u.Facing = Mathf.Atan2(p.centerY - u.Y, p.centerX - u.X);   // (a remote detonation: as it stands)
 
             yield return PlayHitSequence(u, p, ctx);
 

@@ -5,7 +5,7 @@
 //              (TutorialRadio, Play mode only)
 //   2.6 – 5.8s 作戦成功 in the middle of the screen: an ink band 150 high opens (.35s), "OPERATION SUCCESS" 14 display (blue) over
 //              「作戦成功」 64 Title (white) with a glitch burst; the band closes from 5.2s. (No ATTACKER / DEFENDER VICTORY banner then.)
-//              A click skips: the radio to the banner, the banner to the result.
+//              Holding ESC (EscHoldSkip) skips straight to the result with its button.
 //   5.8s –     the result over a dimmed screen (rgba(4,6,9,.97)):
 //     Head     "OPERATION RESULT" 12 display (blue) · 「作戦成功」 30 Title · the stage's name, at x 112 y 34
 //     Cards    one card per operator of the player's side (232 wide, 14 apart, centred, y 108): the photo (OperatorArt.Body, cover,
@@ -16,7 +16,7 @@
 //     Reward   報酬 ¥ counting up 2.4 → 3.2s (bottom left)
 //     Rank     貢献度 +N and the rank bar filling from the old points to the new ones 2.6 → 3.8s (bottom centre); a promotion lights
 //              「昇進」 and the new rank's name
-//     Button   「次へ」 (TacticalButton 300×52, bottom right) fades in at 4.0s; a click before that skips the counting
+//     Button   「次へ」 (TacticalButton 300×52, bottom right) fades in at 4.0s; a held ESC before that skips the counting
 //   then, on 次へ, the rank screen (its own clock from the click): 作戦評価, the map's challenges one by one (○ / ×), the big rank letter
 //   slamming in with a glitch (S / A / B / C), the reward's scale and leave, and 「本部へ戻る」 — which fades to black and goes to the HQ
 // The numbers are the report's (MatchAward, already in the save): the screen only plays them back. No allocation per frame (texts change
@@ -150,6 +150,7 @@ namespace Blindside.UI
 
         void Update()
         {
+            TickSkipHint();
             if (!running) return;
             clock += Time.unscaledDeltaTime;
             if (!radioClosed && clock >= RadioEnd) { radioClosed = true; if (radio != null && radio.IsOpen) radio.Close(); }
@@ -158,25 +159,34 @@ namespace Blindside.UI
             Evaluate(clock);
         }
 
-        public void OnPointerClick(PointerEventData e)
+        /// <summary>Clicks no longer skip: every skip is the held ESC (EscHoldSkip, offered while there is something left to skip).</summary>
+        public void OnPointerClick(PointerEventData e) { }
+
+        EscHoldSkip skipHint;
+        System.Action skipAction;
+
+        bool SkipLeft => rankStart >= 0f ? clock < rankStart + RankButtonAt : clock < ResultStart + ButtonAt;
+
+        void TickSkipHint()
         {
-            // the rank screen: a click shows it all at once
-            if (rankStart >= 0f)
-            {
-                if (clock >= rankStart + RankButtonAt) return;
-                clock = rankStart + RankButtonAt;
-                if (!running && Application.isPlaying) running = true;
-                Evaluate(clock);
-                return;
-            }
-            // a click skips: the radio to the banner, the banner to the result, the result's counting to its end
-            if (clock < BannerFrom) clock = BannerFrom;
-            else if (clock < ResultStart) clock = ResultStart;
-            else if (clock < ResultStart + ButtonAt) clock = ResultStart + ButtonAt;
+            if (!Application.isPlaying) return;
+            bool want = running && root != null && root.gameObject.activeInHierarchy && SkipLeft;
+            if (want && skipHint == null) skipHint = EscHoldSkip.Begin(skipAction ?? (skipAction = SkipToEnd));
+            else if (!want && skipHint != null) { if (!skipHint.Fired) skipHint.End(); skipHint = null; }
+        }
+
+        /// <summary>The held ESC: the rank screen all at once; before it, the radio, the banner and the counting straight to the
+        /// result with its button.</summary>
+        void SkipToEnd()
+        {
+            if (rankStart >= 0f) clock = Mathf.Max(clock, rankStart + RankButtonAt);
+            else clock = Mathf.Max(clock, ResultStart + ButtonAt);
             if (!radioClosed && clock >= RadioEnd) { radioClosed = true; if (radio != null && radio.IsOpen) radio.Close(); }
             if (!running && Application.isPlaying) running = true;
             Evaluate(clock);
         }
+
+        void OnDisable() { if (skipHint != null && !skipHint.Fired) skipHint.End(); skipHint = null; }
 
         // ---- motion ------------------------------------------------------------------------------------------------------------
         public void Evaluate(float t)

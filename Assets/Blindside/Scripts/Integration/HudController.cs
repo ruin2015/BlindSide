@@ -26,6 +26,10 @@ namespace Blindside.Integration
         public bool useMissionBar = true;
         [Tooltip("The mission bar (UI/Kit/KitMissionBar); made beside kitTopbar at Bind when empty.")]
         public KitMissionBar missionBar;
+        [Tooltip("Draw the mission bar (clear condition and goals). Off: it is built and kept up to date but hidden — the battle screen shows neither.")]
+        public bool showMissionBar;
+        [Tooltip("The tactical HUD (the roster cards, the operator file and END TURN only): the battle log is not drawn.")]
+        public bool tacticalHud = true;
         /// <summary>The enemy surveillance cameras still working (the map's and ARGUS's) — MatchBootstrap sets it; the 監視カメラ goal reads it.</summary>
         public System.Func<int> CamerasLeft;
         [Tooltip("Legacy bar (UI/Legacy/HUD_Topbar.prefab); used only when kitTopbar is empty.")]
@@ -50,7 +54,8 @@ namespace Blindside.Integration
         IReadOnlyList<SimUnit> units;
         OperatorTeam side;
         readonly Dictionary<HudRosterCard, SimUnit> cardUnits = new Dictionary<HudRosterCard, SimUnit>();
-        readonly Dictionary<SelectableCard, SimUnit> kitUnits = new Dictionary<SelectableCard, SimUnit>();
+        readonly Dictionary<TacticalRosterCard, SimUnit> kitUnits = new Dictionary<TacticalRosterCard, SimUnit>();
+        readonly Dictionary<TacticalRosterCard, WeaponData> kitGuns = new Dictionary<TacticalRosterCard, WeaponData>();   // the gun each card shows
         bool dirty;
 
         // the role icon chip per operator (display glyphs, BSTactical): the mockup's attackers, then the defenders
@@ -81,6 +86,15 @@ namespace Blindside.Integration
 
             if (content != null) content.SetActive(true);   // $('#hud').classList.remove('hidden')
             if (useMissionBar && missionBar == null && kitTopbar != null) missionBar = KitMissionBar.Replace(kitTopbar);
+            // the bar stays built and fed (the goals are still tracked), only not drawn unless showMissionBar
+            if (missionBar != null && missionBar.gameObject.activeSelf != showMissionBar) missionBar.gameObject.SetActive(showMissionBar);
+            // the tactical HUD: the roster cards, the operator file and END TURN only — the log is kept (HudLog still records,
+            // the Tab history still reads it) but not drawn
+            if (tacticalHud)
+            {
+                if (kitLog != null && kitLog.gameObject.activeSelf) kitLog.gameObject.SetActive(false);
+                if (log != null && log.gameObject.activeSelf) log.gameObject.SetActive(false);
+            }
             BindGoals();
             BuildRoster();
             Refresh();
@@ -149,22 +163,32 @@ namespace Blindside.Integration
             }
         }
 
-        // SelectableCards: identity from the operator data, the click goes to the same RosterClick as the legacy card
+        // TacticalRosterCards: identity and gun from the operator data, the click goes to the same RosterClick as the legacy card
         void BuildKitRoster(List<SimUnit> mine)
         {
+            kitGuns.Clear();
             var cards = kitRoster.Build(mine.Count);
             for (int i = 0; i < cards.Count; i++)
             {
                 var u = mine[i]; var card = cards[i];
                 var op = u.Op;
                 string key = op != null ? op.key : u.Id;
-                card.SetData(OperatorArt.Face(key), op != null ? op.DisplayName : key, op != null ? op.kr : u.Id, op != null ? op.color : UIPalette.Blue,
-                    u.HP, u.MaxHP, $"移動 {M1(u.MoveLeft)}m", RoleIcons.TryGetValue(key, out var icon) ? icon : "◎");
+                card.SetData(OperatorArt.Face(key), op != null ? op.DisplayName : key, op != null ? op.color : UIPalette.Blue, u.HP, u.MaxHP);
+                SyncGun(card, u);
                 var c = card;
                 card.onClick.AddListener(() => OnKitCardClicked(c));
                 kitUnits[card] = u;
             }
             if (Application.isPlaying) kitRoster.PlayEnter();
+        }
+
+        // the gun in hand (it changes with 持ち替え)
+        void SyncGun(TacticalRosterCard card, SimUnit u)
+        {
+            var w = u.Weapon;
+            if (kitGuns.TryGetValue(card, out var shown) && shown == w) return;
+            kitGuns[card] = w;
+            card.SetWeapon(w != null ? GunIcons.Label(w.weaponName, w.key) : "", w != null ? GunIcons.For(w.key) : null);
         }
 
         // d.onclick=()=>{ if(!u.alive) return; sfx('click'); if(playerCanAct()&&!u.ended) selectUnit(u); else { panTo(u.x,u.y,400); showUnitPanel(u); } }
@@ -174,7 +198,7 @@ namespace Blindside.Integration
             selection.RosterClick(u);
         }
 
-        void OnKitCardClicked(SelectableCard card)
+        void OnKitCardClicked(TacticalRosterCard card)
         {
             if (selection == null || !kitUnits.TryGetValue(card, out var u)) return;
             selection.RosterClick(u);
@@ -213,11 +237,12 @@ namespace Blindside.Integration
                 card.SetState(u.HP, u.MaxHP, st, u.Ended, selected == u, u.Alive && u.Ended && my, !u.Alive, true);
             }
 
-            // ---- SelectableCard (.rc) ---- same rules; 行動終了 is the card's own chip, so the move chip keeps the distance
+            // ---- TacticalRosterCard ---- same rules; the card turns "移動 …" into 行動中 and its own 行動終了 / K.I.A
             foreach (var kv in kitUnits)
             {
                 var card = kv.Key; var u = kv.Value;
                 if (card == null) continue;
+                SyncGun(card, u);
                 if (phase == MatchPhase.Deploy)
                 {
                     card.SetState(u.HP, u.MaxHP, u.Captive ? "拘束中" : u.Placed ? "降下完了" : "ヘリ搭乗中", selected == u, false, card.Dead);

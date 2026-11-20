@@ -137,10 +137,10 @@ namespace Blindside.Integration
 
         static void Pulse(Contact c, float now, float k)
         {
-            float ph = Mathf.Repeat(now * .8f + c.phase, 1f);
-            float s = ContactRadius * Mathf.Lerp(.55f, 1.15f, ph) * k;
+            // the ring holds its size (no growing pulse): it only comes in with the build-up
+            float s = Mathf.Max(.01f, ContactRadius * k);
             c.ring.localScale = new Vector3(s, 1f, s);
-            c.ringLr.startColor = c.ringLr.endColor = new Color(1f, 1f, 1f, (1f - ph * .7f) * k);
+            c.ringLr.startColor = c.ringLr.endColor = new Color(1f, 1f, 1f, .9f * k);
             c.beamLr.startColor = c.beamLr.endColor = new Color(1f, 1f, 1f, .7f * k);
             c.diamond.position = c.pos + Vector3.up * (2.6f + Mathf.Sin(now * 2.2f + c.phase * 6f) * .15f);
             c.diamond.rotation = Quaternion.Euler(0f, now * 90f + c.phase * 360f, 0f);
@@ -203,10 +203,15 @@ namespace Blindside.Integration
                     var p = GridSpace.GridToWorld(u.X + Mathf.Cos(ang) * off, u.Y + Mathf.Sin(ang) * off, 0f);
                     contacts.Add(Marker(p, foeMat, (float)rng.NextDouble()));
                 }
+            // the rescue targets, where they are: the hostages and the captured operators (amber)
             hostMarks.Clear();
             var hs = hostages != null ? hostages() : null;
             if (hs != null) for (int i = 0; i < hs.Count; i++) hostMarks.Add(Marker(hs[i], hostMat, i * .37f));
-            if (headerCount != null) headerCount.text = "敵の推定位置 · 反応 " + contacts.Count;
+            if (units != null)
+                foreach (var u in units)
+                    if (u != null && u.Alive && u.Captive) hostMarks.Add(Marker(GridSpace.GridToWorld(u.X, u.Y, 0f), hostMat, hostMarks.Count * .37f));
+            if (headerCount != null)
+                headerCount.text = "敵の推定位置 · 反応 " + contacts.Count + (hostMarks.Count > 0 ? "  ·  救出目標 " + hostMarks.Count : "");
 
             // the camera: follows the main one, renders only the hologram
             var cgo = new GameObject("DeployHoloCam");

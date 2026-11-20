@@ -216,10 +216,11 @@ namespace Blindside.Hub
         public const float FirstPoseTime = .15f, AimSettleTime = .9f, TurnSettleTime = 1.2f;
         float freezeAt = -1f;
 
-        /// <summary>Lets the figure move for `seconds` (a change of pose), then holds it still.</summary>
+        /// <summary>Lets the figure move for `seconds` (a change of pose: the weights blend, the body turns), then holds it still. The
+        /// clips' time is always held: the idle never plays here, not even while the camera moves.</summary>
         void Settle(float seconds)
         {
-            HoldClips(false);
+            HoldClips(true);
             Freeze(false);
             freezeAt = Time.unscaledTime + seconds;
         }
